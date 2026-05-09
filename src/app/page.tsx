@@ -140,62 +140,68 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* New Browse by Category Section */}
+      {/* Digital Skills Section */}
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Explore our marketplace</h2>
-            <p className="text-muted-foreground text-lg">Find experts for digital projects or reliable professionals for home services.</p>
-          </div>
-
-          <div className="space-y-16">
-            {/* Digital Skills */}
-            <div className="space-y-8">
-              <h3 className="text-2xl font-bold border-l-4 border-primary pl-4">Digital Skills</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {digitalSkills.map((skill) => (
-                  <Link key={skill.name} href={`/freelancers?category=${skill.name}`}>
-                    <Card className="group border-none shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer bg-card">
-                      <CardContent className="p-8 flex flex-col items-center text-center">
-                        <div className={`p-4 rounded-2xl ${skill.color} mb-6 transition-transform group-hover:scale-110 duration-300`}>
-                          <skill.icon className="h-8 w-8" />
-                        </div>
-                        <h4 className="font-bold text-lg group-hover:text-primary transition-colors">{skill.name}</h4>
-                        <p className="text-sm text-muted-foreground mt-2">Hire top-rated {skill.name.toLowerCase()} experts</p>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+            <div className="max-w-2xl">
+              <h2 className="text-4xl font-bold mb-4 tracking-tight">Explore Digital Skills</h2>
+              <p className="text-muted-foreground text-lg">Work with world-class experts for your next digital project.</p>
             </div>
-
-            {/* Hand Skills */}
-            <div className="space-y-8">
-              <h3 className="text-2xl font-bold border-l-4 border-accent pl-4">Hand & Artisan Skills</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {handSkills.map((skill) => (
-                  <Link key={skill.name} href={`/freelancers?category=${skill.name}`}>
-                    <Card className="group border-none shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer bg-card">
-                      <CardContent className="p-8 flex flex-col items-center text-center">
-                        <div className={`p-4 rounded-2xl ${skill.color} mb-6 transition-transform group-hover:scale-110 duration-300`}>
-                          <skill.icon className="h-8 w-8" />
-                        </div>
-                        <h4 className="font-bold text-lg group-hover:text-accent transition-colors">{skill.name}</h4>
-                        <p className="text-sm text-muted-foreground mt-2">Connect with verified local professionals</p>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-16 text-center">
-            <Link href="/categories">
-              <Button size="lg" variant="outline" className="px-10 h-14 text-lg rounded-full hover:bg-primary hover:text-primary-foreground transition-all gap-2 group">
-                View All Categories <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+            <Link href="/categories#digital-skills">
+              <Button variant="outline" className="rounded-full px-6 group">
+                View All Digital Categories <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {digitalSkills.map((skill) => (
+              <Link key={skill.name} href={`/freelancers?category=${skill.name}`}>
+                <Card className="group border-none shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 overflow-hidden cursor-pointer bg-card">
+                  <CardContent className="p-8 flex flex-col items-center text-center">
+                    <div className={`p-4 rounded-2xl ${skill.color} mb-6 transition-transform group-hover:scale-110 duration-300`}>
+                      <skill.icon className="h-8 w-8" />
+                    </div>
+                    <h4 className="font-bold text-xl group-hover:text-primary transition-colors">{skill.name}</h4>
+                    <p className="text-sm text-muted-foreground mt-2">Hire top-rated professionals</p>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Hand & Artisan Skills Section */}
+      <section className="py-24 bg-muted/20">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+            <div className="max-w-2xl">
+              <h2 className="text-4xl font-bold mb-4 tracking-tight">Hand & Artisan Skills</h2>
+              <p className="text-muted-foreground text-lg">Connect with reliable and verified local professionals for home and offline services.</p>
+            </div>
+            <Link href="/categories#hand-artisan-skills">
+              <Button variant="outline" className="rounded-full px-6 group">
+                View All Artisan Categories <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {handSkills.map((skill) => (
+              <Link key={skill.name} href={`/freelancers?category=${skill.name}`}>
+                <Card className="group border-none shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 overflow-hidden cursor-pointer bg-card">
+                  <CardContent className="p-8 flex flex-col items-center text-center">
+                    <div className={`p-4 rounded-2xl ${skill.color} mb-6 transition-transform group-hover:scale-110 duration-300`}>
+                      <skill.icon className="h-8 w-8" />
+                    </div>
+                    <h4 className="font-bold text-xl group-hover:text-accent transition-colors">{skill.name}</h4>
+                    <p className="text-sm text-muted-foreground mt-2">Connect with verified pros</p>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
           </div>
         </div>
       </section>

@@ -1,0 +1,28 @@
+{
+  "placeholderImages": [
+    {
+      "id": "hero-freelancer",
+      "description": "Professional freelancer working on a laptop",
+      "imageUrl": "https://picsum.photos/seed/skillup-hero/1200/800",
+      "imageHint": "freelancer laptop"
+    },
+    {
+      "id": "avatar-1",
+      "description": "Freelancer portrait",
+      "imageUrl": "https://picsum.photos/seed/avatar1/400/400",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "avatar-2",
+      "description": "Freelancer portrait",
+      "imageUrl": "https://picsum.photos/seed/avatar2/400/400",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "avatar-3",
+      "description": "Freelancer portrait",
+      "imageUrl": "https://picsum.photos/seed/avatar3/400/400",
+      "imageHint": "person portrait"
+    }
+  ]
+}

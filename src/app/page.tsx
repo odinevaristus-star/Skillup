@@ -4,10 +4,40 @@ import { Button } from "@/components/ui/button"
 import { Navbar } from "@/components/navbar"
 import { Card, CardContent } from "@/components/ui/card"
 import { PlaceHolderImages } from "@/lib/placeholder-images"
-import { CheckCircle, Users, Briefcase, Star, Search, ShieldCheck } from "lucide-react"
+import { 
+  CheckCircle, 
+  Users, 
+  Briefcase, 
+  Star, 
+  Search, 
+  ShieldCheck,
+  Code,
+  Palette,
+  Video,
+  PenTool,
+  Plug,
+  Droplets,
+  Wrench,
+  Paintbrush,
+  ArrowRight
+} from "lucide-react"
 
 export default function LandingPage() {
   const heroImage = PlaceHolderImages.find(img => img.id === 'hero-freelancer')
+
+  const digitalSkills = [
+    { name: "Programming", icon: Code, color: "bg-blue-500/10 text-blue-600" },
+    { name: "Graphic Design", icon: Palette, color: "bg-pink-500/10 text-pink-600" },
+    { name: "Video Editing", icon: Video, color: "bg-purple-500/10 text-purple-600" },
+    { name: "Writing", icon: PenTool, color: "bg-orange-500/10 text-orange-600" },
+  ]
+
+  const handSkills = [
+    { name: "Electrician", icon: Plug, color: "bg-yellow-500/10 text-yellow-600" },
+    { name: "Plumbing", icon: Droplets, color: "bg-cyan-500/10 text-cyan-600" },
+    { name: "Mechanic", icon: Wrench, color: "bg-slate-500/10 text-slate-600" },
+    { name: "Painting", icon: Paintbrush, color: "bg-green-500/10 text-green-600" },
+  ]
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -110,29 +140,62 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Category Section */}
-      <section className="py-24">
+      {/* New Browse by Category Section */}
+      <section className="py-24 bg-background">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-12">
-            <div>
-              <h2 className="text-3xl font-bold mb-4">Browse by category</h2>
-              <p className="text-muted-foreground">Explore expert freelancers across every niche.</p>
-            </div>
-            <Link href="/freelancers" className="text-primary font-semibold hover:underline mt-4 md:mt-0">
-              View all categories →
-            </Link>
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4">Explore our marketplace</h2>
+            <p className="text-muted-foreground text-lg">Find experts for digital projects or reliable professionals for home services.</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {[
-              "Programming", "Design", "Writing", "Marketing", "Video", "Music",
-              "Business", "Lifestyle", "Photography", "Data Science", "Mobile", "3D Modeling"
-            ].map((cat, i) => (
-              <Link key={i} href={`/freelancers?category=${cat}`}>
-                <div className="p-6 rounded-xl border bg-card hover:border-primary hover:bg-primary/5 transition-all cursor-pointer text-center group">
-                  <p className="font-medium group-hover:text-primary">{cat}</p>
-                </div>
-              </Link>
-            ))}
+
+          <div className="space-y-16">
+            {/* Digital Skills */}
+            <div className="space-y-8">
+              <h3 className="text-2xl font-bold border-l-4 border-primary pl-4">Digital Skills</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {digitalSkills.map((skill) => (
+                  <Link key={skill.name} href={`/freelancers?category=${skill.name}`}>
+                    <Card className="group border-none shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer bg-card">
+                      <CardContent className="p-8 flex flex-col items-center text-center">
+                        <div className={`p-4 rounded-2xl ${skill.color} mb-6 transition-transform group-hover:scale-110 duration-300`}>
+                          <skill.icon className="h-8 w-8" />
+                        </div>
+                        <h4 className="font-bold text-lg group-hover:text-primary transition-colors">{skill.name}</h4>
+                        <p className="text-sm text-muted-foreground mt-2">Hire top-rated {skill.name.toLowerCase()} experts</p>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Hand Skills */}
+            <div className="space-y-8">
+              <h3 className="text-2xl font-bold border-l-4 border-accent pl-4">Hand & Artisan Skills</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {handSkills.map((skill) => (
+                  <Link key={skill.name} href={`/freelancers?category=${skill.name}`}>
+                    <Card className="group border-none shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer bg-card">
+                      <CardContent className="p-8 flex flex-col items-center text-center">
+                        <div className={`p-4 rounded-2xl ${skill.color} mb-6 transition-transform group-hover:scale-110 duration-300`}>
+                          <skill.icon className="h-8 w-8" />
+                        </div>
+                        <h4 className="font-bold text-lg group-hover:text-accent transition-colors">{skill.name}</h4>
+                        <p className="text-sm text-muted-foreground mt-2">Connect with verified local professionals</p>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-16 text-center">
+            <Link href="/categories">
+              <Button size="lg" variant="outline" className="px-10 h-14 text-lg rounded-full hover:bg-primary hover:text-primary-foreground transition-all gap-2 group">
+                View All Categories <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

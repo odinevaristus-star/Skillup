@@ -4,6 +4,7 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import Image from "next/image"
 import { 
   TrendingUp, 
   Briefcase, 
@@ -11,7 +12,10 @@ import {
   Star, 
   Zap, 
   Clock, 
-  ArrowRight
+  ArrowRight,
+  PlusCircle,
+  LogOut,
+  Search
 } from "lucide-react"
 
 export default function DashboardOverview() {
@@ -185,7 +189,3 @@ export default function DashboardOverview() {
     </div>
   )
 }
-
-// Fixed missing imports in code
-import { PlusCircle, LogOut } from "lucide-react"
-import Image from "next/image"

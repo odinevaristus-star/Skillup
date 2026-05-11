@@ -9,11 +9,12 @@ import { Label } from "@/components/ui/label"
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card"
 import { Navbar } from "@/components/navbar"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Briefcase, User } from "lucide-react"
+import { Briefcase, User, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
 import { getFirestore, doc, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
+import { errorEmitter, FirestorePermissionError } from "@/firebase"
 
 export default function SignupPage() {
   const [role, setRole] = useState<'customer' | 'freelancer' | null>(null)
@@ -39,16 +40,29 @@ export default function SignupPage() {
       
       await updateProfile(user, { displayName: fullName })
       
-      // Save profile to Firestore
-      await setDoc(doc(db, "users", user.uid), {
+      const userData = {
         fullName,
         role,
         skills: [],
         bio: "",
         title: role === 'freelancer' ? "New Freelancer" : "New Client"
-      })
+      };
+
+      // Firestore mutation without await, following centralized error emission pattern
+      setDoc(doc(db, "users", user.uid), userData)
+        .then(() => {
+          window.location.href = '/dashboard'
+        })
+        .catch(async (serverError) => {
+          const permissionError = new FirestorePermissionError({
+            path: `users/${user.uid}`,
+            operation: 'create',
+            requestResourceData: userData,
+          });
+          errorEmitter.emit('permission-error', permissionError);
+          setIsLoading(false)
+        });
       
-      window.location.href = '/dashboard'
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -125,6 +139,7 @@ export default function SignupPage() {
                   </label>
                 </div>
                 <Button className="w-full h-11 text-base font-semibold mt-4" type="submit" disabled={isLoading}>
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   {isLoading ? "Creating account..." : "Create Account"}
                 </Button>
               </form>

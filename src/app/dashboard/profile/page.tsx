@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { useUser, useFirestore, useDoc } from "@/firebase"
+import { useUser, useFirestore, useDoc, errorEmitter, FirestorePermissionError } from "@/firebase"
 import { doc, setDoc } from "firebase/firestore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,7 +16,7 @@ import { Camera, X, Plus, Save, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 export default function ProfileManagement() {
-  const { user } = useUser()
+  const { user, loading: authLoading } = useUser()
   const db = useFirestore()
   const { toast } = useToast()
 
@@ -25,7 +25,7 @@ export default function ProfileManagement() {
     return doc(db, "users", user.uid)
   }, [db, user?.uid])
 
-  const { data: profile, loading } = useDoc(userDocRef)
+  const { data: profile, loading: profileLoading } = useDoc(userDocRef)
 
   const [fullName, setFullName] = useState("")
   const [title, setTitle] = useState("")
@@ -55,34 +55,39 @@ export default function ProfileManagement() {
     setSkills(skills.filter(s => s !== skillToRemove))
   }
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!user?.uid || !db) return
     setIsSaving(true)
-    try {
-      await setDoc(doc(db, "users", user.uid), {
-        fullName,
-        title,
-        bio,
-        skills,
-        role: profile?.role || "freelancer" // Preserve role
-      }, { merge: true })
-      
-      toast({
-        title: "Profile updated",
-        description: "Your professional details have been saved successfully."
+    
+    const data = {
+      fullName,
+      title,
+      bio,
+      skills,
+      role: profile?.role || "freelancer"
+    };
+
+    setDoc(doc(db, "users", user.uid), data, { merge: true })
+      .then(() => {
+        toast({
+          title: "Profile updated",
+          description: "Your professional details have been saved successfully."
+        })
       })
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Update failed",
-        description: error.message
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: `users/${user.uid}`,
+          operation: 'write',
+          requestResourceData: data,
+        });
+        errorEmitter.emit('permission-error', permissionError);
       })
-    } finally {
-      setIsSaving(false)
-    }
+      .finally(() => {
+        setIsSaving(false)
+      })
   }
 
-  if (loading) {
+  if (authLoading || profileLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

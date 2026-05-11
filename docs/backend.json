@@ -36,6 +36,22 @@
         }
       },
       "required": ["fullName", "role"]
+    },
+    "Job": {
+      "title": "Job",
+      "description": "A job posting or project on the platform.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "budget": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "in-progress", "completed"] },
+        "clientId": { "type": "string" },
+        "freelancerId": { "type": "string" },
+        "progress": { "type": "number" },
+        "deadline": { "type": "string" }
+      },
+      "required": ["title", "clientId", "status"]
     }
   },
   "auth": {
@@ -49,6 +65,10 @@
     "/users/{userId}": {
       "schema": "UserProfile",
       "description": "Stores the professional profile for each registered user."
+    },
+    "/jobs/{jobId}": {
+      "schema": "Job",
+      "description": "Stores details for each job posting."
     }
   }
 }

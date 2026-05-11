@@ -1,9 +1,8 @@
 
 "use client"
 
-import { useUser, useFirestore, useDoc } from "@/firebase"
-import { doc } from "firebase/firestore"
-import { useMemo } from "react"
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from "@/firebase"
+import { doc, collection, query, where, limit } from "firebase/firestore"
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -19,20 +18,35 @@ import {
   ArrowRight,
   PlusCircle,
   LogOut,
-  Search
+  Search,
+  Loader2
 } from "lucide-react"
 import { getAuth, signOut } from "firebase/auth"
+import Link from "next/link"
 
 export default function DashboardOverview() {
-  const { user } = useUser()
+  const { user, loading: authLoading } = useUser()
   const db = useFirestore()
   
-  const userDocRef = useMemo(() => {
+  const userDocRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
     return doc(db, "users", user.uid)
   }, [db, user?.uid])
 
-  const { data: profile } = useDoc(userDocRef)
+  const { data: profile, loading: profileLoading } = useDoc(userDocRef)
+
+  const activeJobsQuery = useMemoFirebase(() => {
+    if (!db || !user?.uid || !profile?.role) return null
+    const field = profile.role === 'freelancer' ? 'freelancerId' : 'clientId'
+    return query(
+      collection(db, "jobs"),
+      where(field, "==", user.uid),
+      where("status", "==", "in-progress"),
+      limit(5)
+    )
+  }, [db, user?.uid, profile?.role])
+
+  const { data: activeJobs, loading: jobsLoading } = useCollection(activeJobsQuery)
 
   const displayName = profile?.fullName || user?.displayName || user?.email?.split('@')[0] || "User"
 
@@ -42,16 +56,19 @@ export default function DashboardOverview() {
     window.location.href = '/'
   }
 
-  const stats = [
-    { label: "Active Jobs", value: "3", icon: Briefcase, color: "text-blue-500" },
-    { label: "Messages", value: "12", icon: MessageSquare, color: "text-cyan-500" },
-    { label: "Total Earned", value: "$4,250", icon: TrendingUp, color: "text-green-500" },
-    { label: "Average Rating", value: "4.9", icon: Star, color: "text-yellow-500" },
-  ]
+  if (authLoading || profileLoading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
-  const activeJobs = [
-    { id: '1', title: 'React Dashboard UI', client: 'Acme Corp', deadline: '2 days left', progress: 75 },
-    { id: '2', title: 'Python Scraper Fix', client: 'WebServices', deadline: '5 days left', progress: 30 },
+  const stats = [
+    { label: "Active Jobs", value: activeJobs?.length.toString() || "0", icon: Briefcase, color: "text-blue-500" },
+    { label: "Account Status", value: profile?.role === 'freelancer' ? "Verified" : "Active", icon: MessageSquare, color: "text-cyan-500" },
+    { label: "Member Since", value: user?.metadata.creationTime ? new Date(user.metadata.creationTime).getFullYear().toString() : "2024", icon: TrendingUp, color: "text-green-500" },
+    { label: "Average Rating", value: "N/A", icon: Star, color: "text-yellow-500" },
   ]
 
   return (
@@ -59,10 +76,14 @@ export default function DashboardOverview() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Welcome back, {displayName}!</h1>
-          <p className="text-muted-foreground">You have 2 projects due this week. Good luck!</p>
+          <p className="text-muted-foreground">
+            {profile?.title || "Professional Profile"} • {user?.email}
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">Download Invoice</Button>
+          <Link href="/dashboard/profile">
+            <Button variant="outline">Edit Profile</Button>
+          </Link>
           <Button>Explore Jobs</Button>
         </div>
       </div>
@@ -76,7 +97,7 @@ export default function DashboardOverview() {
                 <div className={`p-2 rounded-lg bg-muted/50 ${stat.color}`}>
                   <stat.icon className="h-5 w-5" />
                 </div>
-                <Badge variant="secondary" className="text-[10px]">MONTHLY</Badge>
+                <Badge variant="secondary" className="text-[10px]">ACCOUNT</Badge>
               </div>
               <p className="text-2xl font-bold">{stat.value}</p>
               <p className="text-xs text-muted-foreground">{stat.label}</p>
@@ -92,36 +113,48 @@ export default function DashboardOverview() {
           <Card className="border-none shadow-sm overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 pb-4">
               <div className="space-y-1">
-                <CardTitle className="text-xl">Active Projects</CardTitle>
+                <CardTitle className="text-xl">My Active Projects</CardTitle>
                 <CardDescription>Track your ongoing work progress</CardDescription>
               </div>
               <Button variant="ghost" size="sm">View All</Button>
             </CardHeader>
             <CardContent className="pt-6">
-              <div className="space-y-6">
-                {activeJobs.map((job) => (
-                  <div key={job.id} className="space-y-2">
-                    <div className="flex items-center justify-between">
+              {jobsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : activeJobs?.length ? (
+                <div className="space-y-6">
+                  {activeJobs.map((job: any) => (
+                    <div key={job.id} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <p className="font-semibold">{job.title}</p>
+                          <p className="text-xs text-muted-foreground">{job.clientId === user?.uid ? 'Hiring' : 'Contracted'}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs font-medium flex items-center gap-1">
+                            <Clock className="h-3 w-3" /> {job.deadline || 'No deadline'}
+                          </p>
+                        </div>
+                      </div>
                       <div className="space-y-1">
-                        <p className="font-semibold">{job.title}</p>
-                        <p className="text-xs text-muted-foreground">{job.client}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-medium flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> {job.deadline}
-                        </p>
+                        <div className="flex justify-between text-[10px]">
+                          <span>Progress</span>
+                          <span>{job.progress || 0}%</span>
+                        </div>
+                        <Progress value={job.progress || 0} className="h-2" />
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[10px]">
-                        <span>Progress</span>
-                        <span>{job.progress}%</span>
-                      </div>
-                      <Progress value={job.progress} className="h-2" />
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Briefcase className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                  <p>No active projects found.</p>
+                  <Button variant="link" className="mt-2">Browse listings</Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -131,7 +164,9 @@ export default function DashboardOverview() {
               <Zap className="h-5 w-5 text-primary fill-primary/20" />
               <h2 className="text-xl font-bold">AI Recommended for You</h2>
             </div>
-            <p className="text-sm text-muted-foreground mb-6">Based on your expertise in {profile?.skills?.[0] || 'your field'}, we found 3 high-paying jobs you might like.</p>
+            <p className="text-sm text-muted-foreground mb-6">
+              Based on your expertise in {profile?.skills?.[0] || 'your field'}, we found some high-paying jobs you might like.
+            </p>
             <div className="grid md:grid-cols-2 gap-4">
               {[
                 { title: "Senior React Architect", budget: "$150/hr", match: "98% Match" },
@@ -143,7 +178,7 @@ export default function DashboardOverview() {
                     <span className="text-sm font-bold">{rec.budget}</span>
                   </div>
                   <h3 className="font-bold group-hover:text-primary transition-colors">{rec.title}</h3>
-                  <p className="text-xs text-muted-foreground mt-2">Recommended because of your past 5 successful projects.</p>
+                  <p className="text-xs text-muted-foreground mt-2">Personalized recommendation for {displayName}.</p>
                 </div>
               ))}
             </div>
@@ -173,34 +208,14 @@ export default function DashboardOverview() {
           {/* Recent Activity */}
           <Card className="border-none shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg">Recent Messages</CardTitle>
+              <CardTitle className="text-lg">Messages & Alerts</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[
-                  { name: "John Doe", msg: "Hey, can we sync tomorrow?", time: "2h ago" },
-                  { name: "Sarah Smith", msg: "The files look great, thanks!", time: "5h ago" },
-                  { name: "Tech Solutions", msg: "Project proposal accepted", time: "1d ago" },
-                ].map((msg, i) => (
-                  <div key={i} className="flex gap-3 items-center">
-                    <div className="w-10 h-10 rounded-full bg-muted overflow-hidden shrink-0">
-                      <Image 
-                        src={`https://picsum.photos/seed/chat-${i}/40/40`} 
-                        alt={msg.name} 
-                        width={40} 
-                        height={40}
-                        data-ai-hint="user portrait"
-                      />
-                    </div>
-                    <div className="flex-1 overflow-hidden">
-                      <div className="flex justify-between">
-                        <p className="text-sm font-bold truncate">{msg.name}</p>
-                        <span className="text-[10px] text-muted-foreground shrink-0">{msg.time}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">{msg.msg}</p>
-                    </div>
-                  </div>
-                ))}
+                <div className="flex flex-col gap-4 text-center py-6 text-muted-foreground">
+                  <MessageSquare className="h-8 w-8 mx-auto opacity-20" />
+                  <p className="text-sm">No new notifications</p>
+                </div>
                 <Button variant="ghost" size="sm" className="w-full text-primary hover:text-primary hover:bg-primary/5">
                   View Messenger <ArrowRight className="h-3 w-3 ml-2" />
                 </Button>

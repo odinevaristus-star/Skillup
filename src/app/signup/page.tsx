@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Briefcase, User, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
-import { getFirestore, doc, setDoc } from "firebase/firestore"
+import { getFirestore, doc, setDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter, FirestorePermissionError } from "@/firebase"
 
@@ -23,6 +23,7 @@ export default function SignupPage() {
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [primarySkill, setPrimarySkill] = useState("")
   const { toast } = useToast()
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -42,13 +43,15 @@ export default function SignupPage() {
       
       const userData = {
         fullName,
+        email,
         role,
-        skills: [],
+        skills: primarySkill ? [primarySkill] : [],
         bio: "",
-        title: role === 'freelancer' ? "New Freelancer" : "New Client"
+        title: role === 'freelancer' ? (primarySkill || "Professional Freelancer") : "Project Client",
+        avatarUrl: user.photoURL || "",
+        createdAt: serverTimestamp()
       };
 
-      // Firestore mutation without await, following centralized error emission pattern
       setDoc(doc(db, "users", user.uid), userData)
         .then(() => {
           window.location.href = '/dashboard'
@@ -128,6 +131,12 @@ export default function SignupPage() {
                   <Label htmlFor="email">Email address</Label>
                   <Input id="email" type="email" placeholder="john@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
+                {role === 'freelancer' && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="primarySkill">Primary Skill / Category</Label>
+                    <Input id="primarySkill" placeholder="e.g. React Developer, Logo Designer" required value={primarySkill} onChange={(e) => setPrimarySkill(e.target.value)} />
+                  </div>
+                )}
                 <div className="grid gap-2">
                   <Label htmlFor="password">Password</Label>
                   <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />

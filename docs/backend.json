@@ -10,6 +10,10 @@
           "type": "string",
           "description": "The user's full name."
         },
+        "email": {
+          "type": "string",
+          "description": "The user's email address."
+        },
         "title": {
           "type": "string",
           "description": "Professional title (e.g., Senior Full Stack Engineer)."
@@ -33,9 +37,14 @@
         "avatarUrl": {
           "type": "string",
           "description": "URL to the user's profile picture."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the profile was created."
         }
       },
-      "required": ["fullName", "role"]
+      "required": ["fullName", "role", "email"]
     },
     "Job": {
       "title": "Job",

@@ -7,7 +7,6 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import Image from "next/image"
 import { 
   TrendingUp, 
   Briefcase, 
@@ -49,6 +48,12 @@ export default function DashboardOverview() {
   const { data: activeJobs, loading: jobsLoading } = useCollection(activeJobsQuery)
 
   const displayName = profile?.fullName || user?.displayName || user?.email?.split('@')[0] || "User"
+  
+  const memberSince = profile?.createdAt 
+    ? new Date(profile.createdAt.seconds * 1000).getFullYear().toString()
+    : user?.metadata.creationTime 
+      ? new Date(user.metadata.creationTime).getFullYear().toString() 
+      : "2024"
 
   const handleSignOut = async () => {
     const auth = getAuth()
@@ -66,8 +71,8 @@ export default function DashboardOverview() {
 
   const stats = [
     { label: "Active Jobs", value: activeJobs?.length.toString() || "0", icon: Briefcase, color: "text-blue-500" },
-    { label: "Account Status", value: profile?.role === 'freelancer' ? "Verified" : "Active", icon: MessageSquare, color: "text-cyan-500" },
-    { label: "Member Since", value: user?.metadata.creationTime ? new Date(user.metadata.creationTime).getFullYear().toString() : "2024", icon: TrendingUp, color: "text-green-500" },
+    { label: "Account Type", value: profile?.role?.toUpperCase() || "USER", icon: MessageSquare, color: "text-cyan-500" },
+    { label: "Member Since", value: memberSince, icon: TrendingUp, color: "text-green-500" },
     { label: "Average Rating", value: "N/A", icon: Star, color: "text-yellow-500" },
   ]
 
@@ -76,15 +81,18 @@ export default function DashboardOverview() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Welcome back, {displayName}!</h1>
-          <p className="text-muted-foreground">
-            {profile?.title || "Professional Profile"} • {user?.email}
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <Badge variant="secondary" className="font-bold">{profile?.role === 'freelancer' ? 'Freelancer' : 'Client'}</Badge>
+            <p className="text-muted-foreground text-sm">
+              {profile?.title || (profile?.role === 'freelancer' ? "Professional Freelancer" : "Project Manager")} • {profile?.email || user?.email}
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Link href="/dashboard/profile">
             <Button variant="outline">Edit Profile</Button>
           </Link>
-          <Button>Explore Jobs</Button>
+          <Button>Explore {profile?.role === 'freelancer' ? 'Jobs' : 'Talent'}</Button>
         </div>
       </div>
 
@@ -97,7 +105,7 @@ export default function DashboardOverview() {
                 <div className={`p-2 rounded-lg bg-muted/50 ${stat.color}`}>
                   <stat.icon className="h-5 w-5" />
                 </div>
-                <Badge variant="secondary" className="text-[10px]">ACCOUNT</Badge>
+                <Badge variant="secondary" className="text-[10px]">REAL-TIME</Badge>
               </div>
               <p className="text-2xl font-bold">{stat.value}</p>
               <p className="text-xs text-muted-foreground">{stat.label}</p>
@@ -165,12 +173,12 @@ export default function DashboardOverview() {
               <h2 className="text-xl font-bold">AI Recommended for You</h2>
             </div>
             <p className="text-sm text-muted-foreground mb-6">
-              Based on your expertise in {profile?.skills?.[0] || 'your field'}, we found some high-paying jobs you might like.
+              Based on your expertise in {profile?.skills?.[0] || 'your field'}, we found some high-paying opportunities you might like.
             </p>
             <div className="grid md:grid-cols-2 gap-4">
               {[
-                { title: "Senior React Architect", budget: "$150/hr", match: "98% Match" },
-                { title: "UX Designer for Fintech", budget: "$4,000", match: "94% Match" },
+                { title: "Senior Project Architect", budget: "$150/hr", match: "98% Match" },
+                { title: "Product Designer", budget: "$4,000", match: "94% Match" },
               ].map((rec, i) => (
                 <div key={i} className="bg-card p-4 rounded-xl border border-border/50 shadow-sm hover:border-primary transition-colors cursor-pointer group">
                   <div className="flex justify-between items-start mb-2">
@@ -194,10 +202,10 @@ export default function DashboardOverview() {
             </CardHeader>
             <CardContent className="grid gap-2">
               <Button variant="outline" className="justify-start gap-3 h-11">
-                <PlusCircle className="h-4 w-4" /> Create Milestone
+                <PlusCircle className="h-4 w-4" /> {profile?.role === 'freelancer' ? 'Browse Work' : 'Post a Job'}
               </Button>
               <Button variant="outline" className="justify-start gap-3 h-11">
-                <Search className="h-4 w-4" /> Find new talent
+                <Search className="h-4 w-4" /> {profile?.role === 'freelancer' ? 'Find Peers' : 'Find Talent'}
               </Button>
               <Button variant="outline" className="justify-start gap-3 h-11 text-destructive hover:text-destructive" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4" /> Sign out

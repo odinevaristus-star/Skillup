@@ -1,3 +1,4 @@
+
 "use client"
 
 import Link from "next/link"
@@ -8,18 +9,46 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card"
 import { Navbar } from "@/components/navbar"
-import { Github, Chrome, Mail } from "lucide-react"
+import { Github, Chrome } from "lucide-react"
+import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, GithubAuthProvider } from "firebase/auth"
+import { useToast } from "@/hooks/use-toast"
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const { toast } = useToast()
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate login
-    setTimeout(() => {
+    const auth = getAuth()
+    try {
+      await signInWithEmailAndPassword(auth, email, password)
       window.location.href = '/dashboard'
-    }, 1500)
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Login failed",
+        description: error.message
+      })
+      setIsLoading(false)
+    }
+  }
+
+  const handleSocialLogin = async (providerName: 'google' | 'github') => {
+    const auth = getAuth()
+    const provider = providerName === 'google' ? new GoogleAuthProvider() : new GithubAuthProvider()
+    try {
+      await signInWithPopup(auth, provider)
+      window.location.href = '/dashboard'
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Social login failed",
+        description: error.message
+      })
+    }
   }
 
   return (
@@ -36,14 +65,27 @@ export default function LoginPage() {
               <div className="grid gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="name@example.com" required />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="name@example.com" 
+                    required 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                 </div>
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Password</Label>
                     <Link href="#" className="text-xs text-primary hover:underline">Forgot password?</Link>
                   </div>
-                  <Input id="password" type="password" required />
+                  <Input 
+                    id="password" 
+                    type="password" 
+                    required 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="remember" />
@@ -65,10 +107,10 @@ export default function LoginPage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Button variant="outline" className="h-11">
+              <Button variant="outline" className="h-11" onClick={() => handleSocialLogin('github')}>
                 <Github className="mr-2 h-4 w-4" /> Github
               </Button>
-              <Button variant="outline" className="h-11">
+              <Button variant="outline" className="h-11" onClick={() => handleSocialLogin('google')}>
                 <Chrome className="mr-2 h-4 w-4" /> Google
               </Button>
             </div>

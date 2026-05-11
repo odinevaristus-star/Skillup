@@ -1,5 +1,9 @@
+
 "use client"
 
+import { useUser, useFirestore, useDoc } from "@/firebase"
+import { doc } from "firebase/firestore"
+import { useMemo } from "react"
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -17,8 +21,27 @@ import {
   LogOut,
   Search
 } from "lucide-react"
+import { getAuth, signOut } from "firebase/auth"
 
 export default function DashboardOverview() {
+  const { user } = useUser()
+  const db = useFirestore()
+  
+  const userDocRef = useMemo(() => {
+    if (!db || !user?.uid) return null
+    return doc(db, "users", user.uid)
+  }, [db, user?.uid])
+
+  const { data: profile } = useDoc(userDocRef)
+
+  const displayName = profile?.fullName || user?.displayName || user?.email?.split('@')[0] || "User"
+
+  const handleSignOut = async () => {
+    const auth = getAuth()
+    await signOut(auth)
+    window.location.href = '/'
+  }
+
   const stats = [
     { label: "Active Jobs", value: "3", icon: Briefcase, color: "text-blue-500" },
     { label: "Messages", value: "12", icon: MessageSquare, color: "text-cyan-500" },
@@ -35,7 +58,7 @@ export default function DashboardOverview() {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Welcome back, Alex!</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Welcome back, {displayName}!</h1>
           <p className="text-muted-foreground">You have 2 projects due this week. Good luck!</p>
         </div>
         <div className="flex gap-2">
@@ -108,7 +131,7 @@ export default function DashboardOverview() {
               <Zap className="h-5 w-5 text-primary fill-primary/20" />
               <h2 className="text-xl font-bold">AI Recommended for You</h2>
             </div>
-            <p className="text-sm text-muted-foreground mb-6">Based on your expertise in React and UI Design, we found 3 high-paying jobs you might like.</p>
+            <p className="text-sm text-muted-foreground mb-6">Based on your expertise in {profile?.skills?.[0] || 'your field'}, we found 3 high-paying jobs you might like.</p>
             <div className="grid md:grid-cols-2 gap-4">
               {[
                 { title: "Senior React Architect", budget: "$150/hr", match: "98% Match" },
@@ -120,7 +143,7 @@ export default function DashboardOverview() {
                     <span className="text-sm font-bold">{rec.budget}</span>
                   </div>
                   <h3 className="font-bold group-hover:text-primary transition-colors">{rec.title}</h3>
-                  <p className="text-xs text-muted-foreground mt-2">Recommended because of your past 5 successful UI projects.</p>
+                  <p className="text-xs text-muted-foreground mt-2">Recommended because of your past 5 successful projects.</p>
                 </div>
               ))}
             </div>
@@ -141,7 +164,7 @@ export default function DashboardOverview() {
               <Button variant="outline" className="justify-start gap-3 h-11">
                 <Search className="h-4 w-4" /> Find new talent
               </Button>
-              <Button variant="outline" className="justify-start gap-3 h-11 text-destructive hover:text-destructive">
+              <Button variant="outline" className="justify-start gap-3 h-11 text-destructive hover:text-destructive" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4" /> Sign out
               </Button>
             </CardContent>

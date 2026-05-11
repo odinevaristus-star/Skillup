@@ -1,0 +1,54 @@
+
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Details about a SkillUp user, including their role and professional details.",
+      "type": "object",
+      "properties": {
+        "fullName": {
+          "type": "string",
+          "description": "The user's full name."
+        },
+        "title": {
+          "type": "string",
+          "description": "Professional title (e.g., Senior Full Stack Engineer)."
+        },
+        "bio": {
+          "type": "string",
+          "description": "A short professional biography."
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A list of skills the user possesses."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["customer", "freelancer"],
+          "description": "The user's primary role on the platform."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL to the user's profile picture."
+        }
+      },
+      "required": ["fullName", "role"]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "google",
+      "github"
+    ]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores the professional profile for each registered user."
+    }
+  }
+}

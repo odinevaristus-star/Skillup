@@ -1,3 +1,4 @@
+
 "use client"
 
 import Link from "next/link"
@@ -10,17 +11,52 @@ import { Navbar } from "@/components/navbar"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Briefcase, User } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
+import { getFirestore, doc, setDoc } from "firebase/firestore"
+import { useToast } from "@/hooks/use-toast"
 
 export default function SignupPage() {
   const [role, setRole] = useState<'customer' | 'freelancer' | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const { toast } = useToast()
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!role) return
+    
     setIsLoading(true)
-    setTimeout(() => {
+    const auth = getAuth()
+    const db = getFirestore()
+    
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      const user = userCredential.user
+      const fullName = `${firstName} ${lastName}`
+      
+      await updateProfile(user, { displayName: fullName })
+      
+      // Save profile to Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        fullName,
+        role,
+        skills: [],
+        bio: "",
+        title: role === 'freelancer' ? "New Freelancer" : "New Client"
+      })
+      
       window.location.href = '/dashboard'
-    }, 1500)
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Signup failed",
+        description: error.message
+      })
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -67,20 +103,20 @@ export default function SignupPage() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" placeholder="John" required />
+                    <Input id="firstName" placeholder="John" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" placeholder="Doe" required />
+                    <Input id="lastName" placeholder="Doe" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
                   </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email address</Label>
-                  <Input id="email" type="email" placeholder="john@example.com" required />
+                  <Input id="email" type="email" placeholder="john@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="password">Password</Label>
-                  <Input id="password" type="password" required />
+                  <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
                 <div className="flex items-start space-x-2 pt-2">
                   <Checkbox id="terms" required />

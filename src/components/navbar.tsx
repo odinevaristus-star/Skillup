@@ -1,18 +1,30 @@
+
 "use client"
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "@/hooks/use-theme"
-import { Sun, Moon, Zap, Menu } from "lucide-react"
+import { useUser } from "@/firebase"
+import { Sun, Moon, Zap, User, LogOut, LayoutDashboard } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import { getAuth, signOut } from "firebase/auth"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export function Navbar() {
   const { theme, toggleTheme } = useTheme()
+  const { user } = useUser()
+
+  const handleSignOut = async () => {
+    const auth = getAuth()
+    await signOut(auth)
+    window.location.href = '/'
+  }
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -43,12 +55,48 @@ export function Navbar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Link href="/login">
-            <Button variant="ghost">Log in</Button>
-          </Link>
-          <Link href="/signup">
-            <Button>Sign up</Button>
-          </Link>
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user.photoURL || ""} alt={user.displayName || ""} />
+                    <AvatarFallback>{user.displayName?.substring(0, 2).toUpperCase() || "US"}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <div className="flex flex-col space-y-1 p-2">
+                  <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                  <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard" className="flex items-center">
+                    <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/profile" className="flex items-center">
+                    <User className="mr-2 h-4 w-4" /> Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" /> Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="ghost">Log in</Button>
+              </Link>
+              <Link href="/signup">
+                <Button>Sign up</Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </nav>

@@ -1,6 +1,9 @@
+
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useMemo } from "react"
+import { useUser, useFirestore, useDoc } from "@/firebase"
+import { doc, setDoc } from "firebase/firestore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,11 +11,37 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Camera, X, Plus, Save } from "lucide-react"
+import { Progress } from "@/components/ui/progress"
+import { Camera, X, Plus, Save, Loader2 } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 
 export default function ProfileManagement() {
-  const [skills, setSkills] = useState(["React", "Next.js", "TypeScript", "Tailwind CSS"])
+  const { user } = useUser()
+  const db = useFirestore()
+  const { toast } = useToast()
+
+  const userDocRef = useMemo(() => {
+    if (!db || !user?.uid) return null
+    return doc(db, "users", user.uid)
+  }, [db, user?.uid])
+
+  const { data: profile, loading } = useDoc(userDocRef)
+
+  const [fullName, setFullName] = useState("")
+  const [title, setTitle] = useState("")
+  const [bio, setBio] = useState("")
+  const [skills, setSkills] = useState<string[]>([])
   const [newSkill, setNewSkill] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
+
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.fullName || "")
+      setTitle(profile.title || "")
+      setBio(profile.bio || "")
+      setSkills(profile.skills || [])
+    }
+  }, [profile])
 
   const addSkill = (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,6 +54,48 @@ export default function ProfileManagement() {
   const removeSkill = (skillToRemove: string) => {
     setSkills(skills.filter(s => s !== skillToRemove))
   }
+
+  const handleSave = async () => {
+    if (!user?.uid || !db) return
+    setIsSaving(true)
+    try {
+      await setDoc(doc(db, "users", user.uid), {
+        fullName,
+        title,
+        bio,
+        skills,
+        role: profile?.role || "freelancer" // Preserve role
+      }, { merge: true })
+      
+      toast({
+        title: "Profile updated",
+        description: "Your professional details have been saved successfully."
+      })
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: error.message
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  const profileStrength = [
+    !!fullName,
+    !!title,
+    !!bio,
+    skills.length > 0
+  ].filter(Boolean).length * 25
 
   return (
     <div className="space-y-8">
@@ -44,8 +115,8 @@ export default function ProfileManagement() {
               <div className="flex flex-col md:flex-row gap-8 items-start">
                 <div className="relative group">
                   <Avatar className="w-32 h-32 border-4 border-background shadow-lg">
-                    <AvatarImage src="https://picsum.photos/seed/alex/128/128" />
-                    <AvatarFallback>AL</AvatarFallback>
+                    <AvatarImage src={user?.photoURL || `https://picsum.photos/seed/${user?.uid}/128/128`} />
+                    <AvatarFallback>{fullName?.substring(0, 2).toUpperCase() || "US"}</AvatarFallback>
                   </Avatar>
                   <button className="absolute bottom-0 right-0 p-2 bg-primary text-primary-foreground rounded-full shadow-lg hover:scale-110 transition-transform">
                     <Camera className="h-4 w-4" />
@@ -55,11 +126,20 @@ export default function ProfileManagement() {
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="fullName">Full Name</Label>
-                      <Input id="fullName" defaultValue="Alex Linderman" />
+                      <Input 
+                        id="fullName" 
+                        value={fullName} 
+                        onChange={(e) => setFullName(e.target.value)} 
+                      />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="title">Professional Title</Label>
-                      <Input id="title" defaultValue="Senior Full Stack Engineer" />
+                      <Input 
+                        id="title" 
+                        value={title} 
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="e.g. Senior Full Stack Engineer"
+                      />
                     </div>
                   </div>
                   <div className="grid gap-2">
@@ -67,15 +147,18 @@ export default function ProfileManagement() {
                     <Textarea 
                       id="bio" 
                       rows={5} 
-                      defaultValue="Passionate developer with 8+ years of experience building scalable web applications. Expert in React and Node.js ecosystems."
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      placeholder="Tell clients about your expertise..."
                     />
                   </div>
                 </div>
               </div>
             </CardContent>
             <CardFooter className="border-t pt-6">
-              <Button className="ml-auto gap-2">
-                <Save className="h-4 w-4" /> Save Changes
+              <Button className="ml-auto gap-2" onClick={handleSave} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Save Changes
               </Button>
             </CardFooter>
           </Card>
@@ -95,6 +178,7 @@ export default function ProfileManagement() {
                     </button>
                   </Badge>
                 ))}
+                {skills.length === 0 && <p className="text-sm text-muted-foreground italic">No skills added yet.</p>}
               </div>
               <form onSubmit={addSkill} className="flex gap-2">
                 <Input 
@@ -119,19 +203,22 @@ export default function ProfileManagement() {
             <CardContent className="pt-6 space-y-4">
               <div className="space-y-1">
                 <div className="flex justify-between text-xs font-bold">
-                  <span>85% Complete</span>
+                  <span>{profileStrength}% Complete</span>
                 </div>
-                <Progress value={85} className="h-2" />
+                <Progress value={profileStrength} className="h-2" />
               </div>
               <ul className="space-y-3">
-                <li className="flex items-center gap-2 text-sm text-green-500 font-medium">
-                  <Plus className="h-3 w-3 rotate-45" /> Bio added
+                <li className={`flex items-center gap-2 text-sm font-medium ${fullName ? 'text-green-500' : 'text-muted-foreground'}`}>
+                  {fullName ? <Save className="h-3 w-3" /> : <Plus className="h-3 w-3" />} Name added
                 </li>
-                <li className="flex items-center gap-2 text-sm text-green-500 font-medium">
-                  <Plus className="h-3 w-3 rotate-45" /> Skills listed
+                <li className={`flex items-center gap-2 text-sm font-medium ${title ? 'text-green-500' : 'text-muted-foreground'}`}>
+                  {title ? <Save className="h-3 w-3" /> : <Plus className="h-3 w-3" />} Title added
                 </li>
-                <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Plus className="h-3 w-3" /> Add portfolio project
+                <li className={`flex items-center gap-2 text-sm font-medium ${bio ? 'text-green-500' : 'text-muted-foreground'}`}>
+                  {bio ? <Save className="h-3 w-3" /> : <Plus className="h-3 w-3" />} Bio added
+                </li>
+                <li className={`flex items-center gap-2 text-sm font-medium ${skills.length > 0 ? 'text-green-500' : 'text-muted-foreground'}`}>
+                  {skills.length > 0 ? <Save className="h-3 w-3" /> : <Plus className="h-3 w-3" />} Skills listed
                 </li>
               </ul>
             </CardContent>
@@ -163,5 +250,3 @@ export default function ProfileManagement() {
     </div>
   )
 }
-
-import { Progress } from "@/components/ui/progress"

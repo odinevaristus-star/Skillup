@@ -15,6 +15,36 @@ import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase
 import { getFirestore, doc, setDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter, FirestorePermissionError } from "@/firebase"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+const SKILL_CATEGORIES = {
+  "Digital Skills": [
+    "Programming",
+    "Graphic Design",
+    "Video Editing",
+    "Writing",
+    "UI/UX Design",
+    "Tutoring"
+  ],
+  "Hand & Artisan Skills": [
+    "Electrician",
+    "Plumbing",
+    "Mechanic",
+    "Painting",
+    "Barbering",
+    "Hair Styling",
+    "Tailoring",
+    "Phone Repair"
+  ]
+}
 
 export default function SignupPage() {
   const [role, setRole] = useState<'customer' | 'freelancer' | null>(null)
@@ -134,7 +164,25 @@ export default function SignupPage() {
                 {role === 'freelancer' && (
                   <div className="grid gap-2">
                     <Label htmlFor="primarySkill">Primary Skill / Category</Label>
-                    <Input id="primarySkill" placeholder="e.g. React Developer, Logo Designer" required value={primarySkill} onChange={(e) => setPrimarySkill(e.target.value)} />
+                    <Select value={primarySkill} onValueChange={setPrimarySkill} required>
+                      <SelectTrigger id="primarySkill" className="h-11">
+                        <SelectValue placeholder="Select your expertise" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Digital Skills</SelectLabel>
+                          {SKILL_CATEGORIES["Digital Skills"].map((skill) => (
+                            <SelectItem key={skill} value={skill}>{skill}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                        <SelectGroup>
+                          <SelectLabel>Hand & Artisan Skills</SelectLabel>
+                          {SKILL_CATEGORIES["Hand & Artisan Skills"].map((skill) => (
+                            <SelectItem key={skill} value={skill}>{skill}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </div>
                 )}
                 <div className="grid gap-2">

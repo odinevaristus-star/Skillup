@@ -11,10 +11,10 @@ import { Navbar } from "@/components/navbar"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Briefcase, User, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
-import { getFirestore, doc, setDoc, serverTimestamp } from "firebase/firestore"
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
+import { doc, setDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
-import { errorEmitter, FirestorePermissionError } from "@/firebase"
+import { errorEmitter, FirestorePermissionError, useAuth, useFirestore } from "@/firebase"
 import {
   Select,
   SelectContent,
@@ -55,14 +55,14 @@ export default function SignupPage() {
   const [password, setPassword] = useState("")
   const [primarySkill, setPrimarySkill] = useState("")
   const { toast } = useToast()
+  const auth = useAuth()
+  const db = useFirestore()
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!role) return
     
     setIsLoading(true)
-    const auth = getAuth()
-    const db = getFirestore()
     
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)

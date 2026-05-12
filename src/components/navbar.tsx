@@ -4,7 +4,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "@/hooks/use-theme"
-import { useUser } from "@/firebase"
+import { useUser, useAuth } from "@/firebase"
 import { Sun, Moon, Zap, User, LogOut, LayoutDashboard } from "lucide-react"
 import {
   DropdownMenu,
@@ -13,15 +13,15 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import { getAuth, signOut } from "firebase/auth"
+import { signOut } from "firebase/auth"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export function Navbar() {
   const { theme, toggleTheme } = useTheme()
   const { user } = useUser()
+  const auth = useAuth()
 
   const handleSignOut = async () => {
-    const auth = getAuth()
     await signOut(auth)
     window.location.href = '/'
   }

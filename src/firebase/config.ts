@@ -1,8 +1,17 @@
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+
 export const firebaseConfig = {
-  apiKey: "AIzaSyAQBPTSYNDzTbXFq_aDexAuyXY8BPT-SpM",
-  authDomain: "skillup-marketplace.firebaseapp.com",
-  projectId: "skillup-marketplace",
-  storageBucket: "skillup-marketplace.firebasestorage.app",
-  messagingSenderId: "100360343624",
-  appId: "1:100360343624:web:1cf5e01c6c8b8a5ad5c87d",
+  apiKey: "AIzaSyALTMvhQKcG-a-2WMJt49vljRqGtG4Z4oU",
+  authDomain: "skillup-v2-4cc74.firebaseapp.com",
+  projectId: "skillup-v2-4cc74",
+  storageBucket: "skillup-v2-4cc74.firebasestorage.app",
+  messagingSenderId: "528619171641",
+  appId: "1:528619171641:web:68d4d9b1aa1ea2e1f142e8"
 };
+
+const app = initializeApp(firebaseConfig);
+
+export const auth = getAuth(app);
+export const db = getFirestore(app);

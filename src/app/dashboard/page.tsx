@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from "@/firebase"
@@ -96,7 +95,6 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
           <Card key={i} className="border-none shadow-sm">
@@ -115,9 +113,7 @@ export default function DashboardOverview() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* Main Content */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Active Projects */}
           <Card className="border-none shadow-sm overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 pb-4">
               <div className="space-y-1">
@@ -166,7 +162,6 @@ export default function DashboardOverview() {
             </CardContent>
           </Card>
 
-          {/* AI Recommendations */}
           <div className="bg-gradient-to-br from-primary/5 via-accent/5 to-transparent p-6 rounded-2xl border border-primary/10">
             <div className="flex items-center gap-2 mb-4">
               <Zap className="h-5 w-5 text-primary fill-primary/20" />
@@ -193,9 +188,7 @@ export default function DashboardOverview() {
           </div>
         </div>
 
-        {/* Sidebar Widgets */}
         <div className="space-y-8">
-          {/* Quick Actions */}
           <Card className="border-none shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg">Quick Actions</CardTitle>
@@ -213,7 +206,6 @@ export default function DashboardOverview() {
             </CardContent>
           </Card>
 
-          {/* Recent Activity */}
           <Card className="border-none shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg">Messages & Alerts</CardTitle>

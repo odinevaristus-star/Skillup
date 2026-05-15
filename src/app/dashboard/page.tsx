@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from "@/firebase"
@@ -17,7 +18,9 @@ import {
   PlusCircle,
   LogOut,
   Search,
-  Loader2
+  Loader2,
+  Mail,
+  User as UserIcon
 } from "lucide-react"
 import { getAuth, signOut } from "firebase/auth"
 import Link from "next/link"
@@ -46,7 +49,12 @@ export default function DashboardOverview() {
 
   const { data: activeJobs, loading: jobsLoading } = useCollection(activeJobsQuery)
 
-  const displayName = profile?.fullName || user?.displayName || user?.email?.split('@')[0] || "User"
+  // Real data from Firestore
+  const firstName = profile?.firstName || user?.displayName?.split(' ')[0] || "User"
+  const lastName = profile?.lastName || user?.displayName?.split(' ').slice(1).join(' ') || ""
+  const fullName = profile?.fullName || user?.displayName || `${firstName} ${lastName}`.trim()
+  const userEmail = profile?.email || user?.email || "No email provided"
+  const primarySkill = profile?.skills?.[0] || profile?.title || "Not specified"
   
   const memberSince = profile?.createdAt 
     ? new Date(profile.createdAt.seconds * 1000).getFullYear().toString()
@@ -79,12 +87,16 @@ export default function DashboardOverview() {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Welcome back, {displayName}!</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <Badge variant="secondary" className="font-bold">{profile?.role === 'freelancer' ? 'Freelancer' : 'Client'}</Badge>
-            <p className="text-muted-foreground text-sm">
-              {profile?.title || (profile?.role === 'freelancer' ? "Professional Freelancer" : "Project Manager")} • {profile?.email || user?.email}
-            </p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Welcome back, {firstName}!</h1>
+          <div className="flex flex-col gap-1 mt-2">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="font-bold">{profile?.role === 'freelancer' ? 'Freelancer' : 'Client'}</Badge>
+              <span className="text-sm font-medium text-foreground">{fullName}</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-muted-foreground text-sm">
+              <span className="flex items-center gap-1.5"><Briefcase className="h-3.5 w-3.5" /> {primarySkill}</span>
+              <span className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> {userEmail}</span>
+            </div>
           </div>
         </div>
         <div className="flex gap-2">
@@ -168,7 +180,7 @@ export default function DashboardOverview() {
               <h2 className="text-xl font-bold">AI Recommended for You</h2>
             </div>
             <p className="text-sm text-muted-foreground mb-6">
-              Based on your expertise in {profile?.skills?.[0] || 'your field'}, we found some high-paying opportunities you might like.
+              Based on your expertise in {primarySkill}, we found some high-paying opportunities you might like.
             </p>
             <div className="grid md:grid-cols-2 gap-4">
               {[
@@ -181,7 +193,7 @@ export default function DashboardOverview() {
                     <span className="text-sm font-bold">{rec.budget}</span>
                   </div>
                   <h3 className="font-bold group-hover:text-primary transition-colors">{rec.title}</h3>
-                  <p className="text-xs text-muted-foreground mt-2">Personalized recommendation for {displayName}.</p>
+                  <p className="text-xs text-muted-foreground mt-2">Personalized recommendation for {firstName}.</p>
                 </div>
               ))}
             </div>

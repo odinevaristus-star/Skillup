@@ -72,6 +72,8 @@ export default function SignupPage() {
       await updateProfile(user, { displayName: fullName })
       
       const userData = {
+        firstName,
+        lastName,
         fullName,
         email,
         role,

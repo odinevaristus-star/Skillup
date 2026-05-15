@@ -6,6 +6,14 @@
       "description": "Details about a SkillUp user, including their role and professional details.",
       "type": "object",
       "properties": {
+        "firstName": {
+          "type": "string",
+          "description": "The user's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The user's last name."
+        },
         "fullName": {
           "type": "string",
           "description": "The user's full name."

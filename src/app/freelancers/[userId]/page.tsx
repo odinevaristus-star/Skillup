@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
@@ -19,12 +20,14 @@ import {
   ShieldCheck,
   Zap
 } from "lucide-react"
-import { useFirestore, useDoc, useMemoFirebase } from "@/firebase"
+import { useFirestore, useDoc, useMemoFirebase, useUser } from "@/firebase"
 import { doc } from "firebase/firestore"
+import Image from "next/image"
 
 export default function FreelancerProfilePage() {
   const { userId } = useParams()
   const router = useRouter()
+  const { user: currentUser } = useUser()
   const db = useFirestore()
 
   const userRef = useMemoFirebase(() => {
@@ -33,6 +36,14 @@ export default function FreelancerProfilePage() {
   }, [db, userId])
 
   const { data: profile, loading } = useDoc(userRef)
+
+  const handleMessage = () => {
+    if (!currentUser) {
+      router.push("/login")
+      return
+    }
+    router.push(`/dashboard/messages?userId=${userId}`)
+  }
 
   if (loading) {
     return (
@@ -100,7 +111,11 @@ export default function FreelancerProfilePage() {
                   <p className="text-xl md:text-2xl text-muted-foreground font-medium">{profile.title}</p>
                 </div>
                 <div className="flex gap-3 w-full md:w-auto">
-                  <Button variant="outline" className="flex-1 md:flex-none gap-2 h-14 px-8 border-primary text-primary hover:bg-primary/5 rounded-2xl font-bold text-lg">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleMessage}
+                    className="flex-1 md:flex-none gap-2 h-14 px-8 border-primary text-primary hover:bg-primary/5 rounded-2xl font-bold text-lg"
+                  >
                     <MessageSquare className="h-5 w-5" /> Message
                   </Button>
                   <Button className="flex-1 md:flex-none h-14 px-12 font-bold text-lg rounded-2xl shadow-xl shadow-primary/20">
@@ -182,7 +197,6 @@ export default function FreelancerProfilePage() {
             </section>
           </div>
 
-          {/* Sticky Sidebar Info */}
           <div className="space-y-6">
             <Card className="border-none shadow-xl rounded-3xl overflow-hidden sticky top-28">
               <CardHeader className="bg-primary text-primary-foreground p-8">

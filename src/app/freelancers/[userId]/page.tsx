@@ -18,7 +18,9 @@ import {
   Calendar,
   Share2,
   ShieldCheck,
-  Zap
+  Zap,
+  Clock,
+  ExternalLink
 } from "lucide-react"
 import { useFirestore, useDoc, useMemoFirebase, useUser } from "@/firebase"
 import { doc } from "firebase/firestore"
@@ -48,9 +50,9 @@ export default function FreelancerProfilePage() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-muted/20">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="text-muted-foreground font-medium">Loading profile...</p>
+        <div className="flex flex-col items-center gap-6">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-muted-foreground font-bold text-lg">Loading expert profile...</p>
         </div>
       </div>
     )
@@ -59,14 +61,14 @@ export default function FreelancerProfilePage() {
   if (!profile) {
     return (
       <div className="min-h-screen bg-muted/20 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full text-center p-8 border-none shadow-xl">
-          <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
-            <Briefcase className="h-10 w-10 text-muted-foreground opacity-30" />
+        <Card className="max-w-md w-full text-center p-12 border-none shadow-2xl rounded-[3rem]">
+          <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-8">
+            <Briefcase className="h-12 w-12 text-muted-foreground opacity-20" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">Freelancer not found</h2>
-          <p className="text-muted-foreground mb-8">The profile you are looking for might have been moved or deleted.</p>
-          <Button onClick={() => router.push("/freelancers")} className="w-full h-12 rounded-xl font-bold">
-            Back to Search
+          <h2 className="text-3xl font-bold mb-4 tracking-tight">Profile not found</h2>
+          <p className="text-muted-foreground mb-10 leading-relaxed">The expert you are looking for might have moved or is currently unavailable.</p>
+          <Button onClick={() => router.push("/freelancers")} className="w-full h-14 rounded-2xl font-bold text-lg shadow-xl shadow-primary/20">
+            Back to Talent Search
           </Button>
         </Card>
       </div>
@@ -77,197 +79,214 @@ export default function FreelancerProfilePage() {
     <div className="min-h-screen bg-muted/20 flex flex-col">
       <Navbar />
       
-      {/* Header Profile Section */}
-      <div className="bg-card border-b py-12 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 opacity-5">
-          <Zap className="h-64 w-64 text-primary" />
+      {/* Hero Header */}
+      <div className="bg-card border-b pt-16 pb-24 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-12 opacity-5">
+          <Zap className="h-[30rem] w-[30rem] text-primary" />
         </div>
         <div className="container mx-auto px-4 relative z-10">
-          <div className="flex items-center justify-between mb-8">
-            <Button variant="ghost" onClick={() => router.back()} className="gap-2 hover:bg-primary/5 text-primary font-bold">
-              <ArrowLeft className="h-4 w-4" /> Back to Discover
+          <div className="flex items-center justify-between mb-12">
+            <Button variant="ghost" onClick={() => router.back()} className="gap-2 hover:bg-primary/5 text-primary font-bold rounded-xl h-12">
+              <ArrowLeft className="h-4 w-4" /> Back to Search
             </Button>
-            <div className="flex gap-2">
-              <Button variant="outline" size="icon" className="rounded-full h-10 w-10"><Share2 className="h-4 w-4" /></Button>
+            <div className="flex gap-3">
+              <Button variant="outline" size="icon" className="rounded-full h-12 w-12 border-muted-foreground/20 hover:border-primary transition-colors"><Share2 className="h-5 w-5" /></Button>
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-10 items-start">
+          <div className="flex flex-col md:flex-row gap-12 items-start">
             <div className="relative shrink-0">
-              <Avatar className="w-32 h-32 md:w-40 md:h-40 border-4 border-background shadow-2xl rounded-3xl">
-                <AvatarImage src={profile.avatarUrl || `https://picsum.photos/seed/${userId}/160/160`} />
-                <AvatarFallback className="text-4xl">{profile.fullName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+              <Avatar className="w-40 h-40 md:w-56 md:h-56 border-8 border-background shadow-2xl rounded-[3rem]">
+                <AvatarImage src={profile.avatarUrl || `https://picsum.photos/seed/${userId}/256/256`} />
+                <AvatarFallback className="text-5xl font-bold">{profile.fullName?.substring(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
-              <span className="absolute bottom-2 right-2 w-6 h-6 bg-green-500 border-4 border-card rounded-full shadow-lg" />
+              <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-green-500 border-8 border-card rounded-full shadow-2xl flex items-center justify-center">
+                 <CheckCircle2 className="h-6 w-6 text-white" />
+              </div>
             </div>
             
-            <div className="flex-1 space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-6">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">{profile.fullName}</h1>
-                    <Badge className="bg-primary/10 text-primary border-none text-xs font-bold uppercase tracking-widest px-3">Top Rated</Badge>
+            <div className="flex-1 space-y-8">
+              <div className="flex flex-wrap items-center justify-between gap-8">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-foreground">{profile.fullName}</h1>
+                    <Badge className="bg-primary/10 text-primary border-none text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-1.5 rounded-full">Pro Expert</Badge>
                   </div>
-                  <p className="text-xl md:text-2xl text-muted-foreground font-medium">{profile.title}</p>
+                  <p className="text-2xl md:text-3xl text-muted-foreground font-bold tracking-tight">{profile.title}</p>
                 </div>
-                <div className="flex gap-3 w-full md:w-auto">
+                <div className="flex gap-4 w-full md:w-auto">
                   <Button 
                     variant="outline" 
                     onClick={handleMessage}
-                    className="flex-1 md:flex-none gap-2 h-14 px-8 border-primary text-primary hover:bg-primary/5 rounded-2xl font-bold text-lg"
+                    className="flex-1 md:flex-none gap-3 h-16 px-10 border-muted-foreground/20 text-foreground hover:bg-muted/50 rounded-[1.25rem] font-bold text-lg"
                   >
-                    <MessageSquare className="h-5 w-5" /> Message
+                    <MessageSquare className="h-6 w-6" /> Message
                   </Button>
-                  <Button className="flex-1 md:flex-none h-14 px-12 font-bold text-lg rounded-2xl shadow-xl shadow-primary/20">
+                  <Button className="flex-1 md:flex-none h-16 px-14 font-bold text-lg rounded-[1.25rem] shadow-2xl shadow-primary/30 transition-all hover:scale-[1.03] active:scale-[0.98]">
                     Hire Now
                   </Button>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-sm font-medium">
-                <span className="flex items-center gap-2 text-yellow-500">
-                  <Star className="h-5 w-5 fill-current" /> 
-                  <span className="text-lg font-bold">{profile.rating || '5.0'}</span>
-                  <span className="text-muted-foreground">({profile.completedJobs || 0} reviews)</span>
-                </span>
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="h-5 w-5 text-primary" /> Remote
-                </span>
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  <ShieldCheck className="h-5 w-5 text-green-500" /> Identity Verified
-                </span>
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-5 w-5 text-primary" /> Available Now
-                </span>
+              <div className="flex flex-wrap items-center gap-x-10 gap-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-yellow-500/10 rounded-2xl">
+                    <Star className="h-6 w-6 text-yellow-500 fill-current" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-black">{profile.rating || '5.0'}</p>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{profile.completedJobs || 0} reviews</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-primary/10 rounded-2xl">
+                    <MapPin className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-black">Remote</p>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Availability</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-green-500/10 rounded-2xl">
+                    <ShieldCheck className="h-6 w-6 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-black">Verified</p>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">ID & Payment</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <main className="container mx-auto px-4 py-12 flex-1">
-        <div className="grid lg:grid-cols-3 gap-10">
-          <div className="lg:col-span-2 space-y-10">
-            <section className="space-y-4">
-              <h2 className="text-2xl font-bold">About the Professional</h2>
-              <Card className="border-none shadow-sm rounded-2xl overflow-hidden">
-                <CardContent className="p-8">
-                  <p className="text-muted-foreground text-lg leading-relaxed whitespace-pre-line">
-                    {profile.bio || `Highly skilled and reliable professional with years of experience in ${profile.title}. Dedicated to providing world-class service and high-quality results for all clients. Specializing in efficient workflows and creative problem solving.`}
+      <main className="container mx-auto px-4 py-16 flex-1">
+        <div className="grid lg:grid-cols-3 gap-16">
+          <div className="lg:col-span-2 space-y-16">
+            <section className="space-y-6">
+              <h2 className="text-3xl font-black tracking-tight">Professional Biography</h2>
+              <Card className="border-none shadow-sm rounded-[2.5rem] overflow-hidden bg-card">
+                <CardContent className="p-10">
+                  <p className="text-muted-foreground text-xl leading-relaxed whitespace-pre-line font-medium">
+                    {profile.bio || `Specialized professional with extensive experience in ${profile.title}. Focused on delivering high-impact solutions that combine technical precision with creative problem-solving. Committed to transparency, punctuality, and exceeding client expectations through iterative collaboration.`}
                   </p>
                 </CardContent>
               </Card>
             </section>
 
-            <section className="space-y-4">
-              <h2 className="text-2xl font-bold">Expertise & Skills</h2>
-              <div className="flex flex-wrap gap-3">
+            <section className="space-y-6">
+              <h2 className="text-3xl font-black tracking-tight">Expertise & Specialized Skills</h2>
+              <div className="flex flex-wrap gap-4">
                 {profile.skills?.map((skill: string) => (
-                  <Badge key={skill} variant="secondary" className="px-6 py-2.5 text-sm font-bold bg-card border shadow-sm rounded-xl">
+                  <div key={skill} className="px-8 py-4 text-base font-bold bg-white border-2 border-muted hover:border-primary transition-all rounded-[1.25rem] shadow-sm flex items-center gap-3 group">
+                    <CheckCircle2 className="h-5 w-5 text-primary opacity-30 group-hover:opacity-100 transition-opacity" />
                     {skill}
-                  </Badge>
+                  </div>
                 ))}
-                {!profile.skills?.length && <p className="text-muted-foreground italic">No skills listed yet.</p>}
+                {!profile.skills?.length && <p className="text-muted-foreground italic text-lg">Detailed skills list coming soon.</p>}
               </div>
             </section>
 
-            <section className="space-y-4">
-              <h2 className="text-2xl font-bold">Recent Projects</h2>
-              <div className="grid sm:grid-cols-2 gap-6">
+            <section className="space-y-8">
+              <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-black tracking-tight">Case Studies & Portfolio</h2>
+                <Button variant="ghost" className="text-primary font-bold h-12 px-6 rounded-xl gap-2">Explore All <ExternalLink className="h-4 w-4" /></Button>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-8">
                 {[1, 2, 3, 4].map(i => (
-                  <Card key={i} className="group overflow-hidden border-none shadow-sm rounded-2xl cursor-pointer">
-                    <div className="relative aspect-video">
-                      <Image 
-                        src={`https://picsum.photos/seed/portfolio-${i}-${userId}/800/600`} 
-                        alt="Portfolio project" 
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
-                        <div className="text-white">
-                          <p className="font-bold text-lg">Project Title {i}</p>
-                          <p className="text-xs text-white/70">Completed for top-tier client</p>
-                        </div>
-                      </div>
+                  <div key={i} className="group relative overflow-hidden rounded-[2.5rem] bg-card shadow-lg aspect-video cursor-pointer">
+                    <Image 
+                      src={`https://picsum.photos/seed/portfolio-${i}-${userId}/1200/800`} 
+                      alt="Portfolio project" 
+                      fill
+                      className="object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-10">
+                      <Badge className="w-fit mb-4 bg-primary text-white border-none font-bold uppercase tracking-widest text-[10px]">Case Study {i}</Badge>
+                      <h4 className="text-2xl font-black text-white leading-tight">Complex Project Implementation & Strategy</h4>
+                      <p className="text-white/70 text-sm mt-2 font-medium">Full-cycle project management for enterprise client.</p>
                     </div>
-                  </Card>
+                  </div>
                 ))}
               </div>
-              <Button variant="ghost" className="w-full py-8 text-primary font-bold hover:bg-primary/5">View Full Portfolio</Button>
             </section>
           </div>
 
-          <div className="space-y-6">
-            <Card className="border-none shadow-xl rounded-3xl overflow-hidden sticky top-28">
-              <CardHeader className="bg-primary text-primary-foreground p-8">
-                <CardTitle className="text-3xl font-bold">${profile.hourlyRate || 45}<span className="text-sm font-normal opacity-70">/hr</span></CardTitle>
-                <CardDescription className="text-primary-foreground/80 font-medium">Starting rate for projects</CardDescription>
+          <aside className="space-y-8">
+            <Card className="border-none shadow-2xl rounded-[3rem] overflow-hidden sticky top-28 bg-white border border-muted/50">
+              <CardHeader className="bg-primary text-primary-foreground p-10">
+                <div className="space-y-2">
+                  <p className="text-sm font-bold uppercase tracking-[0.3em] opacity-70">Professional Rate</p>
+                  <CardTitle className="text-6xl font-black">${profile.hourlyRate || 45}<span className="text-xl font-medium opacity-70"> / hr</span></CardTitle>
+                </div>
+                <p className="mt-4 text-primary-foreground/80 font-bold flex items-center gap-2"><Clock className="h-4 w-4" /> Typically replies in 2 hours</p>
+              </CardHeader>
+              <CardContent className="p-10 space-y-10">
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] flex items-center gap-3">
+                      <Briefcase className="h-4 w-4 text-primary" /> Active Contracts
+                    </span>
+                    <span className="font-black text-lg">3</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] flex items-center gap-3">
+                      <CheckCircle2 className="h-4 w-4 text-primary" /> Lifetime Reviews
+                    </span>
+                    <span className="font-black text-lg">{profile.completedJobs || 12}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] flex items-center gap-3">
+                      <Star className="h-4 w-4 text-primary" /> Success Rate
+                    </span>
+                    <span className="font-black text-lg">99%</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <Button className="w-full h-16 text-xl font-bold rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">Start Project</Button>
+                  <Button variant="outline" className="w-full h-14 rounded-2xl font-bold border-muted-foreground/20 hover:border-primary transition-all">Download Portfolio (PDF)</Button>
+                </div>
+
+                <div className="pt-8 border-t">
+                  <div className="p-5 bg-muted/20 rounded-2xl flex items-start gap-4">
+                    <ShieldCheck className="h-6 w-6 text-green-500 shrink-0 mt-1" />
+                    <p className="text-xs font-medium text-muted-foreground leading-relaxed">
+                      All projects are protected by <span className="text-foreground font-bold">SkillUp SecurePay</span>. Funds are only released upon your approval of the deliverables.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-none shadow-sm rounded-[2.5rem] bg-card border overflow-hidden">
+              <CardHeader className="p-8 pb-0">
+                <CardTitle className="text-lg font-black tracking-tight">Trust Verification</CardTitle>
               </CardHeader>
               <CardContent className="p-8 space-y-8">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                      <Calendar className="h-5 w-5 text-primary" />
-                      <span>Response time</span>
-                    </div>
-                    <span className="font-bold">~2 hours</span>
+                  <div className="flex justify-between items-end">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Reliability Score</span>
+                    <span className="text-xl font-black text-green-500">100%</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                      <Briefcase className="h-5 w-5 text-primary" />
-                      <span>Jobs completed</span>
-                    </div>
-                    <span className="font-bold">{profile.completedJobs || 12}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                      <Star className="h-5 w-5 text-primary" />
-                      <span>Job success rate</span>
-                    </div>
-                    <span className="font-bold">99%</span>
+                  <div className="h-3 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500 w-full rounded-full" />
                   </div>
                 </div>
-
-                <div className="space-y-3">
-                  <Button className="w-full h-14 text-xl font-bold rounded-2xl">Continue to Hire</Button>
-                  <Button variant="outline" className="w-full h-12 rounded-2xl font-bold border-muted-foreground/20">Save for Later</Button>
-                </div>
-
-                <div className="pt-6 border-t">
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground leading-relaxed">
-                    <ShieldCheck className="h-5 w-5 text-green-500 shrink-0" />
-                    <span>SkillUp payment protection ensures you only pay for work you approve.</span>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-end">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Response Rate</span>
+                    <span className="text-xl font-black text-primary">98%</span>
+                  </div>
+                  <div className="h-3 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-primary w-[98%] rounded-full" />
                   </div>
                 </div>
               </CardContent>
             </Card>
-
-            <Card className="border-none shadow-sm rounded-2xl bg-muted/50">
-              <CardHeader>
-                <CardTitle className="text-lg">Trust Score</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-3">
-                  <div className="flex justify-between text-xs font-bold uppercase tracking-wider">
-                    <span className="text-muted-foreground">RELIABILITY</span>
-                    <span>100%</span>
-                  </div>
-                  <div className="h-2.5 bg-background rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500 w-full" />
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-xs font-bold uppercase tracking-wider">
-                    <span className="text-muted-foreground">COMMUNICATION</span>
-                    <span>98%</span>
-                  </div>
-                  <div className="h-2.5 bg-background rounded-full overflow-hidden">
-                    <div className="h-full bg-primary w-[98%]" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          </aside>
         </div>
       </main>
     </div>

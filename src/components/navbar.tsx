@@ -1,10 +1,11 @@
+
 "use client"
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "@/hooks/use-theme"
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
-import { Sun, Moon, Zap, User, LogOut, LayoutDashboard, Bell } from "lucide-react"
+import { Sun, Moon, Zap, User, LogOut, LayoutDashboard, Bell, MessageSquare } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,10 +53,10 @@ export function Navbar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="rounded-full">
                 {theme === 'light' && <Sun className="h-5 w-5" />}
                 {theme === 'dark' && <Moon className="h-5 w-5" />}
                 {theme === 'amoled' && <Zap className="h-5 w-5" />}
@@ -69,59 +70,66 @@ export function Navbar() {
           </DropdownMenu>
 
           {user && (
-            <Link href="/dashboard/notifications" className="relative">
-              <Button variant="ghost" size="icon">
-                <Bell className="h-5 w-5" />
-                {unreadNotifications && unreadNotifications.length > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-destructive text-destructive-foreground rounded-full text-[10px] font-bold border-2 border-background">
-                    {unreadNotifications.length > 9 ? '9+' : unreadNotifications.length}
-                  </Badge>
-                )}
-              </Button>
-            </Link>
+            <>
+              <Link href="/dashboard/messages" className="relative hidden sm:block">
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <MessageSquare className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/dashboard/notifications" className="relative">
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Bell className="h-5 w-5" />
+                  {unreadNotifications && unreadNotifications.length > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-destructive text-destructive-foreground rounded-full text-[10px] font-bold border-2 border-background">
+                      {unreadNotifications.length > 9 ? '9+' : unreadNotifications.length}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+            </>
           )}
 
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full border">
+                  <Avatar className="h-full w-full">
                     <AvatarImage src={user.photoURL || ""} alt={user.displayName || ""} />
                     <AvatarFallback>{user.displayName?.substring(0, 2).toUpperCase() || "US"}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <div className="flex flex-col space-y-1 p-2">
-                  <p className="text-sm font-medium leading-none">{user.displayName}</p>
-                  <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+              <DropdownMenuContent className="w-64" align="end" forceMount>
+                <div className="flex flex-col space-y-1 p-4">
+                  <p className="text-sm font-bold leading-none">{user.displayName}</p>
+                  <p className="text-xs leading-none text-muted-foreground mt-1">{user.email}</p>
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard" className="flex items-center">
-                    <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
+                  <Link href="/dashboard" className="flex items-center p-3 cursor-pointer">
+                    <LayoutDashboard className="mr-3 h-4 w-4 text-primary" /> <span className="font-medium">Dashboard</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/profile" className="flex items-center">
-                    <User className="mr-2 h-4 w-4" /> Profile
+                  <Link href="/dashboard/profile" className="flex items-center p-3 cursor-pointer">
+                    <User className="mr-3 h-4 w-4 text-primary" /> <span className="font-medium">My Profile</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-                  <LogOut className="mr-2 h-4 w-4" /> Log out
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive p-3 cursor-pointer">
+                  <LogOut className="mr-3 h-4 w-4" /> <span className="font-medium">Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <>
+            <div className="flex items-center gap-2">
               <Link href="/login">
-                <Button variant="ghost">Log in</Button>
+                <Button variant="ghost" className="font-bold">Log in</Button>
               </Link>
               <Link href="/signup">
-                <Button>Sign up</Button>
+                <Button className="font-bold px-6">Join</Button>
               </Link>
-            </>
+            </div>
           )}
         </div>
       </div>

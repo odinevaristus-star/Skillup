@@ -2,17 +2,15 @@
 "use client"
 
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
-import { collection, query, where, orderBy, doc, updateDoc, serverTimestamp } from "firebase/firestore"
-import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+import { collection, query, where, orderBy, doc, updateDoc, serverTimestamp, addDoc } from "firebase/firestore"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Briefcase, 
   Clock, 
-  CheckCircle2, 
   Loader2, 
-  MoreVertical,
   ArrowUpRight,
   PlusCircle,
   FileText,
@@ -23,6 +21,7 @@ import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
+import { cn } from "@/lib/utils"
 
 export default function MyJobsPage() {
   const { user } = useUser()
@@ -30,7 +29,7 @@ export default function MyJobsPage() {
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("all")
 
-  // Fetch jobs for this user
+  // Fetch jobs for this user (as client)
   const userJobsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
     return query(
@@ -54,19 +53,33 @@ export default function MyJobsPage() {
 
   const { data: applications, loading: appsLoading } = useCollection(freelancerAppsQuery)
 
-  const handleUpdateJobStatus = async (jobId: string, status: string) => {
-    if (!db) return
-    const jobRef = doc(db, "jobs", jobId)
+  const handleUpdateJobStatus = async (job: any, status: string) => {
+    if (!db || !user) return
+    const jobRef = doc(db, "jobs", job.id)
+    
     updateDoc(jobRef, { 
       status,
       updatedAt: serverTimestamp()
     })
     .then(() => {
+      // If job is completed and has a freelancer, notify the freelancer
+      if (status === 'completed' && job.freelancerId) {
+        addDoc(collection(db, "notifications"), {
+          userId: job.freelancerId,
+          title: "Job Completed!",
+          message: `${user.displayName || 'The client'} has marked "${job.title}" as completed.`,
+          link: `/dashboard/jobs`,
+          type: "status",
+          read: false,
+          createdAt: serverTimestamp()
+        })
+      }
+      
       toast({ title: "Status Updated", description: `Job is now ${status}.` })
     })
     .catch(async (error) => {
       errorEmitter.emit("permission-error", new FirestorePermissionError({
-        path: `jobs/${jobId}`,
+        path: `jobs/${job.id}`,
         operation: "update",
         requestResourceData: { status }
       }))
@@ -138,7 +151,7 @@ export default function MyJobsPage() {
   )
 }
 
-function JobCard({ job, onUpdateStatus }: { job: any, onUpdateStatus: (id: string, s: string) => void }) {
+function JobCard({ job, onUpdateStatus }: { job: any, onUpdateStatus: (job: any, s: string) => void }) {
   const statusColors: any = {
     'open': 'bg-green-100 text-green-700 border-green-200',
     'in-progress': 'bg-blue-100 text-blue-700 border-blue-200',
@@ -178,12 +191,14 @@ function JobCard({ job, onUpdateStatus }: { job: any, onUpdateStatus: (id: strin
             </Link>
           </div>
           <div className="flex gap-2">
-            {job.status === 'open' && (
-              <Button variant="outline" size="sm" className="font-bold" onClick={() => onUpdateStatus(job.id, 'completed')}>
+            {job.status === 'in-progress' && (
+              <Button variant="outline" size="sm" className="font-bold" onClick={() => onUpdateStatus(job, 'completed')}>
                 Mark Completed
               </Button>
             )}
-            <Button size="sm" className="font-bold rounded-lg px-6">Manage Applicants</Button>
+            <Link href={`/dashboard/jobs/manage/${job.id}`}>
+              <Button size="sm" className="font-bold rounded-lg px-6">Manage Applicants</Button>
+            </Link>
           </div>
         </div>
       </CardContent>
@@ -201,7 +216,7 @@ function ApplicationCard({ application }: { application: any }) {
               <Badge className="bg-primary/10 text-primary border-none text-[10px] font-bold capitalize">
                 {application.status}
               </Badge>
-              <span className="text-xs text-muted-foreground">Applied {new Date(application.createdAt.seconds * 1000).toLocaleDateString()}</span>
+              <span className="text-xs text-muted-foreground">Applied {application.createdAt ? new Date(application.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
             </div>
             <h3 className="text-lg font-bold">Proposal for: {application.jobTitle || 'Job Post'}</h3>
             <p className="text-sm text-muted-foreground line-clamp-1 italic">"{application.coverLetter}"</p>
@@ -238,8 +253,4 @@ function EmptyState({ icon: Icon, title, description, actionUrl, actionText }: a
       </Link>
     </div>
   )
-}
-
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(' ')
 }

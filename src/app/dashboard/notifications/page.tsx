@@ -2,11 +2,11 @@
 "use client"
 
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
-import { collection, query, where, orderBy, limit, doc, updateDoc, writeBatch, getDocs } from "firebase/firestore"
+import { collection, query, where, orderBy, limit, doc, updateDoc, writeBatch } from "firebase/firestore"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Bell, Loader2, MessageSquare, Briefcase, UserCheck, CheckCircle2 } from "lucide-react"
+import { Bell, Loader2, MessageSquare, Briefcase, UserCheck, CheckCircle2, Clock } from "lucide-react"
 import Link from "next/link"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
@@ -35,7 +35,12 @@ export default function NotificationsPage() {
 
     const batch = writeBatch(db)
     unread.forEach(n => {
-      batch.update(doc(db, "notifications", n.id), { read: true })
+      // Assuming 'n' has an 'id' property from useCollection which maps Firestore docs
+      // Note: useCollection docs usually include their ID as 'id'
+      const id = (n as any).id
+      if (id) {
+        batch.update(doc(db, "notifications", id), { read: true })
+      }
     })
 
     batch.commit().catch(async () => {
@@ -64,6 +69,7 @@ export default function NotificationsPage() {
       case 'message': return <MessageSquare className="h-5 w-5 text-blue-500" />
       case 'job': return <Briefcase className="h-5 w-5 text-green-500" />
       case 'hire': return <UserCheck className="h-5 w-5 text-purple-500" />
+      case 'status': return <CheckCircle2 className="h-5 w-5 text-orange-500" />
       default: return <Bell className="h-5 w-5 text-primary" />
     }
   }
@@ -72,15 +78,17 @@ export default function NotificationsPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Notifications</h1>
-          <p className="text-muted-foreground">Stay updated with your activities on SkillUp.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Notification Center</h1>
+          <p className="text-muted-foreground">Manage your alerts and project updates.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={handleMarkAllAsRead} disabled={!notifications?.some(n => !n.read)}>
-          Mark all as read
-        </Button>
+        {notifications && notifications.some(n => !n.read) && (
+          <Button variant="outline" size="sm" onClick={handleMarkAllAsRead} className="rounded-xl font-bold">
+            Mark all as read
+          </Button>
+        )}
       </div>
 
-      <Card className="border-none shadow-sm">
+      <Card className="border-none shadow-sm overflow-hidden rounded-2xl">
         <CardContent className="p-0">
           {loading ? (
             <div className="flex justify-center py-20">
@@ -92,27 +100,40 @@ export default function NotificationsPage() {
                 <div 
                   key={notif.id} 
                   className={`p-6 flex items-start gap-4 transition-colors ${!notif.read ? 'bg-primary/5' : 'hover:bg-muted/20'}`}
-                  onClick={() => !notif.read && markAsRead(notif.id)}
                 >
-                  <div className="p-3 rounded-xl bg-muted/50">
+                  <div className="p-3 rounded-xl bg-muted/50 shrink-0">
                     {getIcon(notif.type || 'system')}
                   </div>
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center justify-between">
-                      <p className="font-bold">{notif.title}</p>
-                      <span className="text-[10px] text-muted-foreground">
+                      <p className={`font-bold ${!notif.read ? 'text-primary' : ''}`}>{notif.title}</p>
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-1 font-medium">
+                        <Clock className="h-3 w-3" />
                         {notif.createdAt ? new Date(notif.createdAt.seconds * 1000).toLocaleString() : 'Just now'}
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground leading-relaxed">{notif.message}</p>
-                    {notif.link && (
-                      <Link href={notif.link}>
-                        <Button variant="link" className="p-0 h-auto text-xs font-bold text-primary">View details</Button>
-                      </Link>
-                    )}
+                    <div className="flex items-center gap-3 mt-3">
+                      {notif.link && (
+                        <Link href={notif.link}>
+                          <Button variant="link" className="p-0 h-auto text-xs font-bold text-primary" onClick={() => markAsRead(notif.id)}>
+                            View Details
+                          </Button>
+                        </Link>
+                      )}
+                      {!notif.read && (
+                        <Button 
+                          variant="ghost" 
+                          className="p-0 h-auto text-xs font-medium text-muted-foreground hover:text-primary transition-colors"
+                          onClick={() => markAsRead(notif.id)}
+                        >
+                          Mark as read
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   {!notif.read && (
-                    <Badge className="bg-primary h-2 w-2 p-0 rounded-full shrink-0" />
+                    <div className="bg-primary h-2 w-2 p-0 rounded-full shrink-0 mt-2" />
                   )}
                 </div>
               ))}
@@ -123,7 +144,7 @@ export default function NotificationsPage() {
                 <Bell className="h-10 w-10 opacity-20" />
               </div>
               <h3 className="text-xl font-bold text-foreground">All caught up!</h3>
-              <p className="max-w-xs mx-auto mt-2">You don't have any notifications at the moment.</p>
+              <p className="max-w-xs mx-auto mt-2">You don't have any notifications right now.</p>
             </div>
           )}
         </CardContent>

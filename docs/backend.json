@@ -6,51 +6,19 @@
       "description": "Details about a SkillUp user, including their role and professional details.",
       "type": "object",
       "properties": {
-        "firstName": {
-          "type": "string",
-          "description": "The user's first name."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "The user's last name."
-        },
-        "fullName": {
-          "type": "string",
-          "description": "The user's full name."
-        },
-        "email": {
-          "type": "string",
-          "description": "The user's email address."
-        },
-        "title": {
-          "type": "string",
-          "description": "Professional title (e.g., Senior Full Stack Engineer)."
-        },
-        "bio": {
-          "type": "string",
-          "description": "A short professional biography."
-        },
-        "skills": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "A list of skills the user possesses."
-        },
-        "role": {
-          "type": "string",
-          "enum": ["customer", "freelancer"],
-          "description": "The user's primary role on the platform."
-        },
-        "avatarUrl": {
-          "type": "string",
-          "description": "URL to the user's profile picture."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The timestamp when the profile was created."
-        }
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "title": { "type": "string" },
+        "bio": { "type": "string" },
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "role": { "type": "string", "enum": ["customer", "freelancer"] },
+        "avatarUrl": { "type": "string" },
+        "hourlyRate": { "type": "number" },
+        "rating": { "type": "number" },
+        "completedJobs": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["fullName", "role", "email"]
     },
@@ -61,31 +29,85 @@
       "properties": {
         "title": { "type": "string" },
         "description": { "type": "string" },
-        "budget": { "type": "string" },
-        "status": { "type": "string", "enum": ["open", "in-progress", "completed"] },
+        "budget": { "type": "number" },
+        "category": { "type": "string" },
+        "skillsRequired": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["open", "in-progress", "completed", "cancelled"] },
         "clientId": { "type": "string" },
+        "clientName": { "type": "string" },
         "freelancerId": { "type": "string" },
-        "progress": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
         "deadline": { "type": "string" }
       },
-      "required": ["title", "clientId", "status"]
+      "required": ["title", "clientId", "status", "budget"]
+    },
+    "JobApplication": {
+      "title": "Job Application",
+      "description": "An application for a job post.",
+      "type": "object",
+      "properties": {
+        "jobId": { "type": "string" },
+        "freelancerId": { "type": "string" },
+        "freelancerName": { "type": "string" },
+        "coverLetter": { "type": "string" },
+        "bidAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["jobId", "freelancerId", "status"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A message sent between users.",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "read": { "type": "boolean" },
+        "chatId": { "type": "string" }
+      },
+      "required": ["senderId", "receiverId", "text", "timestamp", "chatId"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "A system notification for a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "link": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "message", "read", "createdAt"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "google",
-      "github"
-    ]
+    "providers": ["password", "google", "github"]
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "UserProfile",
-      "description": "Stores the professional profile for each registered user."
+      "description": "Stores professional profile for each user."
     },
     "/jobs/{jobId}": {
       "schema": "Job",
       "description": "Stores details for each job posting."
+    },
+    "/applications/{applicationId}": {
+      "schema": "JobApplication",
+      "description": "Stores job applications."
+    },
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Stores peer-to-peer messages."
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Stores user notifications."
     }
   }
 }

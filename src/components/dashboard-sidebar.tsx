@@ -1,22 +1,32 @@
+
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { 
   LayoutDashboard, 
   Briefcase, 
   MessageSquare, 
   User, 
-  Settings, 
   Bell, 
   Search,
   LogOut,
-  PlusCircle
+  PlusCircle,
+  Users
 } from "lucide-react"
+import { useAuth } from "@/firebase"
+import { signOut } from "firebase/auth"
 
 export function DashboardSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const auth = useAuth()
+
+  const handleLogout = async () => {
+    await signOut(auth)
+    router.push('/')
+  }
 
   const navItems = [
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -24,6 +34,7 @@ export function DashboardSidebar() {
     { label: "Messages", href: "/dashboard/messages", icon: MessageSquare, badge: 3 },
     { label: "Notifications", href: "/dashboard/notifications", icon: Bell, badge: 5 },
     { label: "Profile", href: "/dashboard/profile", icon: User },
+    { label: "Hire Talent", href: "/freelancers", icon: Users },
     { label: "Find Work", href: "/jobs", icon: Search },
   ]
 
@@ -62,12 +73,15 @@ export function DashboardSidebar() {
       </div>
 
       <div className="p-4 border-t space-y-2">
-        <Link href="/jobs/post">
+        <Link href="/dashboard/jobs/post">
           <button className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground py-2.5 rounded-xl font-semibold hover:opacity-90 transition-opacity">
             <PlusCircle className="h-4 w-4" /> Post a Job
           </button>
         </Link>
-        <button className="w-full flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors group">
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors group"
+        >
           <LogOut className="h-5 w-5" />
           <span className="font-medium">Logout</span>
         </button>

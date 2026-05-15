@@ -45,12 +45,12 @@ export default function JobDetailPage() {
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user || !db || !jobId) return
+    if (!user || !db || !jobId || !job) return
 
     setIsApplying(true)
     const applicationData = {
       jobId,
-      jobTitle: job?.title,
+      jobTitle: job.title,
       freelancerId: user.uid,
       freelancerName: user.displayName || "Freelancer",
       coverLetter,
@@ -61,6 +61,17 @@ export default function JobDetailPage() {
 
     addDoc(collection(db, "applications"), applicationData)
       .then(() => {
+        // Send notification to the client
+        addDoc(collection(db, "notifications"), {
+          userId: job.clientId,
+          title: "New Job Application",
+          message: `${user.displayName} applied for your job: ${job.title}`,
+          link: `/dashboard/jobs/manage/${jobId}`,
+          type: "job",
+          read: false,
+          createdAt: serverTimestamp()
+        })
+
         toast({
           title: "Application Sent!",
           description: "Good luck! The client will review your proposal."

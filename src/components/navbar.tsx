@@ -1,11 +1,10 @@
-
 "use client"
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "@/hooks/use-theme"
-import { useUser, useAuth } from "@/firebase"
-import { Sun, Moon, Zap, User, LogOut, LayoutDashboard } from "lucide-react"
+import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
+import { Sun, Moon, Zap, User, LogOut, LayoutDashboard, Bell } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,11 +14,25 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { signOut } from "firebase/auth"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { collection, query, where } from "firebase/firestore"
+import { Badge } from "@/components/ui/badge"
 
 export function Navbar() {
   const { theme, toggleTheme } = useTheme()
   const { user } = useUser()
   const auth = useAuth()
+  const db = useFirestore()
+
+  const unreadNotificationsQuery = useMemoFirebase(() => {
+    if (!db || !user?.uid) return null
+    return query(
+      collection(db, "notifications"),
+      where("userId", "==", user.uid),
+      where("read", "==", false)
+    )
+  }, [db, user?.uid])
+
+  const { data: unreadNotifications } = useCollection(unreadNotificationsQuery)
 
   const handleSignOut = async () => {
     await signOut(auth)
@@ -54,6 +67,19 @@ export function Navbar() {
               <DropdownMenuItem onClick={() => toggleTheme('amoled')}>AMOLED</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {user && (
+            <Link href="/dashboard/notifications" className="relative">
+              <Button variant="ghost" size="icon">
+                <Bell className="h-5 w-5" />
+                {unreadNotifications && unreadNotifications.length > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-destructive text-destructive-foreground rounded-full text-[10px] font-bold border-2 border-background">
+                    {unreadNotifications.length > 9 ? '9+' : unreadNotifications.length}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
+          )}
 
           {user ? (
             <DropdownMenu>

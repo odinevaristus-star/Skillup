@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
@@ -84,7 +83,19 @@ export default function MessagesPage() {
     }
 
     addDoc(collection(db, "messages"), msgData)
-      .then(() => setNewMessage(""))
+      .then(() => {
+        // Create notification for receiver
+        addDoc(collection(db, "notifications"), {
+          userId: selectedChatUser.id,
+          title: "New Message",
+          message: `${user.displayName} sent you a message.`,
+          link: `/dashboard/messages?userId=${user.uid}`,
+          type: "message",
+          read: false,
+          createdAt: serverTimestamp()
+        })
+        setNewMessage("")
+      })
       .catch(async (err) => {
         const error = new FirestorePermissionError({
           path: "messages",
@@ -129,7 +140,7 @@ export default function MessagesPage() {
                   chat={chat} 
                   db={db}
                   isActive={selectedChatUser?.id === chat.id}
-                  onClick={() => setSelectedChatUser(chat)} 
+                  onClick={() => setSelectedChatUser({ id: chat.id })} 
                 />
               ))
             ) : (
@@ -143,16 +154,7 @@ export default function MessagesPage() {
         {selectedChatUser ? (
           <>
             <div className="p-4 border-b bg-card flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={selectedChatUser.avatarUrl} />
-                  <AvatarFallback><User className="h-5 w-5" /></AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-bold">{selectedChatUser.fullName || "Loading..."}</p>
-                  <p className="text-[10px] text-green-500 font-medium">Active now</p>
-                </div>
-              </div>
+              <ChatHeader userProfile={selectedChatUser} db={db} />
               <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon"><Phone className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon"><Video className="h-4 w-4" /></Button>
@@ -217,6 +219,31 @@ export default function MessagesPage() {
           </div>
         )}
       </Card>
+    </div>
+  )
+}
+
+function ChatHeader({ userProfile, db }: { userProfile: any, db: any }) {
+  const [profile, setProfile] = useState<any>(userProfile)
+  
+  useEffect(() => {
+    if (db && userProfile.id && !userProfile.fullName) {
+      getDoc(doc(db, "users", userProfile.id)).then(snap => {
+        if (snap.exists()) setProfile(snap.data())
+      })
+    }
+  }, [db, userProfile.id])
+
+  return (
+    <div className="flex items-center gap-3">
+      <Avatar className="h-10 w-10">
+        <AvatarImage src={profile?.avatarUrl} />
+        <AvatarFallback><User className="h-5 w-5" /></AvatarFallback>
+      </Avatar>
+      <div>
+        <p className="font-bold">{profile?.fullName || "Loading..."}</p>
+        <p className="text-[10px] text-green-500 font-medium">Active now</p>
+      </div>
     </div>
   )
 }

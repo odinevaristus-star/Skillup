@@ -1,9 +1,8 @@
-
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from "@/firebase"
-import { doc, collection, query, where, updateDoc, serverTimestamp } from "firebase/firestore"
+import { doc, collection, query, where, updateDoc, serverTimestamp, addDoc } from "firebase/firestore"
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -38,7 +37,7 @@ export default function ManageJobApplicantsPage() {
   const { data: applicants, loading: appsLoading } = useCollection(applicantsQuery)
 
   const handleHire = async (app: any) => {
-    if (!db || !jobId) return
+    if (!db || !jobId || !job) return
 
     const jobUpdate = {
       status: 'in-progress',
@@ -55,6 +54,18 @@ export default function ManageJobApplicantsPage() {
     updateDoc(doc(db, "jobs", jobId as string), jobUpdate)
       .then(() => {
         updateDoc(doc(db, "applications", app.id), appUpdate)
+        
+        // Send notification to the freelancer
+        addDoc(collection(db, "notifications"), {
+          userId: app.freelancerId,
+          title: "You've been hired!",
+          message: `Congratulations! ${job.clientName} hired you for: ${job.title}`,
+          link: `/dashboard/jobs`,
+          type: "hire",
+          read: false,
+          createdAt: serverTimestamp()
+        })
+
         toast({ title: "Freelancer Hired!", description: `${app.freelancerName} has been assigned to the project.` })
         router.push("/dashboard/jobs")
       })

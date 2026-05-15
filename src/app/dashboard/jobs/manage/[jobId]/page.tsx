@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
@@ -7,10 +8,11 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Loader2, ArrowLeft, User, CheckCircle2, MessageSquare, DollarSign, Calendar } from "lucide-react"
+import { Loader2, ArrowLeft, User, CheckCircle2, MessageSquare, DollarSign, Calendar, Briefcase } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
+import { cn } from "@/lib/utils"
 
 export default function ManageJobApplicantsPage() {
   const { jobId } = useParams()
@@ -43,22 +45,24 @@ export default function ManageJobApplicantsPage() {
       status: 'in-progress',
       freelancerId: app.freelancerId,
       freelancerName: app.freelancerName,
-      hiredAt: serverTimestamp()
+      hiredAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     }
 
     const appUpdate = {
       status: 'accepted'
     }
 
-    // Non-blocking update
+    // Update job to in-progress
     updateDoc(doc(db, "jobs", jobId as string), jobUpdate)
       .then(() => {
+        // Update application to accepted
         updateDoc(doc(db, "applications", app.id), appUpdate)
         
-        // Send notification to the freelancer
+        // Notify freelancer
         addDoc(collection(db, "notifications"), {
           userId: app.freelancerId,
-          title: "You've been hired!",
+          title: "Offer Accepted!",
           message: `Congratulations! ${job.clientName} hired you for: ${job.title}`,
           link: `/dashboard/jobs`,
           type: "hire",
@@ -66,7 +70,7 @@ export default function ManageJobApplicantsPage() {
           createdAt: serverTimestamp()
         })
 
-        toast({ title: "Freelancer Hired!", description: `${app.freelancerName} has been assigned to the project.` })
+        toast({ title: "Freelancer Hired!", description: `${app.freelancerName} is now assigned to this project.` })
         router.push("/dashboard/jobs")
       })
       .catch(async (error) => {
@@ -79,63 +83,86 @@ export default function ManageJobApplicantsPage() {
   }
 
   if (jobLoading || appsLoading) {
-    return <div className="flex h-screen items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-muted-foreground font-bold">Retrieving applicants...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Review Applicants</h1>
-          <p className="text-muted-foreground">Manage proposals for "{job?.title}"</p>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-primary/5">
+            <ArrowLeft className="h-6 w-6" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Review Applicants</h1>
+            <p className="text-muted-foreground font-medium">Select the best professional for "{job?.title}"</p>
+          </div>
         </div>
+        <Badge variant={job?.status === 'open' ? 'secondary' : 'default'} className="capitalize h-8 px-4 text-sm font-bold">
+          {job?.status.replace('-', ' ')}
+        </Badge>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            Proposals <span className="bg-muted px-2 py-0.5 rounded text-xs">{applicants?.length || 0}</span>
+          </h2>
+
           {applicants?.length ? applicants.map((app: any) => (
-            <Card key={app.id} className="border-none shadow-sm group hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row gap-6">
+            <Card key={app.id} className="border-none shadow-sm group hover:shadow-md transition-all overflow-hidden bg-card">
+              <CardContent className="p-8">
+                <div className="flex flex-col md:flex-row gap-8">
                   <div className="shrink-0">
-                    <Avatar className="h-16 w-16 border-2 border-primary/10">
+                    <Avatar className="h-20 w-20 border-4 border-muted rounded-2xl shadow-sm">
                       <AvatarImage src={`https://picsum.photos/seed/${app.freelancerId}/128/128`} />
-                      <AvatarFallback><User /></AvatarFallback>
+                      <AvatarFallback><User className="h-8 w-8" /></AvatarFallback>
                     </Avatar>
                   </div>
-                  <div className="flex-1 space-y-4">
+                  <div className="flex-1 space-y-6">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="text-xl font-bold group-hover:text-primary transition-colors">{app.freelancerName}</h3>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-                          <span className="flex items-center gap-1 text-green-600 font-bold">
-                            <CheckCircle2 className="h-4 w-4" /> 98% Job Success
+                        <h3 className="text-2xl font-bold group-hover:text-primary transition-colors">{app.freelancerName}</h3>
+                        <div className="flex items-center gap-4 text-xs font-bold mt-2">
+                          <span className="flex items-center gap-1 text-green-600">
+                            <CheckCircle2 className="h-4 w-4" /> 98% Success Rate
                           </span>
-                          <span>•</span>
-                          <span>Top Rated</span>
+                          <span className="text-muted-foreground bg-muted px-2 py-1 rounded">Top Rated</span>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-primary">${app.bidAmount}</p>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Bid Amount</p>
+                        <p className="text-3xl font-bold text-primary">${app.bidAmount}</p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Proposal Bid</p>
                       </div>
                     </div>
                     
-                    <div className="p-4 bg-muted/30 rounded-xl">
-                      <p className="text-sm leading-relaxed whitespace-pre-line text-muted-foreground">
-                        {app.coverLetter}
+                    <div className="p-6 bg-muted/30 rounded-[1.5rem] border border-dashed border-muted">
+                      <p className="text-sm leading-relaxed whitespace-pre-line text-muted-foreground italic">
+                        "{app.coverLetter}"
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-end gap-3 pt-2">
-                      <Button variant="ghost" className="font-bold text-primary hover:bg-primary/5" onClick={() => router.push(`/dashboard/messages?userId=${app.freelancerId}`)}>
-                        <MessageSquare className="h-4 w-4 mr-2" /> Message
+                    <div className="flex items-center justify-end gap-3 pt-4">
+                      <Button 
+                        variant="ghost" 
+                        className="font-bold text-primary hover:bg-primary/5 h-12 px-6 rounded-xl" 
+                        onClick={() => router.push(`/dashboard/messages?userId=${app.freelancerId}`)}
+                      >
+                        <MessageSquare className="h-4 w-4 mr-2" /> Message & Interview
                       </Button>
-                      <Button className="font-bold px-8 rounded-xl shadow-lg shadow-primary/20" onClick={() => handleHire(app)} disabled={job?.status !== 'open'}>
-                        {job?.status === 'open' ? 'Hire Freelancer' : 'Hired'}
+                      <Button 
+                        className="font-bold px-10 h-12 rounded-xl shadow-xl shadow-primary/20" 
+                        onClick={() => handleHire(app)} 
+                        disabled={job?.status !== 'open'}
+                      >
+                        {job?.status === 'open' ? 'Accept & Hire' : 'Hired'}
                       </Button>
                     </div>
                   </div>
@@ -143,39 +170,52 @@ export default function ManageJobApplicantsPage() {
               </CardContent>
             </Card>
           )) : (
-            <div className="text-center py-32 bg-card rounded-[2rem] border-2 border-dashed">
-              <Loader2 className="h-12 w-12 mx-auto mb-4 opacity-10" />
-              <h3 className="text-xl font-bold">Waiting for applicants...</h3>
-              <p className="text-muted-foreground mt-2">Your job post is live. Applicants will appear here soon.</p>
+            <div className="text-center py-40 bg-card rounded-[2.5rem] border-2 border-dashed border-muted shadow-inner">
+              <Loader2 className="h-16 w-16 mx-auto mb-6 opacity-5 opacity-spin" />
+              <h3 className="text-2xl font-bold">No applications yet</h3>
+              <p className="text-muted-foreground mt-2 max-w-xs mx-auto">Your project is visible to our professional community. Proposals will appear here soon.</p>
             </div>
           )}
         </div>
 
         <div className="space-y-6">
-          <Card className="border-none shadow-sm overflow-hidden rounded-2xl bg-primary text-primary-foreground">
-            <CardHeader>
-              <CardTitle className="text-lg">Project Summary</CardTitle>
+          <Card className="border-none shadow-sm overflow-hidden rounded-[2rem] bg-gradient-to-br from-primary to-primary/90 text-primary-foreground">
+            <CardHeader className="p-8">
+              <CardTitle className="text-xl flex items-center gap-2"><Briefcase className="h-5 w-5" /> Project Specs</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="p-8 pt-0 space-y-6">
               <div className="space-y-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="opacity-70 flex items-center gap-2"><DollarSign className="h-4 w-4" /> Budget</span>
-                  <span className="font-bold">${job?.budget}</span>
+                <div className="flex items-center justify-between">
+                  <span className="opacity-70 text-sm flex items-center gap-2 font-medium"><DollarSign className="h-4 w-4" /> Fixed Budget</span>
+                  <span className="font-bold text-lg">${job?.budget}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="opacity-70 flex items-center gap-2"><Calendar className="h-4 w-4" /> Deadline</span>
-                  <span className="font-bold">{job?.deadline || 'Flexible'}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="opacity-70 flex items-center gap-2"><User className="h-4 w-4" /> Status</span>
-                  <Badge variant="secondary" className="bg-white/20 text-white border-none capitalize">{job?.status}</Badge>
+                <div className="flex items-center justify-between">
+                  <span className="opacity-70 text-sm flex items-center gap-2 font-medium"><Calendar className="h-4 w-4" /> Due Date</span>
+                  <span className="font-bold text-lg">{job?.deadline || 'Flexible'}</span>
                 </div>
               </div>
-              <div className="pt-4 border-t border-white/10">
-                <p className="text-xs italic opacity-70 leading-relaxed">
-                  "Hiring a freelancer will move this project to In Progress and stop new applications."
-                </p>
+              <div className="pt-6 border-t border-white/10">
+                <div className="p-4 bg-white/10 rounded-xl space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-white/60">Selected Category</h4>
+                  <p className="font-bold">{job?.category}</p>
+                </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-sm rounded-[2rem] bg-card overflow-hidden">
+            <CardHeader className="p-8">
+              <CardTitle className="text-lg">Hiring Tips</CardTitle>
+            </CardHeader>
+            <CardContent className="px-8 pb-8 space-y-4">
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                We recommend interviewing at least 2 candidates before making a final decision. Use our internal messenger to discuss deliverables.
+              </p>
+              <ul className="text-xs font-bold text-primary space-y-2">
+                <li className="flex items-center gap-2">✓ Verified professional identity</li>
+                <li className="flex items-center gap-2">✓ Protected payment processing</li>
+                <li className="flex items-center gap-2">✓ Dispute resolution available</li>
+              </ul>
             </CardContent>
           </Card>
         </div>

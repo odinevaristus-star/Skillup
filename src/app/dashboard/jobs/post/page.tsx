@@ -9,10 +9,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, Send } from "lucide-react"
+import { Loader2, Send, Briefcase } from "lucide-react"
 import { useRouter } from "next/navigation"
+
+const CATEGORIES = {
+  "Digital": ["Programming", "Graphic Design", "Video Editing", "Writing", "Web Development", "Mobile Apps", "Data Science", "Digital Marketing"],
+  "Artisan": ["Electrician", "Plumbing", "Mechanic", "Painting", "Carpentry", "Landscaping", "Auto Repair", "Home Repair"]
+}
 
 export default function PostJobPage() {
   const { user } = useUser()
@@ -41,112 +46,151 @@ export default function PostJobPage() {
       clientName: user.displayName || "Client",
       status: "open",
       createdAt: serverTimestamp(),
-      skillsRequired: [] // Could be expanded to a multi-select
+      skillsRequired: [] 
     }
 
     addDoc(collection(db, "jobs"), jobData)
       .then(() => {
         toast({
-          title: "Job Posted!",
-          description: "Your project is now live and freelancers can apply."
+          title: "Project Published!",
+          description: "Your job post is now live. Freelancers will be notified shortly."
         })
-        router.push("/dashboard")
+        router.push("/dashboard/jobs")
       })
       .catch(async (error) => {
-        const permissionError = new FirestorePermissionError({
+        errorEmitter.emit("permission-error", new FirestorePermissionError({
           path: "jobs",
           operation: "create",
           requestResourceData: jobData
-        })
-        errorEmitter.emit("permission-error", permissionError)
+        }))
       })
       .finally(() => setIsLoading(false))
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-10 px-4">
-      <Card className="border-none shadow-xl">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-3xl font-bold">Post a new job</CardTitle>
-          <CardDescription>Tell the community about your project and find the right talent.</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-6">
-            <div className="grid gap-2">
-              <Label htmlFor="title">Job Title</Label>
-              <Input 
-                id="title" 
-                placeholder="e.g. Build a mobile app for my restaurant" 
-                required 
-                value={formData.title}
-                onChange={(e) => setFormData({...formData, title: e.target.value})}
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="category">Category</Label>
-              <Select 
-                onValueChange={(val) => setFormData({...formData, category: val})}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Programming">Programming</SelectItem>
-                  <SelectItem value="Graphic Design">Graphic Design</SelectItem>
-                  <SelectItem value="Electrician">Electrician</SelectItem>
-                  <SelectItem value="Plumbing">Plumbing</SelectItem>
-                  <SelectItem value="Writing">Writing</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+    <div className="max-w-4xl mx-auto py-10 px-4">
+      <div className="mb-8 space-y-2">
+        <h1 className="text-4xl font-bold tracking-tight">Post a New Project</h1>
+        <p className="text-muted-foreground text-lg">Detailed descriptions help you find the best matching talent.</p>
+      </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="description">Detailed Description</Label>
-              <Textarea 
-                id="description" 
-                placeholder="Explain the scope, deliverables, and requirements..." 
-                rows={6}
-                required
-                value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
-              />
-            </div>
+      <form onSubmit={handleSubmit}>
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="border-none shadow-sm">
+              <CardContent className="pt-6 space-y-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="title" className="text-sm font-bold">Project Title</Label>
+                  <Input 
+                    id="title" 
+                    placeholder="e.g. Need a professional plumber for kitchen remodel" 
+                    required 
+                    className="h-12 rounded-xl"
+                    value={formData.title}
+                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="category" className="text-sm font-bold">Project Category</Label>
+                  <Select 
+                    onValueChange={(val) => setFormData({...formData, category: val})}
+                    required
+                  >
+                    <SelectTrigger className="h-12 rounded-xl">
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Digital Skills</SelectLabel>
+                        {CATEGORIES.Digital.map(cat => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel>Artisan Skills</SelectLabel>
+                        {CATEGORIES.Artisan.map(cat => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="budget">Budget (USD)</Label>
-                <Input 
-                  id="budget" 
-                  type="number" 
-                  placeholder="500" 
-                  required 
-                  value={formData.budget}
-                  onChange={(e) => setFormData({...formData, budget: e.target.value})}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="deadline">Project Deadline</Label>
-                <Input 
-                  id="deadline" 
-                  type="date" 
-                  required 
-                  value={formData.deadline}
-                  onChange={(e) => setFormData({...formData, deadline: e.target.value})}
-                />
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter className="border-t pt-6 flex justify-end gap-3">
-            <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
-            <Button type="submit" disabled={isLoading} className="gap-2">
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Publish Job
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
+                <div className="grid gap-2">
+                  <Label htmlFor="description" className="text-sm font-bold">Project Description</Label>
+                  <Textarea 
+                    id="description" 
+                    placeholder="Describe the scope, goals, and any specific requirements..." 
+                    rows={8}
+                    required
+                    className="rounded-xl resize-none"
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+            <Card className="border-none shadow-sm bg-primary text-primary-foreground">
+              <CardHeader>
+                <CardTitle className="text-lg">Budget & Schedule</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="budget" className="text-white/80">Estimated Budget (USD)</Label>
+                  <Input 
+                    id="budget" 
+                    type="number" 
+                    placeholder="500" 
+                    required 
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12 rounded-xl"
+                    value={formData.budget}
+                    onChange={(e) => setFormData({...formData, budget: e.target.value})}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="deadline" className="text-white/80">Expected Deadline</Label>
+                  <Input 
+                    id="deadline" 
+                    type="date" 
+                    required 
+                    className="bg-white/10 border-white/20 text-white h-12 rounded-xl"
+                    value={formData.deadline}
+                    onChange={(e) => setFormData({...formData, deadline: e.target.value})}
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="pt-2">
+                <Button type="submit" disabled={isLoading} className="w-full h-12 bg-white text-primary hover:bg-white/90 rounded-xl font-bold text-lg gap-2">
+                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                  Post Project
+                </Button>
+              </CardFooter>
+            </Card>
+
+            <Card className="border-none shadow-sm">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-muted rounded-xl">
+                    <Briefcase className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm">Quality Checklist</h4>
+                    <ul className="mt-2 space-y-2 text-xs text-muted-foreground list-disc pl-4">
+                      <li>Be clear about deliverables</li>
+                      <li>Specify required tools or tools</li>
+                      <li>Be realistic with the budget</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </form>
     </div>
   )
 }

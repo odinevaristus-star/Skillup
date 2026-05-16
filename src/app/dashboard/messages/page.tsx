@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react"
 import { useUser, useFirestore, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase"
-import { collection, query, where, orderBy, addDoc, serverTimestamp, or, doc, getDoc } from "firebase/firestore"
+import { collection, query, where, orderBy, addDoc, serverTimestamp, or, doc, getDoc, limit } from "firebase/firestore"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -33,13 +33,14 @@ export default function MessagesPage() {
     return query(
       collection(db, "messages"),
       or(where("senderId", "==", user.uid), where("receiverId", "==", user.uid)),
-      orderBy("timestamp", "desc")
+      orderBy("timestamp", "desc"),
+      limit(200)
     )
   }, [db, user?.uid])
 
   const { data: allMessages, loading: messagesLoading } = useCollection(allUserMessagesQuery)
 
-  // 2. Derive unique contacts from messages
+  // 2. Derive unique contacts from messages for the sidebar
   const conversations = useMemo(() => {
     if (!allMessages || !user?.uid) return []
     const contactsMap = new Map()
@@ -51,14 +52,15 @@ export default function MessagesPage() {
           id: otherUserId,
           lastMessage: msg.text,
           timestamp: msg.timestamp,
-          read: msg.read
+          read: msg.read,
+          isMine: msg.senderId === user.uid
         })
       }
     })
     return Array.from(contactsMap.values())
   }, [allMessages, user?.uid])
 
-  // 3. If a userId is passed in URL, fetch their profile to start a chat
+  // 3. If a userId is passed in URL (e.g., from Profile page), fetch their profile to start a chat
   useEffect(() => {
     if (targetUserId && db && user?.uid && targetUserId !== user.uid) {
       setLoadingContact(true)
@@ -76,12 +78,12 @@ export default function MessagesPage() {
   // 4. Auto-scroll to bottom when messages update
   useEffect(() => {
     if (scrollRef.current) {
-      const scrollContainer = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]')
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight
+      const viewport = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]')
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight
       }
     }
-  }, [selectedChatUser])
+  }, [selectedChatUser, conversations])
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -104,7 +106,7 @@ export default function MessagesPage() {
         addDoc(collection(db, "notifications"), {
           userId: selectedChatUser.id,
           title: "New Message",
-          message: `${user.displayName || 'Someone'} sent you a message.`,
+          message: `${user.displayName || 'A user'} sent you a message: "${newMessage.substring(0, 30)}${newMessage.length > 30 ? '...' : ''}"`,
           link: `/dashboard/messages?userId=${user.uid}`,
           type: "message",
           read: false,
@@ -122,7 +124,7 @@ export default function MessagesPage() {
       .finally(() => setIsSending(false))
   }
 
-  // Current active chat messages
+  // Current active chat messages listener
   const activeChatQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || !selectedChatUser?.id) return null
     const chatId = [user.uid, selectedChatUser.id].sort().join("_")
@@ -136,21 +138,23 @@ export default function MessagesPage() {
   const { data: activeMessages } = useCollection(activeChatQuery)
 
   return (
-    <div className="h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-0 lg:gap-6 bg-background rounded-3xl overflow-hidden shadow-2xl border">
+    <div className="h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-0 lg:gap-6 bg-background rounded-[2rem] overflow-hidden shadow-xl border">
       {/* Sidebar - Conversation List */}
       <div className={cn(
-        "lg:w-80 flex flex-col border-r bg-card h-full transition-all",
+        "lg:w-96 flex flex-col border-r bg-card h-full transition-all",
         !showSidebar && "hidden lg:flex"
       )}>
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-bold mb-4 tracking-tight">Messages</h2>
+        <div className="p-6 border-b space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold tracking-tight">Messages</h2>
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9 bg-muted/30 border-none h-10 rounded-xl" placeholder="Search contacts..." />
+            <Input className="pl-10 bg-muted/50 border-none h-11 rounded-xl" placeholder="Search conversations..." />
           </div>
         </div>
         <ScrollArea className="flex-1">
-          <div className="divide-y divide-muted/50">
+          <div className="divide-y divide-muted/30">
             {messagesLoading ? (
               <div className="p-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" /></div>
             ) : conversations.length > 0 ? (
@@ -163,13 +167,20 @@ export default function MessagesPage() {
                   onClick={() => {
                     setSelectedChatUser({ id: chat.id })
                     setShowSidebar(false)
+                    // Update URL without full refresh to preserve state
+                    window.history.pushState(null, '', `/dashboard/messages?userId=${chat.id}`)
                   }} 
                 />
               ))
             ) : (
-              <div className="p-10 text-center text-muted-foreground text-sm space-y-2">
-                <MessageSquare className="h-8 w-8 mx-auto opacity-20" />
-                <p>No conversations found.</p>
+              <div className="p-12 text-center text-muted-foreground space-y-4">
+                <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto">
+                  <MessageSquare className="h-8 w-8 opacity-20" />
+                </div>
+                <div className="space-y-1">
+                  <p className="font-bold text-foreground">No messages yet</p>
+                  <p className="text-xs">Start a conversation from an expert's profile.</p>
+                </div>
               </div>
             )}
           </div>
@@ -196,7 +207,7 @@ export default function MessagesPage() {
                 </Button>
                 <ChatHeader userProfile={selectedChatUser} db={db} />
               </div>
-              <div className="flex items-center gap-1">
+              <div className="hidden sm:flex items-center gap-1">
                 <Button variant="ghost" size="icon" className="rounded-full"><Phone className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" className="rounded-full"><Video className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" className="rounded-full"><Info className="h-4 w-4" /></Button>
@@ -204,22 +215,22 @@ export default function MessagesPage() {
             </div>
 
             {/* Message Stream */}
-            <ScrollArea className="flex-1 p-6 bg-muted/10" ref={scrollRef}>
+            <ScrollArea className="flex-1 p-6 bg-muted/5" ref={scrollRef}>
               <div className="space-y-6">
                 {activeMessages?.map((msg, i) => (
                   <div key={i} className={cn(
-                    "flex flex-col",
+                    "flex flex-col group",
                     msg.senderId === user?.uid ? "items-end" : "items-start"
                   )}>
                     <div className={cn(
-                      "max-w-[75%] px-5 py-3 rounded-[1.25rem] shadow-sm text-sm leading-relaxed",
+                      "max-w-[80%] md:max-w-[70%] px-5 py-3 rounded-[1.5rem] shadow-sm text-sm leading-relaxed",
                       msg.senderId === user?.uid 
                         ? "bg-primary text-primary-foreground rounded-tr-none" 
-                        : "bg-background border text-foreground rounded-tl-none"
+                        : "bg-white border text-foreground rounded-tl-none"
                     )}>
                       {msg.text}
                     </div>
-                    <span className="text-[10px] mt-1.5 text-muted-foreground font-medium px-1">
+                    <span className="text-[10px] mt-1.5 text-muted-foreground font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">
                       {msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Sending...'}
                     </span>
                   </div>
@@ -229,43 +240,50 @@ export default function MessagesPage() {
 
             {/* Input Area */}
             <div className="p-6 border-t bg-card">
-              <form onSubmit={handleSendMessage} className="flex gap-3 items-center">
+              <form onSubmit={handleSendMessage} className="flex gap-4 items-center max-w-5xl mx-auto">
                 <Input 
-                  placeholder="Type your message..." 
-                  className="flex-1 h-12 rounded-2xl bg-muted/30 border-none px-6 focus-visible:ring-primary"
+                  placeholder="Write a message..." 
+                  className="flex-1 h-14 rounded-2xl bg-muted/50 border-none px-6 text-base focus-visible:ring-primary"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  autoFocus
+                  disabled={isSending}
                 />
                 <Button 
                   type="submit" 
                   size="icon" 
-                  className="h-12 w-12 rounded-2xl shadow-lg shadow-primary/20" 
+                  className="h-14 w-14 rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all" 
                   disabled={isSending || !newMessage.trim()}
                 >
-                  {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                  {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-6 w-6" />}
                 </Button>
               </form>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-muted-foreground bg-muted/5">
-            <div className="w-24 h-24 rounded-full bg-muted/50 flex items-center justify-center mb-8">
-              <MessageSquare className="h-12 w-12 opacity-10" />
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-muted/5">
+            <div className="w-24 h-24 rounded-full bg-primary/5 flex items-center justify-center mb-8">
+              <MessageSquare className="h-12 w-12 text-primary opacity-20" />
             </div>
             {loadingContact ? (
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="flex flex-col items-center gap-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm font-bold text-muted-foreground">Initializing conversation...</p>
+              </div>
             ) : (
-              <div className="space-y-3">
-                <h3 className="text-2xl font-bold text-foreground">Your Inbox</h3>
-                <p className="max-w-xs mx-auto text-sm leading-relaxed">Select a professional from the list or browse freelancers to start a conversation about your project.</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4 rounded-xl font-bold"
-                  onClick={() => router.push('/freelancers')}
-                >
-                  Find Talent
-                </Button>
+              <div className="max-w-md space-y-4">
+                <h3 className="text-3xl font-bold tracking-tight">Your Inbox</h3>
+                <p className="text-muted-foreground text-lg leading-relaxed">
+                  Select a professional from your contacts or browse the marketplace to start discussing your next big project.
+                </p>
+                <div className="pt-6">
+                  <Button 
+                    variant="outline" 
+                    className="rounded-2xl font-bold h-12 px-8 border-primary text-primary hover:bg-primary/5"
+                    onClick={() => router.push('/freelancers')}
+                  >
+                    Browse Experts
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -284,17 +302,17 @@ function ChatHeader({ userProfile, db }: { userProfile: any, db: any }) {
         if (snap.exists()) setProfile(snap.data())
       })
     }
-  }, [db, userProfile.id])
+  }, [db, userProfile.id, userProfile.fullName])
 
   return (
-    <div className="flex items-center gap-3">
-      <Avatar className="h-10 w-10 border-2 border-muted shadow-sm">
+    <div className="flex items-center gap-4">
+      <Avatar className="h-11 w-11 border-2 border-muted shadow-sm rounded-xl">
         <AvatarImage src={profile?.avatarUrl} />
-        <AvatarFallback><User className="h-5 w-5" /></AvatarFallback>
+        <AvatarFallback className="bg-primary/10 text-primary font-bold">{profile?.fullName?.substring(0, 2).toUpperCase() || "..."}</AvatarFallback>
       </Avatar>
-      <div className="flex flex-col -space-y-1">
-        <p className="font-bold text-sm">{profile?.fullName || "Loading..."}</p>
-        <p className="text-[10px] text-green-500 font-bold uppercase tracking-wider">Online</p>
+      <div className="flex flex-col -space-y-0.5">
+        <p className="font-bold text-base leading-tight">{profile?.fullName || "User"}</p>
+        <p className="text-[10px] text-green-500 font-black uppercase tracking-widest">Active Now</p>
       </div>
     </div>
   )
@@ -315,26 +333,31 @@ function ConversationItem({ chat, db, isActive, onClick }: { chat: any, db: any,
     <button
       onClick={onClick}
       className={cn(
-        "w-full p-5 flex items-center gap-4 transition-all hover:bg-muted/30 border-l-4 border-transparent",
-        isActive && "bg-primary/5 border-primary"
+        "w-full p-6 flex items-center gap-4 transition-all hover:bg-muted/50 border-l-4 border-transparent",
+        isActive && "bg-primary/5 border-primary shadow-inner"
       )}
     >
       <div className="relative shrink-0">
-        <Avatar className="h-12 w-12 border shadow-sm rounded-xl">
+        <Avatar className="h-14 w-14 border shadow-sm rounded-2xl">
           <AvatarImage src={profile?.avatarUrl} />
-          <AvatarFallback><User className="h-6 w-6" /></AvatarFallback>
+          <AvatarFallback className="bg-muted text-muted-foreground font-bold">{profile?.fullName?.substring(0, 2).toUpperCase() || "..."}</AvatarFallback>
         </Avatar>
-        <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-card bg-green-500" />
+        <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-4 border-card bg-green-500" />
       </div>
       <div className="flex-1 text-left min-w-0">
-        <div className="flex justify-between items-start mb-1">
-          <p className="font-bold truncate text-sm">{profile?.fullName || "..."}</p>
-          <span className="text-[10px] text-muted-foreground font-medium">
+        <div className="flex justify-between items-start mb-1.5">
+          <p className="font-bold truncate text-base text-foreground">{profile?.fullName || "Loading..."}</p>
+          <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
             {chat.timestamp ? new Date(chat.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground truncate font-medium">{chat.lastMessage}</p>
+        <p className="text-xs text-muted-foreground truncate font-medium">
+          {chat.isMine ? "You: " : ""}{chat.lastMessage}
+        </p>
       </div>
+      {!chat.read && !chat.isMine && (
+        <div className="w-2.5 h-2.5 bg-primary rounded-full shrink-0" />
+      )}
     </button>
   )
 }

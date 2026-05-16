@@ -15,13 +15,38 @@ import {
   PlusCircle,
   Users
 } from "lucide-react"
-import { useAuth } from "@/firebase"
+import { useAuth, useUser, useFirestore, useMemoFirebase, useCollection } from "@/firebase"
 import { signOut } from "firebase/auth"
+import { collection, query, where } from "firebase/firestore"
 
 export function DashboardSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const auth = useAuth()
+  const { user } = useUser()
+  const db = useFirestore()
+
+  const unreadMessagesQuery = useMemoFirebase(() => {
+    if (!db || !user?.uid) return null
+    return query(
+      collection(db, "messages"),
+      where("receiverId", "==", user.uid),
+      where("read", "==", false)
+    )
+  }, [db, user?.uid])
+
+  const { data: unreadMessages } = useCollection(unreadMessagesQuery)
+
+  const unreadNotificationsQuery = useMemoFirebase(() => {
+    if (!db || !user?.uid) return null
+    return query(
+      collection(db, "notifications"),
+      where("userId", "==", user.uid),
+      where("read", "==", false)
+    )
+  }, [db, user?.uid])
+
+  const { data: unreadNotifications } = useCollection(unreadNotificationsQuery)
 
   const handleLogout = async () => {
     await signOut(auth)
@@ -31,8 +56,8 @@ export function DashboardSidebar() {
   const navItems = [
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { label: "My Jobs", href: "/dashboard/jobs", icon: Briefcase },
-    { label: "Messages", href: "/dashboard/messages", icon: MessageSquare, badge: 3 },
-    { label: "Notifications", href: "/dashboard/notifications", icon: Bell, badge: 5 },
+    { label: "Messages", href: "/dashboard/messages", icon: MessageSquare, badge: unreadMessages?.length || 0 },
+    { label: "Notifications", href: "/dashboard/notifications", icon: Bell, badge: unreadNotifications?.length || 0 },
     { label: "Profile", href: "/dashboard/profile", icon: User },
     { label: "Hire Talent", href: "/freelancers", icon: Users },
     { label: "Find Work", href: "/jobs", icon: Search },
@@ -59,12 +84,12 @@ export function DashboardSidebar() {
                 <item.icon className="h-5 w-5" />
                 <span className="font-medium">{item.label}</span>
               </div>
-              {item.badge && (
+              {item.badge > 0 && (
                 <span className={cn(
                   "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
                   pathname === item.href ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
                 )}>
-                  {item.badge}
+                  {item.badge > 9 ? '9+' : item.badge}
                 </span>
               )}
             </div>

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react"
 import { useUser, useFirestore, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase"
-import { collection, query, where, orderBy, addDoc, serverTimestamp, or, doc, getDoc, limit } from "firebase/firestore"
+import { collection, query, where, orderBy, addDoc, serverTimestamp, or, doc, getDoc, limit, updateDoc, writeBatch } from "firebase/firestore"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -60,7 +60,7 @@ export default function MessagesPage() {
     return Array.from(contactsMap.values())
   }, [allMessages, user?.uid])
 
-  // 3. If a userId is passed in URL (e.g., from Profile page), fetch their profile to start a chat
+  // 3. If a userId is passed in URL, fetch their profile to start a chat
   useEffect(() => {
     if (targetUserId && db && user?.uid && targetUserId !== user.uid) {
       setLoadingContact(true)
@@ -137,6 +137,24 @@ export default function MessagesPage() {
 
   const { data: activeMessages } = useCollection(activeChatQuery)
 
+  // Mark messages as read when viewing a chat
+  useEffect(() => {
+    if (!db || !user?.uid || !selectedChatUser?.id || !activeMessages) return
+
+    const unreadMessages = activeMessages.filter(m => m.receiverId === user.uid && !m.read)
+    if (unreadMessages.length === 0) return
+
+    const batch = writeBatch(db)
+    unreadMessages.forEach(m => {
+      // Find the ID. Note: useCollection docs usually include their ID as 'id'
+      const id = (m as any).id
+      if (id) {
+        batch.update(doc(db, "messages", id), { read: true })
+      }
+    })
+    batch.commit().catch(console.error)
+  }, [db, user?.uid, selectedChatUser?.id, activeMessages])
+
   return (
     <div className="h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-0 lg:gap-6 bg-background rounded-[2rem] overflow-hidden shadow-xl border">
       {/* Sidebar - Conversation List */}
@@ -167,7 +185,6 @@ export default function MessagesPage() {
                   onClick={() => {
                     setSelectedChatUser({ id: chat.id })
                     setShowSidebar(false)
-                    // Update URL without full refresh to preserve state
                     window.history.pushState(null, '', `/dashboard/messages?userId=${chat.id}`)
                   }} 
                 />

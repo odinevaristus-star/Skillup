@@ -195,8 +195,8 @@ export default function FreelancerSearch() {
                 {filteredFreelancers.map((fl: any) => (
                   <Card key={fl.id} className="group hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 border-none shadow-sm overflow-hidden bg-card rounded-[2rem]">
                     <CardContent className="p-0">
-                      <Link href={`/freelancers/${fl.id}`}>
-                        <div className="p-8">
+                      <div className="p-8">
+                        <Link href={`/freelancers/${fl.id}`}>
                           <div className="flex gap-6">
                             <div className="relative shrink-0">
                               <div className="w-24 h-24 rounded-[1.5rem] bg-muted overflow-hidden border-4 border-background shadow-xl">
@@ -253,8 +253,8 @@ export default function FreelancerSearch() {
                               <Badge variant="ghost" className="text-[10px] text-muted-foreground font-bold">+{fl.skills.length - 3} MORE</Badge>
                             )}
                           </div>
-                        </div>
-                      </Link>
+                        </Link>
+                      </div>
 
                       <div className="px-8 py-5 bg-muted/20 border-t flex items-center justify-between">
                         <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">

@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils"
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
 import { doc, setDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
-import { errorEmitter, FirestorePermissionError, useAuth, useFirestore } from "@/firebase"
+import { useAuth, useFirestore } from "@/firebase"
 import { useRouter } from "next/navigation"
 import {
   Select,
@@ -69,11 +69,21 @@ export default function SignupPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
+      
+      // IMMEDIATE REDIRECT: Do not wait for Firestore or Profile updates
+      router.push('/dashboard')
+      router.refresh()
+
+      // Force redirect fallback
+      setTimeout(() => {
+        router.push('/dashboard')
+        router.refresh()
+      }, 2000)
+
+      // BACKGROUND TASKS: Fire these without awaiting them to prevent UI hang
       const fullName = `${firstName} ${lastName}`
+      updateProfile(user, { displayName: fullName }).catch(console.error)
       
-      await updateProfile(user, { displayName: fullName })
-      
-      // Determine skill category for freelancers
       let skillType = ""
       if (role === 'freelancer') {
         skillType = SKILL_CATEGORIES["Digital Skills"].includes(primarySkill) ? "Digital" : "Artisan"
@@ -99,15 +109,12 @@ export default function SignupPage() {
         isAvailable: true
       };
 
-      await setDoc(doc(db, "users", user.uid), userData)
+      setDoc(doc(db, "users", user.uid), userData).catch(console.error)
       
       toast({
         title: "Welcome to SkillUp!",
         description: "Your account has been created successfully."
       })
-      
-      router.push('/dashboard')
-      router.refresh()
       
     } catch (error: any) {
       toast({

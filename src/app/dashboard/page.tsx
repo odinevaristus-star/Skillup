@@ -32,7 +32,7 @@ export default function DashboardOverview() {
     return doc(db, "users", user.uid)
   }, [db, user?.uid])
 
-  const { data: profile, loading: profileLoading } = useDoc(userDocRef)
+  const { data: profile } = useDoc(userDocRef)
 
   // Fetch jobs where user is either client or assigned freelancer
   const activeJobsQuery = useMemoFirebase(() => {
@@ -65,7 +65,8 @@ export default function DashboardOverview() {
 
   const { data: myApplications } = useCollection(myApplicationsQuery)
 
-  if (authLoading || (profileLoading && !profile)) {
+  // Only block on auth loading. Let the profile load in the background.
+  if (authLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

@@ -28,8 +28,17 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       await signInWithEmailAndPassword(auth, email, password)
+      
+      // IMMEDIATE REDIRECT
       router.push('/dashboard')
       router.refresh()
+      
+      // Force redirect fallback
+      setTimeout(() => {
+        router.push('/dashboard')
+        router.refresh()
+      }, 2000)
+
     } catch (error: any) {
       toast({
         variant: "destructive",

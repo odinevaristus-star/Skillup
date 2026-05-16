@@ -71,6 +71,12 @@ export default function SignupPage() {
       
       await updateProfile(user, { displayName: fullName })
       
+      // Determine skill category for freelancers
+      let skillType = ""
+      if (role === 'freelancer') {
+        skillType = SKILL_CATEGORIES["Digital Skills"].includes(primarySkill) ? "Digital" : "Artisan"
+      }
+      
       const userData = {
         firstName,
         lastName,
@@ -78,10 +84,14 @@ export default function SignupPage() {
         email,
         role,
         skills: primarySkill ? [primarySkill] : [],
+        skillType, // Save Digital or Artisan
         bio: "",
         title: role === 'freelancer' ? (primarySkill || "Professional Freelancer") : "Project Client",
-        avatarUrl: user.photoURL || "",
-        createdAt: serverTimestamp()
+        avatarUrl: user.photoURL || `https://picsum.photos/seed/${user.uid}/128/128`,
+        createdAt: serverTimestamp(),
+        rating: 5.0,
+        completedJobs: 0,
+        hourlyRate: role === 'freelancer' ? 45 : 0
       };
 
       setDoc(doc(db, "users", user.uid), userData)

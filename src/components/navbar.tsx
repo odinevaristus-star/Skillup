@@ -35,6 +35,17 @@ export function Navbar() {
 
   const { data: unreadNotifications } = useCollection(unreadNotificationsQuery)
 
+  const unreadMessagesQuery = useMemoFirebase(() => {
+    if (!db || !user?.uid) return null
+    return query(
+      collection(db, "messages"),
+      where("receiverId", "==", user.uid),
+      where("read", "==", false)
+    )
+  }, [db, user?.uid])
+
+  const { data: unreadMessages } = useCollection(unreadMessagesQuery)
+
   const handleSignOut = async () => {
     await signOut(auth)
     window.location.href = '/'
@@ -71,9 +82,14 @@ export function Navbar() {
 
           {user && (
             <>
-              <Link href="/dashboard/messages" className="relative hidden sm:block">
+              <Link href="/dashboard/messages" className="relative">
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <MessageSquare className="h-5 w-5" />
+                  {unreadMessages && unreadMessages.length > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-primary text-primary-foreground rounded-full text-[10px] font-bold border-2 border-background">
+                      {unreadMessages.length > 9 ? '9+' : unreadMessages.length}
+                    </Badge>
+                  )}
                 </Button>
               </Link>
               <Link href="/dashboard/notifications" className="relative">

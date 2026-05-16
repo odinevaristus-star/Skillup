@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Search, Star, Filter, Loader2, User, MapPin, CheckCircle2, Briefcase, Zap } from "lucide-react"
+import { Search, Star, Filter, Loader2, User, MapPin, CheckCircle2, Briefcase, MessageSquare } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
@@ -193,9 +193,9 @@ export default function FreelancerSearch() {
             ) : filteredFreelancers.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {filteredFreelancers.map((fl: any) => (
-                  <Link key={fl.id} href={`/freelancers/${fl.id}`}>
-                    <Card className="group hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 border-none shadow-sm overflow-hidden bg-card rounded-[2rem]">
-                      <CardContent className="p-0">
+                  <Card key={fl.id} className="group hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 border-none shadow-sm overflow-hidden bg-card rounded-[2rem]">
+                    <CardContent className="p-0">
+                      <Link href={`/freelancers/${fl.id}`}>
                         <div className="p-8">
                           <div className="flex gap-6">
                             <div className="relative shrink-0">
@@ -254,19 +254,25 @@ export default function FreelancerSearch() {
                             )}
                           </div>
                         </div>
+                      </Link>
 
-                        <div className="px-8 py-5 bg-muted/20 border-t flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
-                            <MapPin className="h-4 w-4 text-primary" /> Remote Available
-                          </div>
-                          <div className="flex gap-3">
-                            <Button variant="ghost" size="sm" className="font-bold text-primary hover:bg-primary/5 rounded-xl h-10 px-6">Profile</Button>
-                            <Button size="sm" className="font-bold rounded-xl px-8 h-10 shadow-lg shadow-primary/20 transition-all group-hover:px-10">Hire</Button>
-                          </div>
+                      <div className="px-8 py-5 bg-muted/20 border-t flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
+                          <MapPin className="h-4 w-4 text-primary" /> Remote Available
                         </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
+                        <div className="flex gap-2">
+                          <Link href={`/dashboard/messages?userId=${fl.id}`}>
+                            <Button variant="outline" size="sm" className="font-bold rounded-xl h-10 px-4 gap-2">
+                              <MessageSquare className="h-4 w-4" /> Message
+                            </Button>
+                          </Link>
+                          <Link href={`/freelancers/${fl.id}`}>
+                            <Button size="sm" className="font-bold rounded-xl px-6 h-10 shadow-lg shadow-primary/20">Hire</Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             ) : (

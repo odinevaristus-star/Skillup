@@ -15,7 +15,6 @@ import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
 import { doc, setDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth, useFirestore } from "@/firebase"
-import { useRouter } from "next/navigation"
 import {
   Select,
   SelectContent,
@@ -58,7 +57,6 @@ export default function SignupPage() {
   const { toast } = useToast()
   const auth = useAuth()
   const db = useFirestore()
-  const router = useRouter()
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -70,17 +68,10 @@ export default function SignupPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
       
-      // IMMEDIATE REDIRECT: Do not wait for Firestore or Profile updates
-      router.push('/dashboard')
-      router.refresh()
+      // IMMEDIATE REDIRECT using window.location.href to bypass any router lag
+      window.location.href = '/dashboard'
 
-      // Force redirect fallback
-      setTimeout(() => {
-        router.push('/dashboard')
-        router.refresh()
-      }, 2000)
-
-      // BACKGROUND TASKS: Fire these without awaiting them to prevent UI hang
+      // BACKGROUND TASKS: Initiate profile setup without awaiting
       const fullName = `${firstName} ${lastName}`
       updateProfile(user, { displayName: fullName }).catch(console.error)
       
@@ -110,11 +101,6 @@ export default function SignupPage() {
       };
 
       setDoc(doc(db, "users", user.uid), userData).catch(console.error)
-      
-      toast({
-        title: "Welcome to SkillUp!",
-        description: "Your account has been created successfully."
-      })
       
     } catch (error: any) {
       toast({

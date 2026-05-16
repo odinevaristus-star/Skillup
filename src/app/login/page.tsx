@@ -13,6 +13,7 @@ import { Github, Chrome } from "lucide-react"
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, GithubAuthProvider } from "firebase/auth"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/firebase"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -20,13 +21,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const { toast } = useToast()
   const auth = useAuth()
+  const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      window.location.href = '/dashboard'
+      router.push('/dashboard')
+      router.refresh()
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -41,7 +44,8 @@ export default function LoginPage() {
     const provider = providerName === 'google' ? new GoogleAuthProvider() : new GithubAuthProvider()
     try {
       await signInWithPopup(auth, provider)
-      window.location.href = '/dashboard'
+      router.push('/dashboard')
+      router.refresh()
     } catch (error: any) {
       toast({
         variant: "destructive",

@@ -14,11 +14,9 @@ import {
   Star, 
   Zap, 
   Clock, 
-  ArrowRight,
   PlusCircle,
   Search,
   Loader2,
-  Mail,
   CheckCircle2,
   FileText,
   Users
@@ -38,8 +36,11 @@ export default function DashboardOverview() {
 
   // Fetch jobs where user is either client or assigned freelancer
   const activeJobsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid || !profile?.role) return null
-    const roleField = profile.role === 'freelancer' ? 'freelancerId' : 'clientId'
+    if (!db || !user?.uid) return null
+    // Fallback role to freelancer if profile is still loading or missing
+    const role = profile?.role || 'freelancer'
+    const roleField = role === 'freelancer' ? 'freelancerId' : 'clientId'
+    
     return query(
       collection(db, "jobs"),
       where(roleField, "==", user.uid),
@@ -53,7 +54,7 @@ export default function DashboardOverview() {
 
   // Fetch applications if user is a freelancer
   const myApplicationsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid || profile?.role !== 'freelancer') return null
+    if (!db || !user?.uid || profile?.role === 'customer') return null
     return query(
       collection(db, "applications"),
       where("freelancerId", "==", user.uid),
@@ -64,7 +65,7 @@ export default function DashboardOverview() {
 
   const { data: myApplications } = useCollection(myApplicationsQuery)
 
-  if (authLoading || profileLoading) {
+  if (authLoading || (profileLoading && !profile)) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -72,7 +73,7 @@ export default function DashboardOverview() {
     )
   }
 
-  const isFreelancer = profile?.role === 'freelancer'
+  const isFreelancer = profile?.role !== 'customer'
   const firstName = profile?.firstName || user?.displayName?.split(' ')[0] || "User"
 
   const stats = isFreelancer ? [
@@ -88,7 +89,7 @@ export default function DashboardOverview() {
   ]
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-4xl font-bold tracking-tight text-foreground">Hello, {firstName}!</h1>
@@ -97,13 +98,13 @@ export default function DashboardOverview() {
         <div className="flex gap-3">
           {isFreelancer ? (
             <Link href="/jobs">
-              <Button className="h-11 px-6 rounded-xl font-bold gap-2">
+              <Button className="h-11 px-6 rounded-xl font-bold gap-2 shadow-sm">
                 <Search className="h-4 w-4" /> Find Work
               </Button>
             </Link>
           ) : (
             <Link href="/dashboard/jobs/post">
-              <Button className="h-11 px-6 rounded-xl font-bold gap-2">
+              <Button className="h-11 px-6 rounded-xl font-bold gap-2 shadow-sm">
                 <PlusCircle className="h-4 w-4" /> Post a Job
               </Button>
             </Link>
@@ -220,7 +221,7 @@ export default function DashboardOverview() {
                       <span className="font-bold text-primary">{rec.budget}</span>
                     </div>
                     <h3 className="font-bold text-lg group-hover:text-primary transition-colors mb-2">{rec.title}</h3>
-                    <p className="text-xs text-muted-foreground">Tailored for your {profile?.skills?.[0]} expertise.</p>
+                    <p className="text-xs text-muted-foreground">Tailored for your expert skills.</p>
                   </div>
                 ))}
               </div>
@@ -262,30 +263,23 @@ export default function DashboardOverview() {
                 <TrendingUp className="h-5 w-5" />
                 <CardTitle className="text-lg">Weekly Outlook</CardTitle>
               </div>
-              <CardDescription className="text-primary-foreground/80">Your activity is up 12% this week</CardDescription>
+              <CardDescription className="text-primary-foreground/80">Your activity is up this week</CardDescription>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-blue-500" />
-                    <span className="text-sm font-medium">Proposal Views</span>
+                    <span className="text-sm font-medium">Views</span>
                   </div>
-                  <span className="font-bold">48</span>
+                  <span className="font-bold">12</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500" />
                     <span className="text-sm font-medium">Interviews</span>
                   </div>
-                  <span className="font-bold">4</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                    <span className="text-sm font-medium">Invitees</span>
-                  </div>
-                  <span className="font-bold">12</span>
+                  <span className="font-bold">2</span>
                 </div>
               </div>
               <Button variant="ghost" className="w-full text-primary font-bold hover:bg-primary/5">Detailed Reports</Button>

@@ -15,6 +15,7 @@ import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
 import { doc, setDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter, FirestorePermissionError, useAuth, useFirestore } from "@/firebase"
+import { useRouter } from "next/navigation"
 import {
   Select,
   SelectContent,
@@ -57,6 +58,7 @@ export default function SignupPage() {
   const { toast } = useToast()
   const auth = useAuth()
   const db = useFirestore()
+  const router = useRouter()
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,35 +80,34 @@ export default function SignupPage() {
       }
       
       const userData = {
+        uid: user.uid,
         firstName,
         lastName,
         fullName,
         email,
         role,
         skills: primarySkill ? [primarySkill] : [],
-        skillType, // Save Digital or Artisan
+        skillType,
         bio: "",
         title: role === 'freelancer' ? (primarySkill || "Professional Freelancer") : "Project Client",
         avatarUrl: user.photoURL || `https://picsum.photos/seed/${user.uid}/128/128`,
         createdAt: serverTimestamp(),
         rating: 5.0,
         completedJobs: 0,
-        hourlyRate: role === 'freelancer' ? 45 : 0
+        totalHires: 0,
+        hourlyRate: role === 'freelancer' ? 45 : 0,
+        isAvailable: true
       };
 
-      setDoc(doc(db, "users", user.uid), userData)
-        .then(() => {
-          window.location.href = '/dashboard'
-        })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
-            path: `users/${user.uid}`,
-            operation: 'create',
-            requestResourceData: userData,
-          });
-          errorEmitter.emit('permission-error', permissionError);
-          setIsLoading(false)
-        });
+      await setDoc(doc(db, "users", user.uid), userData)
+      
+      toast({
+        title: "Welcome to SkillUp!",
+        description: "Your account has been created successfully."
+      })
+      
+      router.push('/dashboard')
+      router.refresh()
       
     } catch (error: any) {
       toast({

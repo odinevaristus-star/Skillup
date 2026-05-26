@@ -62,6 +62,7 @@ export default function PostJobPage() {
 
     addDoc(collection(db, "jobs"), jobData)
       .then(() => {
+        // IMMEDIATE REDIRECT using window.location.href to force navigation
         window.location.href = "/dashboard/jobs"
       })
       .catch(async (error) => {

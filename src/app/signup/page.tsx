@@ -22,7 +22,9 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
+  SelectSeparator,
 } from '@/components/ui/select';
+import { useRouter } from 'next/navigation';
 
 const ARTISAN_SKILLS = [
   "Electrician", "Plumbing", "Carpentry", "Tailoring / Fashion Design", "Hair Styling / Braiding",
@@ -48,6 +50,7 @@ export default function SignupPage() {
   const { toast } = useToast();
   const auth = useAuth();
   const db = useFirestore();
+  const router = useRouter();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,9 +65,10 @@ export default function SignupPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // IMMEDIATE REDIRECT
+      // IMMEDIATE REDIRECT using window.location.href for force navigation
       window.location.href = '/dashboard';
 
+      // Write Firestore data in background
       const finalSkill = primarySkill === 'Other' ? otherSkill : primarySkill;
       const fullName = `${firstName} ${lastName}`;
       
@@ -199,9 +203,9 @@ export default function SignupPage() {
                           </SelectGroup>
                           <SelectSeparator />
                           <SelectItem value="Other">Other (type your own)</SelectItem>
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     {primarySkill === 'Other' && (
                       <Input 
                         placeholder="Enter your skill e.g. Event Planning" 

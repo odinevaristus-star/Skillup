@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react"
@@ -22,23 +23,8 @@ import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, where, orderBy } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
-
-const ARTISAN_SKILLS = [
-  "Electrician", "Plumbing", "Carpentry", "Tailoring / Fashion Design", "Hair Styling / Braiding",
-  "Makeup Artist", "Painting", "Phone Repair", "Laptop / Computer Repair", "Catering / Cooking",
-  "Laundry", "Cleaning Service", "Photography", "Videography", "Tutoring / Lessons", "Generator Repair"
-];
-
-const DIGITAL_SKILLS = [
-  "Graphic Design", "Video Editing", "Web Development", "Mobile App Development", "Social Media Management",
-  "Content Writing", "Copywriting", "Data Entry", "Photo Editing", "Animation", "Music Production",
-  "Voice Over", "Translation"
-];
-
-const ALL_CATEGORIES = [
-  ...ARTISAN_SKILLS,
-  ...DIGITAL_SKILLS
-]
+import { SearchableSelect } from "@/components/ui/searchable-select"
+import { ALL_CATEGORIES } from "@/lib/constants"
 
 export default function JobSearchPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -98,28 +84,12 @@ export default function JobSearchPage() {
               </div>
 
               <div className="space-y-6">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Category</h3>
-                <div className="flex flex-wrap gap-2.5">
-                  <Button 
-                    variant={activeCategory === 'all' ? 'default' : 'outline'} 
-                    size="sm" 
-                    className="rounded-xl text-xs font-bold h-10 px-4"
-                    onClick={() => setActiveCategory('all')}
-                  >
-                    All Gigs
-                  </Button>
-                  {ALL_CATEGORIES.map(cat => (
-                    <Button 
-                      key={cat}
-                      variant={activeCategory === cat ? 'default' : 'outline'} 
-                      size="sm" 
-                      className="rounded-xl text-xs font-bold h-10 px-4"
-                      onClick={() => setActiveCategory(cat)}
-                    >
-                      {cat}
-                    </Button>
-                  ))}
-                </div>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Category Search</h3>
+                <SearchableSelect 
+                  value={activeCategory === 'all' ? "" : activeCategory}
+                  onValueChange={(val) => setActiveCategory(val || 'all')}
+                  placeholder="All Categories"
+                />
               </div>
             </div>
 

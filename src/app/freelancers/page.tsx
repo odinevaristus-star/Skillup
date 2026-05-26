@@ -25,10 +25,12 @@ import Link from "next/link"
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, where } from "firebase/firestore"
 import { cn } from "@/lib/utils"
+import { SearchableSelect } from "@/components/ui/searchable-select"
 
 export default function FreelancerSearch() {
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryType, setCategoryType] = useState<"all" | "Digital" | "Artisan">("all")
+  const [specificSkill, setSpecificSkill] = useState("")
   const db = useFirestore()
 
   const freelancersQuery = useMemoFirebase(() => {
@@ -54,9 +56,13 @@ export default function FreelancerSearch() {
         categoryType === "all" || 
         fl.skillType === categoryType
 
-      return matchesSearch && matchesType
+      const matchesSkill = 
+        !specificSkill || 
+        fl.skills?.some((s: string) => s.toLowerCase() === specificSkill.toLowerCase())
+
+      return matchesSearch && matchesType && matchesSkill
     })
-  }, [freelancers, searchTerm, categoryType])
+  }, [freelancers, searchTerm, categoryType, specificSkill])
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/20">
@@ -86,17 +92,27 @@ export default function FreelancerSearch() {
       <main className="container mx-auto px-4 py-12 flex-1">
         <div className="flex flex-col gap-10">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <Tabs 
-              value={categoryType} 
-              onValueChange={(val: any) => setCategoryType(val)} 
-              className="w-full md:w-auto"
-            >
-              <TabsList className="grid grid-cols-3 w-full md:w-[400px] h-12 rounded-xl bg-card border p-1 shadow-sm">
-                <TabsTrigger value="all" className="rounded-lg font-bold">All Talent</TabsTrigger>
-                <TabsTrigger value="Digital" className="rounded-lg font-bold">Digital</TabsTrigger>
-                <TabsTrigger value="Artisan" className="rounded-lg font-bold">Artisan</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <Tabs 
+                value={categoryType} 
+                onValueChange={(val: any) => setCategoryType(val)} 
+                className="w-full md:w-auto"
+              >
+                <TabsList className="grid grid-cols-3 w-full md:w-[400px] h-12 rounded-xl bg-card border p-1 shadow-sm">
+                  <TabsTrigger value="all" className="rounded-lg font-bold">All</TabsTrigger>
+                  <TabsTrigger value="Digital" className="rounded-lg font-bold">Digital</TabsTrigger>
+                  <TabsTrigger value="Artisan" className="rounded-lg font-bold">Artisan</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <div className="hidden lg:block w-64">
+                <SearchableSelect 
+                  value={specificSkill}
+                  onValueChange={setSpecificSkill}
+                  placeholder="Filter by skill..."
+                  className="h-12"
+                />
+              </div>
+            </div>
             <p className="text-sm font-medium text-muted-foreground">
               Showing <span className="text-foreground font-bold">{filteredFreelancers.length}</span> verified professionals
             </p>
@@ -131,8 +147,13 @@ export default function FreelancerSearch() {
                         </div>
                         <div className="flex-1 min-w-0 space-y-1">
                           <h3 className="font-bold text-xl group-hover:text-primary transition-colors truncate">{fl.fullName}</h3>
-                          <p className="text-sm font-bold text-primary flex items-center gap-1.5">
-                            <Briefcase className="h-4 w-4" /> {fl.title || fl.primarySkill || "Professional"}
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            <Badge variant="outline" className="text-[10px] uppercase font-black tracking-widest px-2 py-0.5 border-primary/20 text-primary">
+                              {fl.skillType || 'Professional'}
+                            </Badge>
+                          </div>
+                          <p className="text-sm font-bold text-muted-foreground flex items-center gap-1.5 mt-1">
+                            <Briefcase className="h-4 w-4 text-primary" /> {fl.title || "Professional"}
                           </p>
                           <div className="flex items-center gap-2 pt-1">
                             <Star className="h-4 w-4 text-yellow-500 fill-current" />
@@ -194,6 +215,7 @@ export default function FreelancerSearch() {
                 onClick={() => {
                   setSearchTerm("")
                   setCategoryType("all")
+                  setSpecificSkill("")
                 }}
               >
                 Clear all filters

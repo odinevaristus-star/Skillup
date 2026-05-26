@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -14,29 +15,9 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useFirestore } from '@/firebase';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-  SelectSeparator,
-} from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
-
-const ARTISAN_SKILLS = [
-  "Electrician", "Plumbing", "Carpentry", "Tailoring / Fashion Design", "Hair Styling / Braiding",
-  "Makeup Artist", "Painting", "Phone Repair", "Laptop / Computer Repair", "Catering / Cooking",
-  "Laundry", "Cleaning Service", "Photography", "Videography", "Tutoring / Lessons", "Generator Repair"
-];
-
-const DIGITAL_SKILLS = [
-  "Graphic Design", "Video Editing", "Web Development", "Mobile App Development", "Social Media Management",
-  "Content Writing", "Copywriting", "Data Entry", "Photo Editing", "Animation", "Music Production",
-  "Voice Over", "Translation"
-];
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { ARTISAN_SKILLS, DIGITAL_SKILLS } from '@/lib/constants';
 
 export default function SignupPage() {
   const [role, setRole] = useState<'customer' | 'freelancer' | null>(null);
@@ -46,11 +27,9 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [primarySkill, setPrimarySkill] = useState('');
-  const [otherSkill, setOtherSkill] = useState('');
   const { toast } = useToast();
   const auth = useAuth();
   const db = useFirestore();
-  const router = useRouter();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,9 +44,10 @@ export default function SignupPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
+      // IMMEDIATE REDIRECT using window.location.href for stability
       window.location.href = '/dashboard';
 
-      const finalSkill = primarySkill === 'Other' ? otherSkill : primarySkill;
+      const finalSkill = primarySkill;
       const fullName = `${firstName} ${lastName}`;
       
       updateProfile(user, { displayName: fullName }).catch(console.error);
@@ -179,40 +159,13 @@ export default function SignupPage() {
                   <Input id="email" type="email" placeholder="john@example.com" required className="h-12 rounded-xl bg-muted/30 border-none px-4" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 {role === 'freelancer' && (
-                  <div className="grid gap-4">
-                    <div className="grid gap-2.5">
-                      <Label htmlFor="primarySkill" className="font-bold">Primary Skill / Category</Label>
-                      <Select value={primarySkill} onValueChange={setPrimarySkill} required>
-                        <SelectTrigger id="primarySkill" className="h-12 rounded-xl bg-muted/30 border-none px-4">
-                          <SelectValue placeholder="Select your expertise" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-2xl">
-                          <SelectGroup>
-                            <SelectLabel>Artisan Skills</SelectLabel>
-                            {ARTISAN_SKILLS.map((skill) => (
-                              <SelectItem key={skill} value={skill}>{skill}</SelectItem>
-                            ))}
-                          </SelectGroup>
-                          <SelectGroup>
-                            <SelectLabel>Digital Skills</SelectLabel>
-                            {DIGITAL_SKILLS.map((skill) => (
-                              <SelectItem key={skill} value={skill}>{skill}</SelectItem>
-                            ))}
-                          </SelectGroup>
-                          <SelectSeparator />
-                          <SelectItem value="Other">Other (type your own)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {primarySkill === 'Other' && (
-                      <Input 
-                        placeholder="Enter your skill e.g. Event Planning" 
-                        className="h-12 rounded-xl bg-muted/30 border-none px-4 animate-in fade-in slide-in-from-top-2"
-                        required
-                        value={otherSkill}
-                        onChange={(e) => setOtherSkill(e.target.value)}
-                      />
-                    )}
+                  <div className="grid gap-2.5">
+                    <Label htmlFor="primarySkill" className="font-bold">Primary Skill / Category</Label>
+                    <SearchableSelect 
+                      value={primarySkill} 
+                      onValueChange={setPrimarySkill} 
+                      placeholder="Select or type your expertise"
+                    />
                   </div>
                 )}
                 <div className="grid gap-2.5">

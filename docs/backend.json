@@ -12,13 +12,18 @@
         "email": { "type": "string" },
         "title": { "type": "string" },
         "bio": { "type": "string" },
+        "department": { "type": "string", "description": "Academic department or course of study" },
+        "priceRange": { "type": "string", "description": "Price range for services in Naira" },
         "skills": { "type": "array", "items": { "type": "string" } },
         "role": { "type": "string", "enum": ["customer", "freelancer"] },
+        "skillType": { "type": "string", "enum": ["Digital", "Artisan"] },
         "avatarUrl": { "type": "string" },
         "hourlyRate": { "type": "number" },
         "rating": { "type": "number" },
         "completedJobs": { "type": "number" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "isAvailable": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["fullName", "role", "email"]
     },

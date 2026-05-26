@@ -20,7 +20,9 @@ import {
   ShieldCheck,
   Zap,
   Clock,
-  ExternalLink
+  ExternalLink,
+  GraduationCap,
+  Landmark
 } from "lucide-react"
 import { useFirestore, useDoc, useMemoFirebase, useUser } from "@/firebase"
 import { doc } from "firebase/firestore"
@@ -96,25 +98,38 @@ export default function FreelancerProfilePage() {
 
           <div className="flex flex-col md:flex-row gap-12 items-start">
             <div className="relative shrink-0">
-              <Avatar className="w-40 h-40 md:w-56 md:h-56 border-8 border-background shadow-2xl rounded-[3rem]">
+              <Avatar className="w-40 h-40 md:w-56 md:h-56 border-8 border-background shadow-2xl rounded-[3rem] overflow-hidden">
                 <AvatarImage src={profile.avatarUrl || `https://picsum.photos/seed/${userId}/256/256`} />
-                <AvatarFallback className="text-5xl font-bold">{profile.fullName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                <AvatarFallback className="text-5xl font-bold bg-primary/10 text-primary">
+                  {profile.fullName?.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
               </Avatar>
-              <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-green-500 border-8 border-card rounded-full shadow-2xl flex items-center justify-center">
+              <div className={`absolute -bottom-2 -right-2 w-12 h-12 border-8 border-card rounded-full shadow-2xl flex items-center justify-center ${profile.isAvailable !== false ? 'bg-green-500' : 'bg-destructive'}`}>
                  <CheckCircle2 className="h-6 w-6 text-white" />
               </div>
             </div>
             
             <div className="flex-1 space-y-8">
-              <div className="flex flex-wrap items-center justify-between gap-8">
-                <div className="space-y-3">
+              <div className="flex flex-col gap-6">
+                <div className="space-y-4">
                   <div className="flex items-center gap-4 flex-wrap">
                     <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-foreground">{profile.fullName}</h1>
-                    <Badge className="bg-primary/10 text-primary border-none text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-1.5 rounded-full">Pro Expert</Badge>
+                    {profile.isAvailable !== false ? (
+                      <Badge className="bg-green-500/10 text-green-600 border-none font-bold text-[10px] uppercase tracking-widest px-4 py-1.5 rounded-full">Available Now</Badge>
+                    ) : (
+                      <Badge className="bg-destructive/10 text-destructive border-none font-bold text-[10px] uppercase tracking-widest px-4 py-1.5 rounded-full">Busy</Badge>
+                    )}
                   </div>
-                  <p className="text-2xl md:text-3xl text-muted-foreground font-bold tracking-tight">{profile.title}</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-xl md:text-2xl text-muted-foreground font-bold tracking-tight">
+                    <span>{profile.title}</span>
+                    {profile.department && (
+                      <span className="flex items-center gap-2 text-primary/70">
+                        <GraduationCap className="h-6 w-6" /> {profile.department}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex gap-4 w-full md:w-auto">
+                <div className="flex gap-4 w-full md:w-auto pt-4">
                   <Button 
                     variant="outline" 
                     onClick={handleMessage}
@@ -123,7 +138,7 @@ export default function FreelancerProfilePage() {
                     <MessageSquare className="h-6 w-6" /> Message
                   </Button>
                   <Button className="flex-1 md:flex-none h-16 px-14 font-bold text-lg rounded-[1.25rem] shadow-2xl shadow-primary/30 transition-all hover:scale-[1.03] active:scale-[0.98]">
-                    Hire Now
+                    Book Consultation
                   </Button>
                 </div>
               </div>
@@ -140,11 +155,11 @@ export default function FreelancerProfilePage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-primary/10 rounded-2xl">
-                    <MapPin className="h-6 w-6 text-primary" />
+                    <Clock className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-xl font-black">Remote</p>
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Availability</p>
+                    <p className="text-xl font-black">Fast</p>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Response Time</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -153,7 +168,7 @@ export default function FreelancerProfilePage() {
                   </div>
                   <div>
                     <p className="text-xl font-black">Verified</p>
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">ID & Payment</p>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Professional identity</p>
                   </div>
                 </div>
               </div>
@@ -166,18 +181,18 @@ export default function FreelancerProfilePage() {
         <div className="grid lg:grid-cols-3 gap-16">
           <div className="lg:col-span-2 space-y-16">
             <section className="space-y-6">
-              <h2 className="text-3xl font-black tracking-tight">Professional Biography</h2>
+              <h2 className="text-3xl font-black tracking-tight">Expert Biography</h2>
               <Card className="border-none shadow-sm rounded-[2.5rem] overflow-hidden bg-card">
                 <CardContent className="p-10">
                   <p className="text-muted-foreground text-xl leading-relaxed whitespace-pre-line font-medium">
-                    {profile.bio || `Specialized professional with extensive experience in ${profile.title}. Focused on delivering high-impact solutions that combine technical precision with creative problem-solving. Committed to transparency, punctuality, and exceeding client expectations through iterative collaboration.`}
+                    {profile.bio || `Passionate professional dedicated to delivering high-quality solutions. Specialized in ${profile.title}, I bring a structured approach to complex projects, ensuring excellence in every deliverable.`}
                   </p>
                 </CardContent>
               </Card>
             </section>
 
             <section className="space-y-6">
-              <h2 className="text-3xl font-black tracking-tight">Expertise & Specialized Skills</h2>
+              <h2 className="text-3xl font-black tracking-tight">Core Expertise</h2>
               <div className="flex flex-wrap gap-4">
                 {profile.skills?.map((skill: string) => (
                   <div key={skill} className="px-8 py-4 text-base font-bold bg-white border-2 border-muted hover:border-primary transition-all rounded-[1.25rem] shadow-sm flex items-center gap-3 group">
@@ -185,17 +200,17 @@ export default function FreelancerProfilePage() {
                     {skill}
                   </div>
                 ))}
-                {!profile.skills?.length && <p className="text-muted-foreground italic text-lg">Detailed skills list coming soon.</p>}
+                {!profile.skills?.length && <p className="text-muted-foreground italic text-lg font-medium">No specialized skills listed yet.</p>}
               </div>
             </section>
 
             <section className="space-y-8">
               <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-black tracking-tight">Case Studies & Portfolio</h2>
-                <Button variant="ghost" className="text-primary font-bold h-12 px-6 rounded-xl gap-2">Explore All <ExternalLink className="h-4 w-4" /></Button>
+                <h2 className="text-3xl font-black tracking-tight">Work Showcase</h2>
+                <Button variant="ghost" className="text-primary font-bold h-12 px-6 rounded-xl gap-2">Full Portfolio <ExternalLink className="h-4 w-4" /></Button>
               </div>
               <div className="grid sm:grid-cols-2 gap-8">
-                {[1, 2, 3, 4].map(i => (
+                {[1, 2].map(i => (
                   <div key={i} className="group relative overflow-hidden rounded-[2.5rem] bg-card shadow-lg aspect-video cursor-pointer">
                     <Image 
                       src={`https://picsum.photos/seed/portfolio-${i}-${userId}/1200/800`} 
@@ -204,9 +219,8 @@ export default function FreelancerProfilePage() {
                       className="object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-10">
-                      <Badge className="w-fit mb-4 bg-primary text-white border-none font-bold uppercase tracking-widest text-[10px]">Case Study {i}</Badge>
-                      <h4 className="text-2xl font-black text-white leading-tight">Complex Project Implementation & Strategy</h4>
-                      <p className="text-white/70 text-sm mt-2 font-medium">Full-cycle project management for enterprise client.</p>
+                      <Badge className="w-fit mb-4 bg-primary text-white border-none font-bold uppercase tracking-widest text-[10px]">Project Showcase</Badge>
+                      <h4 className="text-2xl font-black text-white leading-tight">Advanced Professional Project</h4>
                     </div>
                   </div>
                 ))}
@@ -218,45 +232,42 @@ export default function FreelancerProfilePage() {
             <Card className="border-none shadow-2xl rounded-[3rem] overflow-hidden sticky top-28 bg-white border border-muted/50">
               <CardHeader className="bg-primary text-primary-foreground p-10">
                 <div className="space-y-2">
-                  <p className="text-sm font-bold uppercase tracking-[0.3em] opacity-70">Professional Rate</p>
-                  <CardTitle className="text-6xl font-black">${profile.hourlyRate || 45}<span className="text-xl font-medium opacity-70"> / hr</span></CardTitle>
+                  <p className="text-sm font-bold uppercase tracking-[0.3em] opacity-70">Service Fees</p>
+                  <CardTitle className="text-4xl font-black flex items-center gap-2">
+                    <Landmark className="h-8 w-8" /> {profile.priceRange || 'Contact for Price'}
+                  </CardTitle>
                 </div>
-                <p className="mt-4 text-primary-foreground/80 font-bold flex items-center gap-2"><Clock className="h-4 w-4" /> Typically replies in 2 hours</p>
+                <p className="mt-4 text-primary-foreground/80 font-bold flex items-center gap-2"><Clock className="h-4 w-4" /> Response in ~1 hour</p>
               </CardHeader>
               <CardContent className="p-10 space-y-10">
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] flex items-center gap-3">
-                      <Briefcase className="h-4 w-4 text-primary" /> Active Contracts
+                      <GraduationCap className="h-4 w-4 text-primary" /> Qualification
                     </span>
-                    <span className="font-black text-lg">3</span>
+                    <span className="font-black text-sm truncate max-w-[120px]">{profile.department || 'Verified'}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] flex items-center gap-3">
-                      <CheckCircle2 className="h-4 w-4 text-primary" /> Lifetime Reviews
+                      <Briefcase className="h-4 w-4 text-primary" /> Total Jobs
                     </span>
-                    <span className="font-black text-lg">{profile.completedJobs || 12}</span>
+                    <span className="font-black text-lg">{profile.completedJobs || 0}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] flex items-center gap-3">
-                      <Star className="h-4 w-4 text-primary" /> Success Rate
+                      <Zap className="h-4 w-4 text-primary" /> Success Rate
                     </span>
                     <span className="font-black text-lg">99%</span>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <Button className="w-full h-16 text-xl font-bold rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">Start Project</Button>
-                  <Button variant="outline" className="w-full h-14 rounded-2xl font-bold border-muted-foreground/20 hover:border-primary transition-all">Download Portfolio (PDF)</Button>
-                </div>
-
-                <div className="pt-8 border-t">
-                  <div className="p-5 bg-muted/20 rounded-2xl flex items-start gap-4">
-                    <ShieldCheck className="h-6 w-6 text-green-500 shrink-0 mt-1" />
-                    <p className="text-xs font-medium text-muted-foreground leading-relaxed">
-                      All projects are protected by <span className="text-foreground font-bold">SkillUp SecurePay</span>. Funds are only released upon your approval of the deliverables.
-                    </p>
-                  </div>
+                  <Button className="w-full h-16 text-xl font-bold rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all" onClick={handleMessage}>
+                    Inquire Now
+                  </Button>
+                  <Button variant="outline" className="w-full h-14 rounded-2xl font-bold border-muted-foreground/20 hover:border-primary transition-all">
+                    Download CV
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -265,24 +276,12 @@ export default function FreelancerProfilePage() {
               <CardHeader className="p-8 pb-0">
                 <CardTitle className="text-lg font-black tracking-tight">Trust Verification</CardTitle>
               </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-end">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Reliability Score</span>
-                    <span className="text-xl font-black text-green-500">100%</span>
-                  </div>
-                  <div className="h-3 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500 w-full rounded-full" />
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-end">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Response Rate</span>
-                    <span className="text-xl font-black text-primary">98%</span>
-                  </div>
-                  <div className="h-3 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-primary w-[98%] rounded-full" />
-                  </div>
+              <CardContent className="p-8 space-y-6">
+                <div className="p-5 bg-muted/20 rounded-2xl flex items-start gap-4 border border-dashed border-muted-foreground/10">
+                  <ShieldCheck className="h-6 w-6 text-green-500 shrink-0 mt-1" />
+                  <p className="text-xs font-medium text-muted-foreground leading-relaxed">
+                    Identity and credentials verified by <span className="text-foreground font-bold text-primary">SkillUp Compliance</span>.
+                  </p>
                 </div>
               </CardContent>
             </Card>

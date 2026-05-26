@@ -12,7 +12,8 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
-import { Camera, X, Plus, Save, Loader2 } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Camera, X, Plus, Save, Loader2, Landmark } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 export default function ProfileManagement() {
@@ -30,6 +31,9 @@ export default function ProfileManagement() {
   const [fullName, setFullName] = useState("")
   const [title, setTitle] = useState("")
   const [bio, setBio] = useState("")
+  const [department, setDepartment] = useState("")
+  const [priceRange, setPriceRange] = useState("")
+  const [isAvailable, setIsAvailable] = useState(true)
   const [skills, setSkills] = useState<string[]>([])
   const [newSkill, setNewSkill] = useState("")
   const [isSaving, setIsSaving] = useState(false)
@@ -39,14 +43,18 @@ export default function ProfileManagement() {
       setFullName(profile.fullName || "")
       setTitle(profile.title || "")
       setBio(profile.bio || "")
+      setDepartment(profile.department || "")
+      setPriceRange(profile.priceRange || "")
+      setIsAvailable(profile.isAvailable !== undefined ? profile.isAvailable : true)
       setSkills(profile.skills || [])
     }
   }, [profile])
 
   const addSkill = (e: React.FormEvent) => {
     e.preventDefault()
-    if (newSkill && !skills.includes(newSkill)) {
-      setSkills([...skills, newSkill])
+    const trimmedSkill = newSkill.trim()
+    if (trimmedSkill && !skills.includes(trimmedSkill)) {
+      setSkills([...skills, trimmedSkill])
       setNewSkill("")
     }
   }
@@ -63,8 +71,11 @@ export default function ProfileManagement() {
       fullName,
       title,
       bio,
+      department,
+      priceRange,
+      isAvailable,
       skills,
-      role: profile?.role || "freelancer"
+      updatedAt: new Date().toISOString()
     };
 
     setDoc(doc(db, "users", user.uid), data, { merge: true })
@@ -75,12 +86,11 @@ export default function ProfileManagement() {
         })
       })
       .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: `users/${user.uid}`,
           operation: 'write',
           requestResourceData: data,
-        });
-        errorEmitter.emit('permission-error', permissionError);
+        }));
       })
       .finally(() => {
         setIsSaving(false)
@@ -99,154 +109,200 @@ export default function ProfileManagement() {
     !!fullName,
     !!title,
     !!bio,
+    !!department,
     skills.length > 0
-  ].filter(Boolean).length * 25
+  ].filter(Boolean).length * 20
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Your Profile</h1>
-        <p className="text-muted-foreground">Manage your public presence and professional details.</p>
+    <div className="space-y-10 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">Professional Profile</h1>
+          <p className="text-muted-foreground text-lg font-medium mt-1">Enhance your visibility and attract top-tier clients.</p>
+        </div>
+        <div className="flex items-center gap-4 bg-card px-6 py-3 rounded-2xl border shadow-sm">
+          <Label htmlFor="availability" className="font-bold text-sm">Active & Available</Label>
+          <Switch 
+            id="availability" 
+            checked={isAvailable} 
+            onCheckedChange={setIsAvailable} 
+          />
+        </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <Card className="border-none shadow-sm">
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>This information will be displayed on your public profile.</CardDescription>
+      <div className="grid lg:grid-cols-3 gap-10">
+        <div className="lg:col-span-2 space-y-10">
+          <Card className="border-none shadow-sm rounded-3xl bg-card overflow-hidden">
+            <CardHeader className="p-8">
+              <CardTitle className="text-2xl">Personal & Academic Info</CardTitle>
+              <CardDescription>How you'll appear to potential clients.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex flex-col md:flex-row gap-8 items-start">
-                <div className="relative group">
-                  <Avatar className="w-32 h-32 border-4 border-background shadow-lg">
-                    <AvatarImage src={user?.photoURL || `https://picsum.photos/seed/${user?.uid}/128/128`} />
-                    <AvatarFallback>{fullName?.substring(0, 2).toUpperCase() || "US"}</AvatarFallback>
+            <CardContent className="p-8 pt-0 space-y-8">
+              <div className="flex flex-col md:flex-row gap-10 items-start">
+                <div className="relative group shrink-0">
+                  <Avatar className="w-32 h-32 md:w-40 md:h-40 border-4 border-muted shadow-2xl rounded-3xl overflow-hidden">
+                    <AvatarImage src={user?.photoURL || `https://picsum.photos/seed/${user?.uid}/256/256`} />
+                    <AvatarFallback className="text-4xl font-bold bg-primary/10 text-primary">
+                      {fullName?.substring(0, 2).toUpperCase() || "US"}
+                    </AvatarFallback>
                   </Avatar>
-                  <button className="absolute bottom-0 right-0 p-2 bg-primary text-primary-foreground rounded-full shadow-lg hover:scale-110 transition-transform">
-                    <Camera className="h-4 w-4" />
+                  <button className="absolute -bottom-2 -right-2 p-3 bg-primary text-primary-foreground rounded-2xl shadow-xl hover:scale-110 transition-transform">
+                    <Camera className="h-5 w-5" />
                   </button>
                 </div>
-                <div className="flex-1 space-y-4 w-full">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="fullName">Full Name</Label>
+                <div className="flex-1 space-y-6 w-full">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid gap-2.5">
+                      <Label htmlFor="fullName" className="font-bold">Full Name</Label>
                       <Input 
                         id="fullName" 
+                        className="h-12 rounded-xl"
                         value={fullName} 
                         onChange={(e) => setFullName(e.target.value)} 
                       />
                     </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="title">Professional Title</Label>
+                    <div className="grid gap-2.5">
+                      <Label htmlFor="title" className="font-bold">Professional Headline</Label>
                       <Input 
                         id="title" 
+                        className="h-12 rounded-xl"
                         value={title} 
                         onChange={(e) => setTitle(e.target.value)}
-                        placeholder="e.g. Senior Full Stack Engineer"
+                        placeholder="e.g. Lead Brand Designer"
                       />
                     </div>
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="bio">Bio</Label>
-                    <Textarea 
-                      id="bio" 
-                      rows={5} 
-                      value={bio}
-                      onChange={(e) => setBio(e.target.value)}
-                      placeholder="Tell clients about your expertise..."
-                    />
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid gap-2.5">
+                      <Label htmlFor="department" className="font-bold">Department / Course of Study</Label>
+                      <div className="relative">
+                        <Input 
+                          id="department" 
+                          className="h-12 rounded-xl"
+                          value={department} 
+                          onChange={(e) => setDepartment(e.target.value)}
+                          placeholder="e.g. Computer Science"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-2.5">
+                      <Label htmlFor="priceRange" className="font-bold text-primary flex items-center gap-2">
+                        <Landmark className="h-4 w-4" /> Price Range (₦)
+                      </Label>
+                      <Input 
+                        id="priceRange" 
+                        className="h-12 rounded-xl font-bold"
+                        value={priceRange} 
+                        onChange={(e) => setPriceRange(e.target.value)}
+                        placeholder="e.g. ₦500 - ₦5,000"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
+              <div className="grid gap-2.5">
+                <Label htmlFor="bio" className="font-bold">Professional Bio</Label>
+                <Textarea 
+                  id="bio" 
+                  rows={6} 
+                  className="rounded-2xl resize-none p-4"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Detail your experience, tools, and what makes your service unique..."
+                />
+              </div>
             </CardContent>
-            <CardFooter className="border-t pt-6">
-              <Button className="ml-auto gap-2" onClick={handleSave} disabled={isSaving}>
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                Save Changes
+            <CardFooter className="p-8 border-t bg-muted/20">
+              <Button className="ml-auto h-12 px-10 rounded-xl font-bold gap-2 shadow-xl shadow-primary/20" onClick={handleSave} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                Save Professional Profile
               </Button>
             </CardFooter>
           </Card>
 
-          <Card className="border-none shadow-sm">
-            <CardHeader>
-              <CardTitle>Skills & Expertise</CardTitle>
-              <CardDescription>Add the skills you want to be discovered for.</CardDescription>
+          <Card className="border-none shadow-sm rounded-3xl bg-card overflow-hidden">
+            <CardHeader className="p-8">
+              <CardTitle className="text-2xl">Skills & Specialized Tools</CardTitle>
+              <CardDescription>Add the tags you want to be discovered for.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex flex-wrap gap-2">
+            <CardContent className="p-8 pt-0 space-y-8">
+              <div className="flex flex-wrap gap-3">
                 {skills.map((skill) => (
-                  <Badge key={skill} variant="secondary" className="px-3 py-1 flex items-center gap-1 group">
+                  <Badge key={skill} variant="secondary" className="px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 group transition-all hover:bg-destructive/10 hover:text-destructive">
                     {skill}
-                    <button onClick={() => removeSkill(skill)} className="hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
-                      <X className="h-3 w-3" />
+                    <button onClick={() => removeSkill(skill)} className="opacity-40 group-hover:opacity-100">
+                      <X className="h-3.5 w-3.5" />
                     </button>
                   </Badge>
                 ))}
-                {skills.length === 0 && <p className="text-sm text-muted-foreground italic">No skills added yet.</p>}
+                {skills.length === 0 && <p className="text-sm text-muted-foreground italic font-medium">No skills showcased yet.</p>}
               </div>
-              <form onSubmit={addSkill} className="flex gap-2">
+              <form onSubmit={addSkill} className="flex gap-4">
                 <Input 
-                  placeholder="e.g. Python, Figma, Marketing" 
+                  placeholder="Press Enter to add e.g. React, Carpentry, Python..." 
+                  className="h-12 rounded-xl flex-1"
                   value={newSkill}
                   onChange={(e) => setNewSkill(e.target.value)}
                 />
-                <Button type="submit" variant="outline" size="icon">
-                  <Plus className="h-4 w-4" />
+                <Button type="submit" variant="outline" size="icon" className="h-12 w-12 rounded-xl border-muted-foreground/20">
+                  <Plus className="h-6 w-6" />
                 </Button>
               </form>
             </CardContent>
           </Card>
         </div>
 
-        <div className="space-y-8">
-          <Card className="border-none shadow-sm overflow-hidden">
-            <CardHeader className="bg-primary text-primary-foreground">
-              <CardTitle className="text-lg">Profile Strength</CardTitle>
-              <CardDescription className="text-primary-foreground/70">Complete your profile to get more jobs.</CardDescription>
+        <div className="space-y-10">
+          <Card className="border-none shadow-2xl rounded-3xl bg-primary text-primary-foreground overflow-hidden">
+            <CardHeader className="p-8 pb-4">
+              <CardTitle className="text-xl">Profile Strength</CardTitle>
+              <CardDescription className="text-primary-foreground/70 font-medium">Complete these milestones to boost search ranking.</CardDescription>
             </CardHeader>
-            <CardContent className="pt-6 space-y-4">
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-bold">
-                  <span>{profileStrength}% Complete</span>
+            <CardContent className="p-8 pt-0 space-y-6">
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-black uppercase tracking-widest">
+                  <span>Progress</span>
+                  <span>{profileStrength}%</span>
                 </div>
-                <Progress value={profileStrength} className="h-2" />
+                <Progress value={profileStrength} className="h-2.5 bg-white/20" />
               </div>
-              <ul className="space-y-3">
-                <li className={`flex items-center gap-2 text-sm font-medium ${fullName ? 'text-green-500' : 'text-muted-foreground'}`}>
-                  {fullName ? <Save className="h-3 w-3" /> : <Plus className="h-3 w-3" />} Name added
-                </li>
-                <li className={`flex items-center gap-2 text-sm font-medium ${title ? 'text-green-500' : 'text-muted-foreground'}`}>
-                  {title ? <Save className="h-3 w-3" /> : <Plus className="h-3 w-3" />} Title added
-                </li>
-                <li className={`flex items-center gap-2 text-sm font-medium ${bio ? 'text-green-500' : 'text-muted-foreground'}`}>
-                  {bio ? <Save className="h-3 w-3" /> : <Plus className="h-3 w-3" />} Bio added
-                </li>
-                <li className={`flex items-center gap-2 text-sm font-medium ${skills.length > 0 ? 'text-green-500' : 'text-muted-foreground'}`}>
-                  {skills.length > 0 ? <Save className="h-3 w-3" /> : <Plus className="h-3 w-3" />} Skills listed
-                </li>
+              <ul className="space-y-4">
+                {[
+                  { check: !!fullName, label: "Identity Verified" },
+                  { check: !!title, label: "Headline Optimized" },
+                  { check: !!bio, label: "Bio Completed" },
+                  { check: !!department, label: "Academic Info Added" },
+                  { check: skills.length > 0, label: "Skills Showcased" }
+                ].map((item, i) => (
+                  <li key={i} className={`flex items-center gap-3 text-sm font-bold ${item.check ? 'text-white' : 'text-white/40'}`}>
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center border-2 ${item.check ? 'bg-white border-white' : 'border-white/20'}`}>
+                      {item.check && <Save className="h-3 w-3 text-primary" />}
+                    </div>
+                    {item.label}
+                  </li>
+                ))}
               </ul>
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg">Preferences</CardTitle>
+          <Card className="border-none shadow-sm rounded-3xl bg-card">
+            <CardHeader className="p-8">
+              <CardTitle className="text-lg">Visibility Settings</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
+            <CardContent className="p-8 pt-0 space-y-6">
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30">
                 <div className="space-y-0.5">
-                  <p className="text-sm font-medium">Available for work</p>
-                  <p className="text-xs text-muted-foreground">Allow clients to message you.</p>
+                  <p className="text-sm font-bold">Public Discoverability</p>
+                  <p className="text-xs text-muted-foreground font-medium">Show in search results.</p>
                 </div>
-                <input type="checkbox" defaultChecked className="toggle" />
+                <Switch defaultChecked />
               </div>
-              <div className="flex items-center justify-between border-t pt-4">
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30">
                 <div className="space-y-0.5">
-                  <p className="text-sm font-medium">Public profile</p>
-                  <p className="text-xs text-muted-foreground">Show your profile in search results.</p>
+                  <p className="text-sm font-bold">Direct Messaging</p>
+                  <p className="text-xs text-muted-foreground font-medium">Allow unassigned clients to text you.</p>
                 </div>
-                <input type="checkbox" defaultChecked className="toggle" />
+                <Switch defaultChecked />
               </div>
             </CardContent>
           </Card>

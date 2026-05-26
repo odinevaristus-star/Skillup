@@ -16,8 +16,8 @@ import {
   FileText,
   UserCheck,
   CheckCircle2,
-  Trash2,
-  MoreHorizontal
+  MapPin,
+  Landmark
 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
@@ -96,35 +96,35 @@ export default function MyJobsPage() {
   const isFreelancer = profile?.role === 'freelancer'
 
   return (
-    <div className="space-y-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight">Project Management</h1>
-          <p className="text-muted-foreground text-lg mt-1 font-medium">Track your active contracts, postings, and proposals.</p>
+    <div className="space-y-12 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+        <div className="space-y-2">
+          <h1 className="text-4xl md:text-5xl font-black tracking-tighter">My Projects</h1>
+          <p className="text-muted-foreground text-lg font-medium">Track your active contracts, postings, and pending proposals.</p>
         </div>
         {!isFreelancer && (
           <Link href="/dashboard/jobs/post">
-            <Button className="font-bold rounded-2xl h-12 px-8 gap-2 shadow-xl shadow-primary/20">
-              <PlusCircle className="h-5 w-5" /> Post New Project
+            <Button className="font-black text-sm uppercase tracking-widest rounded-2xl h-16 px-10 gap-3 shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+              <PlusCircle className="h-6 w-6" /> Post New Gig
             </Button>
           </Link>
         )}
       </div>
 
       <Tabs defaultValue={isFreelancer ? "applications" : "postings"} className="w-full">
-        <div className="flex items-center justify-between mb-8 overflow-x-auto">
+        <div className="flex items-center justify-between mb-10 overflow-x-auto pb-2">
           <TabsList className="bg-muted/50 p-1.5 rounded-2xl h-auto">
-            <TabsTrigger value="postings" className="rounded-xl px-6 py-2.5 font-bold data-[state=active]:shadow-lg">Client Postings</TabsTrigger>
-            <TabsTrigger value="applications" className="rounded-xl px-6 py-2.5 font-bold data-[state=active]:shadow-lg">Freelancer Proposals</TabsTrigger>
-            <TabsTrigger value="contracts" className="rounded-xl px-6 py-2.5 font-bold data-[state=active]:shadow-lg">Active Contracts</TabsTrigger>
+            <TabsTrigger value="postings" className="rounded-xl px-8 py-3.5 font-black text-xs uppercase tracking-widest data-[state=active]:shadow-xl transition-all">My Postings</TabsTrigger>
+            <TabsTrigger value="applications" className="rounded-xl px-8 py-3.5 font-black text-xs uppercase tracking-widest data-[state=active]:shadow-xl transition-all">My Proposals</TabsTrigger>
+            <TabsTrigger value="contracts" className="rounded-xl px-8 py-3.5 font-black text-xs uppercase tracking-widest data-[state=active]:shadow-xl transition-all">Active Work</TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="postings" className="space-y-6 animate-in fade-in duration-500">
+        <TabsContent value="postings" className="space-y-8">
           {postedLoading ? (
-            <div className="flex justify-center py-24"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" /></div>
+            <div className="flex justify-center py-32"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-10" /></div>
           ) : postedJobs?.length ? (
-            <div className="grid gap-6">
+            <div className="grid gap-8">
               {postedJobs.map((job: any) => (
                 <JobManagementCard key={job.id} job={job} onUpdateStatus={handleUpdateJobStatus} />
               ))}
@@ -140,11 +140,11 @@ export default function MyJobsPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="applications" className="space-y-6 animate-in fade-in duration-500">
+        <TabsContent value="applications" className="space-y-8">
           {appsLoading ? (
-            <div className="flex justify-center py-24"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" /></div>
+            <div className="flex justify-center py-32"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-10" /></div>
           ) : applications?.length ? (
-            <div className="grid gap-6">
+            <div className="grid gap-8">
               {applications.map((app: any) => (
                 <ApplicationTrackCard key={app.id} application={app} />
               ))}
@@ -153,20 +153,20 @@ export default function MyJobsPage() {
             <EmptyState 
               icon={FileText} 
               title="No active proposals" 
-              description="Start earning by finding the right project for your unique skills." 
+              description="Start earning by finding the right project for your unique skills on campus." 
               actionUrl="/jobs" 
-              actionText="Browse Open Jobs" 
+              actionText="Browse Job Board" 
             />
           )}
         </TabsContent>
 
-        <TabsContent value="contracts" className="space-y-6 animate-in fade-in duration-500">
-          <div className="text-center py-32 bg-card rounded-[2.5rem] border-2 border-dashed border-muted shadow-inner">
-            <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <UserCheck className="h-10 w-10 text-muted-foreground opacity-20" />
+        <TabsContent value="contracts" className="space-y-8">
+          <div className="text-center py-40 bg-card rounded-[3rem] border-2 border-dashed border-muted shadow-inner">
+            <div className="w-24 h-24 bg-muted/50 rounded-3xl flex items-center justify-center mx-auto mb-8">
+              <UserCheck className="h-12 w-12 text-muted-foreground opacity-20" />
             </div>
-            <h3 className="text-2xl font-bold">Manage Contracts</h3>
-            <p className="text-muted-foreground mt-2 max-w-sm mx-auto">Active agreements will appear here once a hiring decision is finalized.</p>
+            <h3 className="text-3xl font-black tracking-tight mb-4">Active Contracts</h3>
+            <p className="text-muted-foreground mt-2 max-w-sm mx-auto font-medium text-lg leading-relaxed">Agreed project milestones and active timers will appear here once hiring is finalized.</p>
           </div>
         </TabsContent>
       </Tabs>
@@ -176,56 +176,59 @@ export default function MyJobsPage() {
 
 function JobManagementCard({ job, onUpdateStatus }: { job: any, onUpdateStatus: (job: any, s: string) => void }) {
   const statusConfig: any = {
-    'open': { color: 'bg-green-500/10 text-green-700 border-green-200', label: 'Finding Talent' },
-    'in-progress': { color: 'bg-blue-500/10 text-blue-700 border-blue-200', label: 'Active Work' },
-    'completed': { color: 'bg-slate-500/10 text-slate-700 border-slate-200', label: 'Archived' },
-    'cancelled': { color: 'bg-red-500/10 text-red-700 border-red-200', label: 'Cancelled' }
+    'open': { color: 'bg-green-500/10 text-green-700', label: 'Seeking Talent' },
+    'in-progress': { color: 'bg-blue-500/10 text-blue-700', label: 'In Progress' },
+    'completed': { color: 'bg-slate-500/10 text-slate-700', label: 'Finished' },
+    'cancelled': { color: 'bg-red-500/10 text-red-700', label: 'Cancelled' }
   }
 
   const current = statusConfig[job.status] || { color: 'bg-muted', label: job.status }
 
   return (
-    <Card className="border-none shadow-sm overflow-hidden group hover:shadow-md transition-all rounded-3xl bg-card">
+    <Card className="border-none shadow-sm overflow-hidden group hover:shadow-xl transition-all duration-500 rounded-[2.5rem] bg-card border border-muted/30">
       <CardContent className="p-0">
-        <div className="p-8">
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-8">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Badge className={cn("capitalize px-4 py-1 border-none font-bold text-[10px] tracking-widest", current.color)}>
+        <div className="p-10">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-10">
+            <div className="space-y-6 flex-1">
+              <div className="flex items-center gap-4">
+                <Badge className={cn("px-5 py-2 border-none font-black text-[10px] uppercase tracking-widest rounded-full", current.color)}>
                   {current.label}
                 </Badge>
-                <span className="text-xs text-muted-foreground flex items-center gap-1.5 font-medium">
-                  <Clock className="h-3.5 w-3.5" /> Published {job.createdAt ? new Date(job.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <Clock className="h-4 w-4" /> Posted {job.createdAt ? new Date(job.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <MapPin className="h-4 w-4" /> {job.location || 'Remote'}
                 </span>
               </div>
-              <div>
-                <h3 className="text-2xl font-bold group-hover:text-primary transition-colors leading-tight">{job.title}</h3>
-                <p className="text-sm text-muted-foreground line-clamp-2 mt-2 leading-relaxed max-w-2xl">{job.description}</p>
+              <div className="space-y-2">
+                <h3 className="text-3xl font-black group-hover:text-primary transition-colors tracking-tighter leading-tight">{job.title}</h3>
+                <p className="text-muted-foreground font-medium line-clamp-2 leading-relaxed max-w-2xl">{job.description}</p>
               </div>
             </div>
             <div className="md:text-right shrink-0">
-              <p className="text-3xl font-bold text-primary">${job.budget}</p>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Fixed Budget</p>
+              <p className="text-4xl font-black text-primary flex items-center gap-1 md:justify-end">
+                <span className="text-2xl font-bold opacity-50">₦</span>{job.budget?.toLocaleString() || '0'}
+              </p>
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">Project Budget</p>
             </div>
           </div>
         </div>
-        <div className="px-8 py-5 bg-muted/20 border-t flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
-            <Link href={`/jobs/${job.id}`}>
-              <Button variant="ghost" size="sm" className="font-bold text-primary gap-2 hover:bg-primary/5 rounded-xl">
-                View Listing <ArrowUpRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-          <div className="flex gap-3">
+        <div className="px-10 py-8 bg-muted/20 border-t flex flex-wrap items-center justify-between gap-6">
+          <Link href={`/jobs/${job.id}`}>
+            <Button variant="ghost" className="font-black text-xs uppercase tracking-widest text-primary gap-3 hover:bg-primary/5 rounded-xl h-12">
+              Review Listing <ArrowUpRight className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div className="flex gap-4">
             {job.status === 'in-progress' && (
-              <Button variant="outline" size="sm" className="font-bold border-muted-foreground/20 rounded-xl px-6" onClick={() => onUpdateStatus(job, 'completed')}>
-                Finish Project
+              <Button variant="outline" className="font-black text-xs uppercase tracking-widest border-muted-foreground/20 rounded-xl px-8 h-12 hover:bg-primary/5" onClick={() => onUpdateStatus(job, 'completed')}>
+                Complete Milestone
               </Button>
             )}
             {job.status === 'open' && (
               <Link href={`/dashboard/jobs/manage/${job.id}`}>
-                <Button size="sm" className="font-bold rounded-xl px-8 h-10 shadow-lg shadow-primary/10">Manage Proposals</Button>
+                <Button className="font-black text-xs uppercase tracking-widest rounded-xl px-10 h-12 shadow-xl shadow-primary/20">Manage Proposals</Button>
               </Link>
             )}
           </div>
@@ -243,29 +246,31 @@ function ApplicationTrackCard({ application }: { application: any }) {
   }
 
   return (
-    <Card className="border-none shadow-sm group hover:shadow-md transition-all rounded-3xl bg-card">
-      <CardContent className="p-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-10">
-          <div className="space-y-4 flex-1">
-            <div className="flex items-center gap-3">
-              <Badge className={cn("border-none text-[10px] font-bold px-3 py-1 capitalize", statusColors[application.status])}>
+    <Card className="border-none shadow-sm group hover:shadow-xl transition-all duration-500 rounded-[2.5rem] bg-card border border-muted/30">
+      <CardContent className="p-10">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-12">
+          <div className="space-y-6 flex-1">
+            <div className="flex items-center gap-4">
+              <Badge className={cn("border-none text-[10px] font-black uppercase tracking-widest px-5 py-2 rounded-full", statusColors[application.status])}>
                 {application.status}
               </Badge>
-              <span className="text-xs text-muted-foreground font-medium">Applied {application.createdAt ? new Date(application.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Applied {application.createdAt ? new Date(application.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
             </div>
-            <div>
-              <h3 className="text-xl font-bold leading-tight">Proposal for: {application.jobTitle}</h3>
-              <p className="text-sm text-muted-foreground mt-2 line-clamp-1 italic italic">"{application.coverLetter}"</p>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black leading-tight tracking-tight">Proposal for: {application.jobTitle}</h3>
+              <p className="text-muted-foreground font-medium italic line-clamp-2 leading-relaxed">"{application.coverLetter}"</p>
             </div>
           </div>
-          <div className="flex items-center gap-10 shrink-0">
+          <div className="flex items-center gap-12 shrink-0">
             <div className="text-right">
-              <p className="text-3xl font-bold text-primary">${application.bidAmount}</p>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Your Bid</p>
+              <p className="text-4xl font-black text-primary flex items-center gap-1 md:justify-end">
+                <span className="text-2xl font-bold opacity-50">₦</span>{application.bidAmount?.toLocaleString() || '0'}
+              </p>
+              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1">Your Proposed Bid</p>
             </div>
             <Link href={`/jobs/${application.jobId}`}>
-              <Button variant="outline" size="icon" className="rounded-2xl h-14 w-14 border-muted hover:bg-primary/5 hover:text-primary transition-all">
-                <ArrowUpRight className="h-6 w-6" />
+              <Button variant="outline" size="icon" className="rounded-2xl h-16 w-16 border-muted-foreground/20 hover:border-primary hover:text-primary transition-all">
+                <ArrowUpRight className="h-7 w-7" />
               </Button>
             </Link>
           </div>
@@ -277,14 +282,14 @@ function ApplicationTrackCard({ application }: { application: any }) {
 
 function EmptyState({ icon: Icon, title, description, actionUrl, actionText }: any) {
   return (
-    <div className="text-center py-40 bg-card rounded-[3rem] border-2 border-dashed border-muted shadow-inner">
-      <div className="w-24 h-24 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-8">
-        <Icon className="h-10 w-10 text-muted-foreground opacity-20" />
+    <div className="text-center py-48 bg-card rounded-[4rem] border-2 border-dashed border-muted shadow-inner px-8">
+      <div className="w-28 h-28 bg-muted/50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 transition-transform hover:scale-105 duration-500">
+        <Icon className="h-12 w-12 text-muted-foreground opacity-20" />
       </div>
-      <h3 className="text-3xl font-bold mb-3">{title}</h3>
-      <p className="text-muted-foreground max-w-md mx-auto leading-relaxed text-lg">{description}</p>
+      <h3 className="text-4xl font-black tracking-tight mb-4">{title}</h3>
+      <p className="text-muted-foreground max-w-md mx-auto leading-relaxed text-lg font-medium mb-12">{description}</p>
       <Link href={actionUrl}>
-        <Button className="mt-10 rounded-2xl px-12 h-14 font-bold text-lg shadow-2xl shadow-primary/20">
+        <Button className="rounded-2xl px-14 h-16 font-black text-sm uppercase tracking-widest shadow-2xl shadow-primary/30 transition-all hover:scale-[1.03] active:scale-[0.98]">
           {actionText}
         </Button>
       </Link>

@@ -12,18 +12,21 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { 
   Calendar, 
-  DollarSign, 
   MapPin, 
   Briefcase, 
   Clock, 
   User, 
   CheckCircle2,
   Loader2,
-  ChevronLeft
+  ChevronLeft,
+  Landmark,
+  ShieldCheck,
+  Zap
 } from "lucide-react"
 import { useUser, useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase"
 import { doc, collection, addDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
+import { formatDistanceToNow } from "date-fns"
 
 export default function JobDetailPage() {
   const { jobId } = useParams()
@@ -91,57 +94,70 @@ export default function JobDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      <div className="flex h-screen items-center justify-center bg-muted/20">
+        <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
       </div>
     )
   }
 
   if (!job) {
     return (
-      <div className="text-center py-20">
-        <h2 className="text-2xl font-bold">Job not found</h2>
-        <Button onClick={() => router.push("/jobs")} className="mt-4">Back to Search</Button>
+      <div className="min-h-screen bg-muted/20 flex flex-col items-center justify-center p-4">
+        <Card className="max-w-md w-full text-center p-12 border-none shadow-2xl rounded-[3rem]">
+          <Briefcase className="h-16 w-16 text-muted-foreground opacity-10 mx-auto mb-8" />
+          <h2 className="text-3xl font-bold mb-4">Job not found</h2>
+          <Button onClick={() => router.push("/jobs")} className="w-full h-14 rounded-2xl font-bold text-lg">Back to Job Board</Button>
+        </Card>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-muted/20">
+    <div className="min-h-screen bg-muted/20 flex flex-col">
       <Navbar />
-      <div className="container mx-auto px-4 py-12">
-        <Button variant="ghost" onClick={() => router.back()} className="mb-8 gap-2">
-          <ChevronLeft className="h-4 w-4" /> Back to Search
+      <div className="container mx-auto px-4 py-16 flex-1 max-w-6xl">
+        <Button variant="ghost" onClick={() => router.back()} className="mb-10 gap-2 text-primary font-bold rounded-xl hover:bg-primary/5">
+          <ChevronLeft className="h-5 w-5" /> Back to Search
         </Button>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
-            <Card className="border-none shadow-sm overflow-hidden">
-              <CardHeader className="bg-card">
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <Badge variant="secondary" className="bg-primary/5 text-primary border-none">{job.category}</Badge>
-                  <Badge variant="outline" className="border-primary/20 text-primary">Open</Badge>
+        <div className="grid lg:grid-cols-3 gap-12">
+          <div className="lg:col-span-2 space-y-12">
+            <Card className="border-none shadow-sm overflow-hidden rounded-[2.5rem] bg-card">
+              <CardHeader className="p-10 border-b">
+                <div className="flex flex-wrap gap-3 mb-6">
+                  <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full">
+                    {job.category}
+                  </Badge>
+                  <Badge variant="outline" className="border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full">Active Listing</Badge>
                 </div>
-                <CardTitle className="text-3xl font-bold">{job.title}</CardTitle>
-                <div className="flex flex-wrap items-center gap-6 mt-4 text-muted-foreground text-sm">
-                  <span className="flex items-center gap-1.5"><Calendar className="h-4 w-4" /> Posted {new Date().toLocaleDateString()}</span>
-                  <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" /> Remote</span>
-                  <span className="flex items-center gap-1.5"><DollarSign className="h-4 w-4" /> ${job.budget} Fixed Budget</span>
+                <CardTitle className="text-4xl md:text-5xl font-black tracking-tighter leading-tight">{job.title}</CardTitle>
+                <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mt-8 text-muted-foreground text-sm font-bold uppercase tracking-widest">
+                  <span className="flex items-center gap-2"><Calendar className="h-4 w-4 text-primary" /> {job.createdAt ? formatDistanceToNow(new Date(job.createdAt.seconds * 1000), { addSuffix: true }) : 'Recent'}</span>
+                  <span className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /> {job.location || 'Remote'}</span>
+                  <span className="flex items-center gap-2 text-primary"><Landmark className="h-4 w-4" /> ₦{job.budget.toLocaleString()}</span>
                 </div>
               </CardHeader>
-              <CardContent className="pt-6 space-y-8">
+              <CardContent className="p-10 space-y-10">
                 <div>
-                  <h3 className="text-lg font-bold mb-4">Job Description</h3>
-                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{job.description}</p>
+                  <h3 className="text-xl font-black mb-6 flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">01</span>
+                    Description
+                  </h3>
+                  <p className="text-muted-foreground text-lg leading-relaxed whitespace-pre-line font-medium">{job.description}</p>
                 </div>
                 
-                <div className="pt-8 border-t">
-                  <h3 className="text-lg font-bold mb-4">Skills Required</h3>
-                  <div className="flex flex-wrap gap-2">
+                <div className="pt-10 border-t">
+                  <h3 className="text-xl font-black mb-6 flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">02</span>
+                    Requirements
+                  </h3>
+                  <div className="flex flex-wrap gap-3">
                     {job.skillsRequired?.length ? job.skillsRequired.map((s: string) => (
-                      <Badge key={s} variant="secondary">{s}</Badge>
+                      <Badge key={s} variant="secondary" className="px-5 py-2.5 text-xs font-bold rounded-xl">{s}</Badge>
                     )) : (
-                      <span className="text-sm text-muted-foreground">Open to all qualified freelancers</span>
+                      <span className="text-base text-muted-foreground font-medium flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-primary" /> Open to all qualified professionals
+                      </span>
                     )}
                   </div>
                 </div>
@@ -149,63 +165,63 @@ export default function JobDetailPage() {
             </Card>
           </div>
 
-          <div className="space-y-6">
-            <Card className="border-none shadow-xl bg-primary text-primary-foreground">
-              <CardHeader>
-                <CardTitle className="text-xl">Apply Now</CardTitle>
-                <CardDescription className="text-primary-foreground/70">
-                  Submit your proposal to start working on this project.
+          <aside className="space-y-8">
+            <Card className="border-none shadow-2xl bg-primary text-primary-foreground rounded-[2.5rem] overflow-hidden sticky top-28">
+              <CardHeader className="p-10 pb-4">
+                <CardTitle className="text-2xl font-black">Join Project</CardTitle>
+                <CardDescription className="text-primary-foreground/70 font-medium text-base">
+                  Submit your professional proposal to begin this collaboration.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-10 pt-6">
                 {!showApplyForm ? (
                   <Button 
-                    className="w-full bg-white text-primary hover:bg-white/90 h-12 text-lg font-bold"
+                    className="w-full bg-white text-primary hover:bg-white/90 h-16 text-xl font-black rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
                     onClick={() => setShowApplyForm(true)}
                   >
-                    Send Proposal
+                    Quick Apply
                   </Button>
                 ) : (
-                  <form onSubmit={handleApply} className="space-y-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="bid" className="text-white">Your Bid (USD)</Label>
+                  <form onSubmit={handleApply} className="space-y-6">
+                    <div className="grid gap-3">
+                      <Label htmlFor="bid" className="text-white font-bold text-sm uppercase tracking-widest">Your Bid (₦)</Label>
                       <Input 
                         id="bid" 
                         type="number" 
                         placeholder={job.budget.toString()} 
-                        className="bg-primary-foreground/10 border-white/20 text-white placeholder:text-white/40"
+                        className="bg-primary-foreground/10 border-white/20 text-white placeholder:text-white/40 h-14 rounded-xl px-6 font-bold text-lg"
                         required
                         value={bidAmount}
                         onChange={(e) => setBidAmount(e.target.value)}
                       />
                     </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="letter" className="text-white">Cover Letter</Label>
+                    <div className="grid gap-3">
+                      <Label htmlFor="letter" className="text-white font-bold text-sm uppercase tracking-widest">Cover Letter</Label>
                       <Textarea 
                         id="letter" 
-                        placeholder="Explain why you're a good fit..." 
-                        className="bg-primary-foreground/10 border-white/20 text-white placeholder:text-white/40"
+                        placeholder="Detail your relevant experience..." 
+                        className="bg-primary-foreground/10 border-white/20 text-white placeholder:text-white/40 rounded-xl p-6 resize-none"
                         rows={5}
                         required
                         value={coverLetter}
                         onChange={(e) => setCoverLetter(e.target.value)}
                       />
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-3">
+                      <Button 
+                        type="submit" 
+                        className="w-full bg-white text-primary hover:bg-white/90 h-16 text-lg font-black rounded-2xl shadow-xl"
+                        disabled={isApplying}
+                      >
+                        {isApplying ? <Loader2 className="h-6 w-6 animate-spin" /> : "Submit Proposal"}
+                      </Button>
                       <Button 
                         type="button" 
                         variant="ghost" 
-                        className="flex-1 text-white hover:bg-white/10"
+                        className="w-full text-white hover:bg-white/10 h-12 font-bold"
                         onClick={() => setShowApplyForm(false)}
                       >
                         Cancel
-                      </Button>
-                      <Button 
-                        type="submit" 
-                        className="flex-1 bg-white text-primary hover:bg-white/90"
-                        disabled={isApplying}
-                      >
-                        {isApplying ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit"}
                       </Button>
                     </div>
                   </form>
@@ -213,35 +229,35 @@ export default function JobDetailPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg">About the Client</CardTitle>
+            <Card className="border-none shadow-sm rounded-[2.5rem] bg-card overflow-hidden">
+              <CardHeader className="p-10 pb-4">
+                <CardTitle className="text-xl font-black">About Client</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                    <User className="h-5 w-5 text-muted-foreground" />
+              <CardContent className="p-10 pt-4 space-y-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center border-2 border-background shadow-sm">
+                    <User className="h-7 w-7 text-muted-foreground/40" />
                   </div>
                   <div>
-                    <p className="font-bold">{job.clientName}</p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3 text-green-500" /> Verified Payment
+                    <p className="font-black text-lg">{job.clientName}</p>
+                    <p className="text-[10px] text-green-500 font-black uppercase tracking-widest flex items-center gap-1.5">
+                      <ShieldCheck className="h-3.5 w-3.5" /> Verified Account
                     </p>
                   </div>
                 </div>
-                <div className="pt-4 border-t text-sm space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Joined</span>
-                    <span>Recent</span>
+                <div className="pt-6 border-t space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px]">Client Rank</span>
+                    <span className="font-black text-sm">Top 5%</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Location</span>
-                    <span>Global</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px]">Payment Score</span>
+                    <span className="font-black text-sm">100% Secure</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </div>
+          </aside>
         </div>
       </div>
     </div>

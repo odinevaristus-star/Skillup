@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Send, Briefcase, Landmark, MapPin } from "lucide-react"
-import { useRouter } from "next/navigation"
 
 const CATEGORIES = {
   "Digital": ["Programming", "Graphic Design", "Video Editing", "Writing", "Web Development", "Mobile Apps", "Data Science", "Digital Marketing"],
@@ -24,7 +23,6 @@ export default function PostJobPage() {
   const { user } = useUser()
   const db = useFirestore()
   const { toast } = useToast()
-  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
   const [formData, setFormData] = useState({
@@ -54,20 +52,22 @@ export default function PostJobPage() {
 
     addDoc(collection(db, "jobs"), jobData)
       .then(() => {
-        toast({
-          title: "Project Published!",
-          description: "Your job post is now live. Freelancers will be notified shortly."
-        })
-        router.push("/dashboard/jobs")
+        // FORCE REDIRECT immediately using window.location
+        window.location.href = "/dashboard/jobs"
       })
       .catch(async (error) => {
+        setIsLoading(false)
         errorEmitter.emit("permission-error", new FirestorePermissionError({
           path: "jobs",
           operation: "create",
           requestResourceData: jobData
         }))
+        toast({
+          variant: "destructive",
+          title: "Submission failed",
+          description: "We couldn't post your project. Please check your permissions."
+        })
       })
-      .finally(() => setIsLoading(false))
   }
 
   return (

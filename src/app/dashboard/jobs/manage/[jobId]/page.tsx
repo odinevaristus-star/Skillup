@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 import { cn } from "@/lib/utils"
+import { useState } from "react"
 
 export default function ManageJobApplicantsPage() {
   const { jobId } = useParams()
@@ -20,6 +21,7 @@ export default function ManageJobApplicantsPage() {
   const { user } = useUser()
   const db = useFirestore()
   const { toast } = useToast()
+  const [isHiring, setIsHiring] = useState(false)
 
   const jobRef = useMemoFirebase(() => {
     if (!db || !jobId) return null
@@ -41,6 +43,7 @@ export default function ManageJobApplicantsPage() {
   const handleHire = async (app: any) => {
     if (!db || !jobId || !job) return
 
+    setIsHiring(true)
     const jobUpdate = {
       status: 'in-progress',
       freelancerId: app.freelancerId,
@@ -71,14 +74,21 @@ export default function ManageJobApplicantsPage() {
         })
 
         toast({ title: "Freelancer Hired!", description: `${app.freelancerName} is now assigned to this project.` })
-        router.push("/dashboard/jobs")
+        // FORCE REDIRECT immediately
+        window.location.href = "/dashboard/jobs"
       })
       .catch(async (error) => {
+        setIsHiring(false)
         errorEmitter.emit("permission-error", new FirestorePermissionError({
           path: `jobs/${jobId}`,
           operation: "update",
           requestResourceData: jobUpdate
         }))
+        toast({
+          variant: "destructive",
+          title: "Hiring failed",
+          description: "Something went wrong. Please try again."
+        })
       })
   }
 
@@ -160,9 +170,9 @@ export default function ManageJobApplicantsPage() {
                       <Button 
                         className="font-bold px-10 h-12 rounded-xl shadow-xl shadow-primary/20" 
                         onClick={() => handleHire(app)} 
-                        disabled={job?.status !== 'open'}
+                        disabled={job?.status !== 'open' || isHiring}
                       >
-                        {job?.status === 'open' ? 'Accept & Hire' : 'Hired'}
+                        {isHiring ? <Loader2 className="h-4 w-4 animate-spin" /> : (job?.status === 'open' ? 'Accept & Hire' : 'Hired')}
                       </Button>
                     </div>
                   </div>

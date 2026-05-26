@@ -34,25 +34,48 @@ export default function DashboardOverview() {
 
   const { data: profile } = useDoc(userDocRef)
 
-  // Fetch jobs where user is either client or assigned freelancer
-  const activeJobsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid) return null
-    const role = profile?.role || 'freelancer'
-    const roleField = role === 'freelancer' ? 'freelancerId' : 'clientId'
-    
+  // Determine role (default to freelancer for backward compatibility)
+  const isFreelancer = profile?.role !== 'customer'
+
+  // Fetch jobs where user is client
+  const clientJobsQuery = useMemoFirebase(() => {
+    if (!db || !user?.uid || isFreelancer) return null
     return query(
       collection(db, "jobs"),
-      where(roleField, "==", user.uid),
-      where("status", "in", ["open", "in-progress"]),
+      where("clientId", "==", user.uid),
       orderBy("createdAt", "desc"),
       limit(5)
     )
-  }, [db, user?.uid, profile?.role])
+  }, [db, user?.uid, isFreelancer])
 
-  const { data: activeJobs, loading: jobsLoading } = useCollection(activeJobsQuery)
+  // Fetch jobs where user is hired freelancer
+  const freelancerJobsQuery = useMemoFirebase(() => {
+    if (!db || !user?.uid || !isFreelancer) return null
+    return query(
+      collection(db, "jobs"),
+      where("freelancerId", "==", user.uid),
+      orderBy("createdAt", "desc"),
+      limit(5)
+    )
+  }, [db, user?.uid, isFreelancer])
+
+  // Fetch applications if user is a freelancer
+  const myApplicationsQuery = useMemoFirebase(() => {
+    if (!db || !user?.uid || !isFreelancer) return null
+    return query(
+      collection(db, "applications"),
+      where("freelancerId", "==", user.uid),
+      orderBy("createdAt", "desc"),
+      limit(5)
+    )
+  }, [db, user?.uid, isFreelancer])
+
+  const { data: clientJobs, loading: clientJobsLoading } = useCollection(clientJobsQuery)
+  const { data: freelancerJobs, loading: freelancerJobsLoading } = useCollection(freelancerJobsQuery)
+  const { data: myApplications } = useCollection(myApplicationsQuery)
 
   // Fetch recommended jobs (Smart Matches) - General open jobs
-  const recommendedJobsQuery = useMemoFirebase(() => {
+  const openJobsQuery = useMemoFirebase(() => {
     if (!db) return null
     return query(
       collection(db, "jobs"),
@@ -62,20 +85,7 @@ export default function DashboardOverview() {
     )
   }, [db])
 
-  const { data: recommendedJobs, loading: recsLoading } = useCollection(recommendedJobsQuery)
-
-  // Fetch applications if user is a freelancer
-  const myApplicationsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid || profile?.role === 'customer') return null
-    return query(
-      collection(db, "applications"),
-      where("freelancerId", "==", user.uid),
-      orderBy("createdAt", "desc"),
-      limit(5)
-    )
-  }, [db, user?.uid, profile?.role])
-
-  const { data: myApplications } = useCollection(myApplicationsQuery)
+  const { data: openJobs, loading: openJobsLoading } = useCollection(openJobsQuery)
 
   if (authLoading) {
     return (
@@ -85,30 +95,31 @@ export default function DashboardOverview() {
     )
   }
 
-  const isFreelancer = profile?.role !== 'customer'
   const firstName = profile?.firstName || user?.displayName?.split(' ')[0] || "User"
+  const activeJobs = isFreelancer ? (freelancerJobs || []) : (clientJobs || [])
+  const jobsLoading = isFreelancer ? freelancerJobsLoading : clientJobsLoading
 
-  // Filter out user's own jobs from smart matches
-  const smartMatches = recommendedJobs?.filter(job => job.clientId !== user?.uid).slice(0, 2) || []
-
+  // Stats Configuration
   const stats = isFreelancer ? [
-    { label: "Active Projects", value: activeJobs?.filter(j => j.status === 'in-progress').length.toString() || "0", icon: Briefcase, color: "text-blue-500" },
+    { label: "Active Projects", value: activeJobs.filter(j => j.status === 'in-progress').length.toString(), icon: Briefcase, color: "text-blue-500" },
     { label: "Submitted Proposals", value: myApplications?.length.toString() || "0", icon: FileText, color: "text-purple-500" },
     { label: "Completed Jobs", value: profile?.completedJobs?.toString() || "0", icon: CheckCircle2, color: "text-green-500" },
     { label: "Average Rating", value: profile?.rating ? profile.rating.toFixed(1) : "N/A", icon: Star, color: "text-yellow-500" },
   ] : [
-    { label: "Open Postings", value: activeJobs?.filter(j => j.status === 'open').length.toString() || "0", icon: Zap, color: "text-orange-500" },
-    { label: "Active Contracts", value: activeJobs?.filter(j => j.status === 'in-progress').length.toString() || "0", icon: Briefcase, color: "text-blue-500" },
+    { label: "Open Postings", value: activeJobs.filter(j => j.status === 'open').length.toString(), icon: Zap, color: "text-orange-500" },
+    { label: "Active Contracts", value: activeJobs.filter(j => j.status === 'in-progress').length.toString(), icon: Briefcase, color: "text-blue-500" },
     { label: "Total Hires", value: profile?.totalHires?.toString() || "0", icon: Users, color: "text-cyan-500" },
     { label: "Messages", value: "0", icon: MessageSquare, color: "text-indigo-500" },
   ]
+
+  const smartMatches = openJobs?.filter(job => job.clientId !== user?.uid).slice(0, 2) || []
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-4xl font-bold tracking-tight text-foreground">Hello, {firstName}!</h1>
-          <p className="text-muted-foreground mt-1">Here's what's happening with your projects today.</p>
+          <p className="text-muted-foreground mt-1">Here's your {isFreelancer ? 'freelancer' : 'client'} workspace overview.</p>
         </div>
         <div className="flex gap-3">
           {isFreelancer ? (
@@ -149,12 +160,12 @@ export default function DashboardOverview() {
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          {/* Active Projects Card */}
+          {/* Recent Activity Card */}
           <Card className="border-none shadow-sm overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/20 pb-4">
               <div className="space-y-1">
-                <CardTitle className="text-xl font-bold">Recent Projects</CardTitle>
-                <CardDescription>Monitor your current progress</CardDescription>
+                <CardTitle className="text-xl font-bold">{isFreelancer ? 'Current Contracts' : 'My Recent Postings'}</CardTitle>
+                <CardDescription>{isFreelancer ? 'Jobs you are currently working on' : 'Monitor progress of your active projects'}</CardDescription>
               </div>
               <Link href="/dashboard/jobs">
                 <Button variant="ghost" size="sm" className="font-bold text-primary hover:bg-primary/5">View All</Button>
@@ -165,7 +176,7 @@ export default function DashboardOverview() {
                 <div className="flex justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-              ) : activeJobs?.length ? (
+              ) : activeJobs.length ? (
                 <div className="space-y-6">
                   {activeJobs.map((job: any) => (
                     <div key={job.id} className="group p-4 rounded-2xl border bg-card hover:border-primary/50 transition-colors">
@@ -173,20 +184,20 @@ export default function DashboardOverview() {
                         <div className="space-y-1">
                           <h4 className="font-bold text-lg group-hover:text-primary transition-colors">{job.title}</h4>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> Due {job.deadline || 'Flexible'}</span>
+                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {job.deadline ? `Due ${job.deadline}` : 'No deadline'}</span>
                             <Badge variant="secondary" className="capitalize text-[10px]">{job.status.replace('-', ' ')}</Badge>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-lg font-bold text-primary">${job.budget}</p>
+                          <p className="text-lg font-bold text-primary">₦{job.budget?.toLocaleString()}</p>
                         </div>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between text-[10px] font-bold">
-                          <span>Progress</span>
-                          <span>{job.progress || 0}%</span>
+                          <span>Status</span>
+                          <span>{job.status === 'open' ? 'Awaiting Applicants' : 'Active Milestone'}</span>
                         </div>
-                        <Progress value={job.progress || 0} className="h-2" />
+                        <Progress value={job.status === 'in-progress' ? 50 : 0} className="h-2" />
                       </div>
                     </div>
                   ))}
@@ -196,7 +207,7 @@ export default function DashboardOverview() {
                   <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
                     <Briefcase className="h-8 w-8" />
                   </div>
-                  <h3 className="text-lg font-bold text-foreground">No active projects</h3>
+                  <h3 className="text-lg font-bold text-foreground">Nothing here yet</h3>
                   <p className="text-sm max-w-xs mx-auto mt-2">
                     {isFreelancer ? "Browse available jobs to start earning." : "Post a new job to find talented freelancers."}
                   </p>
@@ -210,7 +221,7 @@ export default function DashboardOverview() {
             </CardContent>
           </Card>
 
-          {/* Smart Matches */}
+          {/* Smart Matches / Browse Talent */}
           <div className="bg-gradient-to-br from-primary/10 via-accent/5 to-transparent p-8 rounded-[2rem] border border-primary/10 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-8 opacity-5">
               <Zap className="h-32 w-32 text-primary" />
@@ -220,16 +231,16 @@ export default function DashboardOverview() {
                 <div className="p-2 bg-primary rounded-lg">
                   <Zap className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <h2 className="text-2xl font-bold">Smart Matches</h2>
+                <h2 className="text-2xl font-bold">{isFreelancer ? 'Smart Matches' : 'Latest Opportunities'}</h2>
               </div>
-              <p className="text-muted-foreground mb-8 leading-relaxed">
+              <p className="text-muted-foreground mb-8 leading-relaxed font-medium">
                 {isFreelancer 
-                  ? "Real-time opportunities from our professional network tailored for you." 
-                  : "Discover the latest projects being posted on the platform."}
+                  ? "Real-time opportunities from our professional network tailored for your skills." 
+                  : "Discover the latest projects being posted by others on the platform."}
               </p>
               
               <div className="grid md:grid-cols-2 gap-6">
-                {recsLoading ? (
+                {openJobsLoading ? (
                   <div className="col-span-2 flex justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin text-primary opacity-20" />
                   </div>
@@ -239,7 +250,7 @@ export default function DashboardOverview() {
                       <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border hover:border-primary transition-all cursor-pointer group shadow-sm">
                         <div className="flex justify-between items-start mb-4">
                           <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-bold">LIVE MATCH</Badge>
-                          <span className="font-bold text-primary">${job.budget}</span>
+                          <span className="font-bold text-primary">₦{job.budget?.toLocaleString()}</span>
                         </div>
                         <h3 className="font-bold text-lg group-hover:text-primary transition-colors mb-2 line-clamp-1">{job.title}</h3>
                         <p className="text-xs text-muted-foreground line-clamp-1">{job.category} • {job.clientName}</p>
@@ -263,22 +274,39 @@ export default function DashboardOverview() {
               <CardTitle className="text-lg font-bold">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 pt-2">
-              <Link href={isFreelancer ? "/jobs" : "/dashboard/jobs/post"}>
-                <Button variant="outline" className="w-full justify-start gap-3 h-14 rounded-xl border-dashed hover:border-primary hover:bg-primary/5 transition-all">
-                  {isFreelancer ? <Search className="h-5 w-5" /> : <PlusCircle className="h-5 w-5" />}
-                  <span className="font-bold">{isFreelancer ? 'Find Work' : 'Create Project'}</span>
-                </Button>
-              </Link>
+              {isFreelancer ? (
+                <Link href="/jobs">
+                  <Button variant="outline" className="w-full justify-start gap-3 h-14 rounded-xl border-dashed hover:border-primary hover:bg-primary/5 transition-all">
+                    <Search className="h-5 w-5" />
+                    <span className="font-bold">Browse Job Board</span>
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/dashboard/jobs/post">
+                    <Button variant="outline" className="w-full justify-start gap-3 h-14 rounded-xl border-dashed hover:border-primary hover:bg-primary/5 transition-all">
+                      <PlusCircle className="h-5 w-5" />
+                      <span className="font-bold">Post a New Gig</span>
+                    </Button>
+                  </Link>
+                  <Link href="/freelancers">
+                    <Button variant="outline" className="w-full justify-start gap-3 h-14 rounded-xl border-dashed hover:border-primary hover:bg-primary/5 transition-all">
+                      <Users className="h-5 w-5" />
+                      <span className="font-bold">Browse Freelancers</span>
+                    </Button>
+                  </Link>
+                </>
+              )}
               <Link href="/dashboard/profile">
                 <Button variant="outline" className="w-full justify-start gap-3 h-14 rounded-xl border-dashed hover:border-primary hover:bg-primary/5 transition-all">
                   <Star className="h-5 w-5" />
-                  <span className="font-bold">Boost Profile</span>
+                  <span className="font-bold">My Profile</span>
                 </Button>
               </Link>
               <Link href="/dashboard/messages">
                 <Button variant="outline" className="w-full justify-start gap-3 h-14 rounded-xl border-dashed hover:border-primary hover:bg-primary/5 transition-all">
                   <MessageSquare className="h-5 w-5" />
-                  <span className="font-bold">Messenger</span>
+                  <span className="font-bold">Messages</span>
                 </Button>
               </Link>
             </CardContent>
@@ -290,7 +318,7 @@ export default function DashboardOverview() {
                 <TrendingUp className="h-5 w-5" />
                 <CardTitle className="text-lg">Weekly Outlook</CardTitle>
               </div>
-              <CardDescription className="text-primary-foreground/80">Your activity is up this week</CardDescription>
+              <CardDescription className="text-primary-foreground/80">Activity tracker</CardDescription>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
               <div className="space-y-4">
@@ -304,12 +332,11 @@ export default function DashboardOverview() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-sm font-medium">Interviews</span>
+                    <span className="text-sm font-medium">Interactions</span>
                   </div>
                   <span className="font-bold">2</span>
                 </div>
               </div>
-              <Button variant="ghost" className="w-full text-primary font-bold hover:bg-primary/5">Detailed Reports</Button>
             </CardContent>
           </Card>
         </div>

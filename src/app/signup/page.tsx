@@ -60,7 +60,10 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!role) return
+    if (!role) {
+      toast({ variant: "destructive", title: "Error", description: "Please select a role" })
+      return
+    }
     
     setIsLoading(true)
     
@@ -86,17 +89,16 @@ export default function SignupPage() {
         lastName,
         fullName,
         email,
-        role,
+        role, // 'customer' for clients, 'freelancer' for freelancers
         skills: primarySkill ? [primarySkill] : [],
         skillType,
         bio: "",
         title: role === 'freelancer' ? (primarySkill || "Professional Freelancer") : "Project Client",
         avatarUrl: user.photoURL || `https://picsum.photos/seed/${user.uid}/128/128`,
         createdAt: serverTimestamp(),
-        rating: 5.0,
+        rating: null,
         completedJobs: 0,
         totalHires: 0,
-        hourlyRate: role === 'freelancer' ? 45 : 0,
         isAvailable: true
       };
 
@@ -127,7 +129,7 @@ export default function SignupPage() {
                 onClick={() => setRole('customer')}
                 className={cn(
                   "p-6 border-2 rounded-xl cursor-pointer transition-all hover:border-primary/50 group",
-                  role === 'customer' ? "border-primary bg-primary/5" : "border-border"
+                  role === 'customer' ? "border-primary bg-primary/5 shadow-inner" : "border-border"
                 )}
               >
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -140,7 +142,7 @@ export default function SignupPage() {
                 onClick={() => setRole('freelancer')}
                 className={cn(
                   "p-6 border-2 rounded-xl cursor-pointer transition-all hover:border-primary/50 group",
-                  role === 'freelancer' ? "border-primary bg-primary/5" : "border-border"
+                  role === 'freelancer' ? "border-primary bg-primary/5 shadow-inner" : "border-border"
                 )}
               >
                 <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -197,7 +199,7 @@ export default function SignupPage() {
                 </div>
                 <div className="flex items-start space-x-2 pt-2">
                   <Checkbox id="terms" required />
-                  <label htmlFor="terms" className="text-xs text-muted-foreground leading-relaxed">
+                  <label htmlFor="terms" className="text-xs text-muted-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                     By creating an account, you agree to our <Link href="#" className="text-primary hover:underline font-medium">Terms of Service</Link> and <Link href="#" className="text-primary hover:underline font-medium">Privacy Policy</Link>.
                   </label>
                 </div>

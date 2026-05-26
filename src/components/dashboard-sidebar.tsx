@@ -13,11 +13,12 @@ import {
   Search,
   LogOut,
   PlusCircle,
-  Users
+  Users,
+  FileText
 } from "lucide-react"
-import { useAuth, useUser, useFirestore, useMemoFirebase, useCollection } from "@/firebase"
+import { useAuth, useUser, useFirestore, useMemoFirebase, useCollection, useDoc } from "@/firebase"
 import { signOut } from "firebase/auth"
-import { collection, query, where } from "firebase/firestore"
+import { collection, query, where, doc } from "firebase/firestore"
 
 export function DashboardSidebar() {
   const pathname = usePathname()
@@ -25,6 +26,14 @@ export function DashboardSidebar() {
   const auth = useAuth()
   const { user } = useUser()
   const db = useFirestore()
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!db || !user?.uid) return null
+    return doc(db, "users", user.uid)
+  }, [db, user?.uid])
+
+  const { data: profile } = useDoc(userDocRef)
+  const isFreelancer = profile?.role !== 'customer'
 
   const unreadMessagesQuery = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
@@ -55,9 +64,13 @@ export function DashboardSidebar() {
 
   const navItems = [
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Hire Talent", href: "/freelancers", icon: Users },
-    { label: "Find Work", href: "/jobs", icon: Search },
-    { label: "My Jobs", href: "/dashboard/jobs", icon: Briefcase },
+    ...(isFreelancer ? [
+      { label: "Find Work", href: "/jobs", icon: Search },
+      { label: "My Proposals", href: "/dashboard/jobs", icon: FileText },
+    ] : [
+      { label: "Hire Talent", href: "/freelancers", icon: Users },
+      { label: "My Jobs", href: "/dashboard/jobs", icon: Briefcase },
+    ]),
     { label: "Messages", href: "/dashboard/messages", icon: MessageSquare, badge: unreadMessages?.length || 0 },
     { label: "Notifications", href: "/dashboard/notifications", icon: Bell, badge: unreadNotifications?.length || 0 },
     { label: "Profile", href: "/dashboard/profile", icon: User },
@@ -98,11 +111,13 @@ export function DashboardSidebar() {
       </div>
 
       <div className="p-4 border-t space-y-2">
-        <Link href="/dashboard/jobs/post">
-          <button className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground py-2.5 rounded-xl font-semibold hover:opacity-90 transition-opacity">
-            <PlusCircle className="h-4 w-4" /> Post a Job
-          </button>
-        </Link>
+        {!isFreelancer && (
+          <Link href="/dashboard/jobs/post">
+            <button className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground py-2.5 rounded-xl font-semibold hover:opacity-90 transition-opacity">
+              <PlusCircle className="h-4 w-4" /> Post a Job
+            </button>
+          </Link>
+        )}
         <button 
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors group"

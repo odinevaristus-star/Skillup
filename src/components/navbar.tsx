@@ -4,8 +4,8 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "@/hooks/use-theme"
-import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
-import { Sun, Moon, Zap, User, LogOut, LayoutDashboard, Bell, MessageSquare, Users, Search } from "lucide-react"
+import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
+import { Sun, Moon, Zap, User, LogOut, LayoutDashboard, Bell, MessageSquare, Users, Search, PlusCircle } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { signOut } from "firebase/auth"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { collection, query, where } from "firebase/firestore"
+import { collection, query, where, doc } from "firebase/firestore"
 import { Badge } from "@/components/ui/badge"
 
 export function Navbar() {
@@ -23,6 +23,14 @@ export function Navbar() {
   const { user } = useUser()
   const auth = useAuth()
   const db = useFirestore()
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!db || !user?.uid) return null
+    return doc(db, "users", user.uid)
+  }, [db, user?.uid])
+
+  const { data: profile } = useDoc(userDocRef)
+  const isFreelancer = profile?.role !== 'customer'
 
   const unreadNotificationsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
@@ -59,12 +67,30 @@ export function Navbar() {
             <span className="text-2xl font-bold tracking-tighter text-primary">SkillUp</span>
           </Link>
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/freelancers" className="text-sm font-bold flex items-center gap-2 hover:text-primary transition-colors">
-              <Users className="h-4 w-4" /> Hire Talent
-            </Link>
-            <Link href="/jobs" className="text-sm font-bold flex items-center gap-2 hover:text-primary transition-colors">
-              <Search className="h-4 w-4" /> Find Work
-            </Link>
+            {user && (
+              <>
+                {isFreelancer ? (
+                  <Link href="/jobs" className="text-sm font-bold flex items-center gap-2 hover:text-primary transition-colors">
+                    <Search className="h-4 w-4" /> Find Work
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/freelancers" className="text-sm font-bold flex items-center gap-2 hover:text-primary transition-colors">
+                      <Users className="h-4 w-4" /> Hire Talent
+                    </Link>
+                    <Link href="/dashboard/jobs/post" className="text-sm font-bold flex items-center gap-2 hover:text-primary transition-colors">
+                      <PlusCircle className="h-4 w-4" /> Post Job
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
+            {!user && (
+              <>
+                <Link href="/freelancers" className="text-sm font-bold hover:text-primary transition-colors">Hire Talent</Link>
+                <Link href="/jobs" className="text-sm font-bold hover:text-primary transition-colors">Find Work</Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -122,7 +148,7 @@ export function Navbar() {
               <DropdownMenuContent className="w-64" align="end" forceMount>
                 <div className="flex flex-col space-y-1 p-4">
                   <p className="text-sm font-bold leading-none">{user.displayName}</p>
-                  <p className="text-xs leading-none text-muted-foreground mt-1">{user.email}</p>
+                  <p className="text-xs leading-none text-muted-foreground mt-1 capitalize">{profile?.role || 'Freelancer'}</p>
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>

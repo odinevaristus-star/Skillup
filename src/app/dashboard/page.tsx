@@ -37,7 +37,6 @@ export default function DashboardOverview() {
   // Fetch jobs where user is either client or assigned freelancer
   const activeJobsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
-    // Fallback role to freelancer if profile is still loading or missing
     const role = profile?.role || 'freelancer'
     const roleField = role === 'freelancer' ? 'freelancerId' : 'clientId'
     
@@ -52,6 +51,19 @@ export default function DashboardOverview() {
 
   const { data: activeJobs, loading: jobsLoading } = useCollection(activeJobsQuery)
 
+  // Fetch recommended jobs (Smart Matches) - General open jobs
+  const recommendedJobsQuery = useMemoFirebase(() => {
+    if (!db) return null
+    return query(
+      collection(db, "jobs"),
+      where("status", "==", "open"),
+      orderBy("createdAt", "desc"),
+      limit(4)
+    )
+  }, [db])
+
+  const { data: recommendedJobs, loading: recsLoading } = useCollection(recommendedJobsQuery)
+
   // Fetch applications if user is a freelancer
   const myApplicationsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || profile?.role === 'customer') return null
@@ -65,7 +77,6 @@ export default function DashboardOverview() {
 
   const { data: myApplications } = useCollection(myApplicationsQuery)
 
-  // Only block on auth loading. Let the profile load in the background.
   if (authLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -77,11 +88,14 @@ export default function DashboardOverview() {
   const isFreelancer = profile?.role !== 'customer'
   const firstName = profile?.firstName || user?.displayName?.split(' ')[0] || "User"
 
+  // Filter out user's own jobs from smart matches
+  const smartMatches = recommendedJobs?.filter(job => job.clientId !== user?.uid).slice(0, 2) || []
+
   const stats = isFreelancer ? [
     { label: "Active Projects", value: activeJobs?.filter(j => j.status === 'in-progress').length.toString() || "0", icon: Briefcase, color: "text-blue-500" },
     { label: "Submitted Proposals", value: myApplications?.length.toString() || "0", icon: FileText, color: "text-purple-500" },
     { label: "Completed Jobs", value: profile?.completedJobs?.toString() || "0", icon: CheckCircle2, color: "text-green-500" },
-    { label: "Average Rating", value: profile?.rating?.toString() || "5.0", icon: Star, color: "text-yellow-500" },
+    { label: "Average Rating", value: profile?.rating ? profile.rating.toFixed(1) : "N/A", icon: Star, color: "text-yellow-500" },
   ] : [
     { label: "Open Postings", value: activeJobs?.filter(j => j.status === 'open').length.toString() || "0", icon: Zap, color: "text-orange-500" },
     { label: "Active Contracts", value: activeJobs?.filter(j => j.status === 'in-progress').length.toString() || "0", icon: Briefcase, color: "text-blue-500" },
@@ -196,7 +210,7 @@ export default function DashboardOverview() {
             </CardContent>
           </Card>
 
-          {/* AI Recommendations */}
+          {/* Smart Matches */}
           <div className="bg-gradient-to-br from-primary/10 via-accent/5 to-transparent p-8 rounded-[2rem] border border-primary/10 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-8 opacity-5">
               <Zap className="h-32 w-32 text-primary" />
@@ -209,22 +223,34 @@ export default function DashboardOverview() {
                 <h2 className="text-2xl font-bold">Smart Matches</h2>
               </div>
               <p className="text-muted-foreground mb-8 leading-relaxed">
-                Our AI matched your profile with these high-potential opportunities.
+                {isFreelancer 
+                  ? "Real-time opportunities from our professional network tailored for you." 
+                  : "Discover the latest projects being posted on the platform."}
               </p>
+              
               <div className="grid md:grid-cols-2 gap-6">
-                {[
-                  { title: "Senior Full Stack Dev", budget: "$120/hr", match: "99% Match" },
-                  { title: "Visual Brand Designer", budget: "$3,500", match: "96% Match" },
-                ].map((rec, i) => (
-                  <div key={i} className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border hover:border-primary transition-all cursor-pointer group shadow-sm">
-                    <div className="flex justify-between items-start mb-4">
-                      <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-bold">{rec.match}</Badge>
-                      <span className="font-bold text-primary">{rec.budget}</span>
-                    </div>
-                    <h3 className="font-bold text-lg group-hover:text-primary transition-colors mb-2">{rec.title}</h3>
-                    <p className="text-xs text-muted-foreground">Tailored for your expert skills.</p>
+                {recsLoading ? (
+                  <div className="col-span-2 flex justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary opacity-20" />
                   </div>
-                ))}
+                ) : smartMatches.length > 0 ? (
+                  smartMatches.map((job: any) => (
+                    <Link key={job.id} href={`/jobs/${job.id}`}>
+                      <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border hover:border-primary transition-all cursor-pointer group shadow-sm">
+                        <div className="flex justify-between items-start mb-4">
+                          <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-bold">LIVE MATCH</Badge>
+                          <span className="font-bold text-primary">${job.budget}</span>
+                        </div>
+                        <h3 className="font-bold text-lg group-hover:text-primary transition-colors mb-2 line-clamp-1">{job.title}</h3>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{job.category} • {job.clientName}</p>
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="col-span-2 text-center py-12 bg-white/50 rounded-2xl border border-dashed">
+                    <p className="text-muted-foreground font-medium">No matches yet. Check back when more jobs are posted.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

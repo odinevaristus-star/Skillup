@@ -65,10 +65,8 @@ export default function SignupPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // IMMEDIATE REDIRECT using window.location.href for force navigation
       window.location.href = '/dashboard';
 
-      // Write Firestore data in background
       const finalSkill = primarySkill === 'Other' ? otherSkill : primarySkill;
       const fullName = `${firstName} ${lastName}`;
       

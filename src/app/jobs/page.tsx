@@ -23,13 +23,21 @@ import { collection, query, where, orderBy } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
 
-const ALL_CATEGORIES = [
+const ARTISAN_SKILLS = [
   "Electrician", "Plumbing", "Carpentry", "Tailoring / Fashion Design", "Hair Styling / Braiding",
   "Makeup Artist", "Painting", "Phone Repair", "Laptop / Computer Repair", "Catering / Cooking",
-  "Laundry", "Cleaning Service", "Photography", "Videography", "Tutoring / Lessons", "Generator Repair",
+  "Laundry", "Cleaning Service", "Photography", "Videography", "Tutoring / Lessons", "Generator Repair"
+];
+
+const DIGITAL_SKILLS = [
   "Graphic Design", "Video Editing", "Web Development", "Mobile App Development", "Social Media Management",
   "Content Writing", "Copywriting", "Data Entry", "Photo Editing", "Animation", "Music Production",
   "Voice Over", "Translation"
+];
+
+const ALL_CATEGORIES = [
+  ...ARTISAN_SKILLS,
+  ...DIGITAL_SKILLS
 ]
 
 export default function JobSearchPage() {

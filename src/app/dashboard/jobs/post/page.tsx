@@ -11,7 +11,7 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, Send, Briefcase, Landmark, MapPin } from "lucide-react"
+import { Loader2, Send, Briefcase, Landmark } from "lucide-react"
 
 const ARTISAN_SKILLS = [
   "Electrician", "Plumbing", "Carpentry", "Tailoring / Fashion Design", "Hair Styling / Braiding",
@@ -62,7 +62,6 @@ export default function PostJobPage() {
 
     addDoc(collection(db, "jobs"), jobData)
       .then(() => {
-        // IMMEDIATE REDIRECT using window.location.href to force navigation
         window.location.href = "/dashboard/jobs"
       })
       .catch(async (error) => {
@@ -75,7 +74,7 @@ export default function PostJobPage() {
         toast({
           variant: "destructive",
           title: "Submission failed",
-          description: "We couldn't post your project. Please check your permissions."
+          description: "We couldn't post your project. Please try again."
         })
       })
   }

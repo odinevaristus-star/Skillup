@@ -83,7 +83,7 @@ export default function MessagesPage() {
         viewport.scrollTop = viewport.scrollHeight
       }
     }
-  }, [selectedChatUser, conversations])
+  }, [selectedChatUser, allMessages])
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -146,10 +146,9 @@ export default function MessagesPage() {
 
     const batch = writeBatch(db)
     unreadMessages.forEach(m => {
-      // Find the ID. Note: useCollection docs usually include their ID as 'id'
-      const id = (m as any).id
-      if (id) {
-        batch.update(doc(db, "messages", id), { read: true })
+      const msgId = (m as any).id
+      if (msgId) {
+        batch.update(doc(db, "messages", msgId), { read: true })
       }
     })
     batch.commit().catch(console.error)
@@ -234,24 +233,41 @@ export default function MessagesPage() {
             {/* Message Stream */}
             <ScrollArea className="flex-1 p-6 bg-muted/5" ref={scrollRef}>
               <div className="space-y-6">
-                {activeMessages?.map((msg, i) => (
-                  <div key={i} className={cn(
-                    "flex flex-col group",
-                    msg.senderId === user?.uid ? "items-end" : "items-start"
-                  )}>
-                    <div className={cn(
-                      "max-w-[80%] md:max-w-[70%] px-5 py-3 rounded-[1.5rem] shadow-sm text-sm leading-relaxed",
-                      msg.senderId === user?.uid 
-                        ? "bg-primary text-primary-foreground rounded-tr-none" 
-                        : "bg-white border text-foreground rounded-tl-none"
-                    )}>
-                      {msg.text}
+                {activeMessages?.map((msg: any, i: number) => {
+                  const isFirstOfDate = i === 0 || 
+                    (msg.timestamp && activeMessages[i-1].timestamp && 
+                    new Date(msg.timestamp.seconds * 1000).toDateString() !== new Date(activeMessages[i-1].timestamp.seconds * 1000).toDateString())
+
+                  return (
+                    <div key={msg.id || i} className="space-y-6">
+                      {isFirstOfDate && msg.timestamp && (
+                        <div className="flex justify-center my-8">
+                          <span className="bg-muted px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                            {new Date(msg.timestamp.seconds * 1000).toDateString() === new Date().toDateString() ? 'Today' : 
+                             new Date(msg.timestamp.seconds * 1000).toDateString() === new Date(Date.now() - 86400000).toDateString() ? 'Yesterday' :
+                             new Date(msg.timestamp.seconds * 1000).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+                      <div className={cn(
+                        "flex flex-col group animate-in fade-in slide-in-from-bottom-2 duration-300",
+                        msg.senderId === user?.uid ? "items-end" : "items-start"
+                      )}>
+                        <div className={cn(
+                          "max-w-[80%] md:max-w-[70%] px-5 py-3 rounded-[1.5rem] shadow-sm text-sm leading-relaxed",
+                          msg.senderId === user?.uid 
+                            ? "bg-primary text-primary-foreground rounded-tr-none" 
+                            : "bg-white border text-foreground rounded-tl-none"
+                        )}>
+                          {msg.text}
+                        </div>
+                        <span className="text-[10px] mt-1.5 text-muted-foreground font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">
+                          {msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Sending...'}
+                        </span>
+                      </div>
                     </div>
-                    <span className="text-[10px] mt-1.5 text-muted-foreground font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">
-                      {msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Sending...'}
-                    </span>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </ScrollArea>
 
@@ -319,7 +335,7 @@ function ChatHeader({ userProfile, db }: { userProfile: any, db: any }) {
         if (snap.exists()) setProfile(snap.data())
       })
     }
-  }, [db, userProfile.id, userProfile.fullName])
+  }, [db, userProfile.id])
 
   return (
     <div className="flex items-center gap-4">
@@ -346,6 +362,8 @@ function ConversationItem({ chat, db, isActive, onClick }: { chat: any, db: any,
     }
   }, [db, chat.id])
 
+  const isUnread = !chat.read && !chat.isMine
+
   return (
     <button
       onClick={onClick}
@@ -363,16 +381,18 @@ function ConversationItem({ chat, db, isActive, onClick }: { chat: any, db: any,
       </div>
       <div className="flex-1 text-left min-w-0">
         <div className="flex justify-between items-start mb-1.5">
-          <p className="font-bold truncate text-base text-foreground">{profile?.fullName || "Loading..."}</p>
+          <p className={cn("truncate text-base text-foreground", isUnread ? "font-black" : "font-bold")}>
+            {profile?.fullName || "Loading..."}
+          </p>
           <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
             {chat.timestamp ? new Date(chat.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground truncate font-medium">
+        <p className={cn("text-xs truncate", isUnread ? "text-foreground font-black" : "text-muted-foreground font-medium")}>
           {chat.isMine ? "You: " : ""}{chat.lastMessage}
         </p>
       </div>
-      {!chat.read && !chat.isMine && (
+      {isUnread && (
         <div className="w-2.5 h-2.5 bg-primary rounded-full shrink-0" />
       )}
     </button>

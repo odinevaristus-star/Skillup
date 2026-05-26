@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -82,7 +83,7 @@ export function DashboardSidebar() {
 
       <div className="flex-1 px-4 space-y-2 overflow-y-auto">
         {navItems.map((item) => (
-          <Link key={item.href} href={item.href}>
+          <Link key={item.label} href={item.href}>
             <div
               className={cn(
                 'flex items-center justify-between px-5 py-4 rounded-2xl transition-all group mb-1',

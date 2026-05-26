@@ -20,28 +20,20 @@ import {
   Car, 
   Home,
   Search,
-  ArrowRight
+  ArrowRight,
+  Utensils,
+  Camera,
+  Scissors,
+  Sparkles,
+  Zap,
+  GraduationCap
 } from "lucide-react"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
 
 const CATEGORIES = [
-  {
-    id: "digital-skills",
-    title: "Digital Skills",
-    description: "Work with top-tier talent for your online and technical projects.",
-    skills: [
-      { name: "Programming", icon: Code, count: "12,403", color: "text-blue-500" },
-      { name: "Graphic Design", icon: Palette, count: "8,291", color: "text-pink-500" },
-      { name: "Video Editing", icon: Video, count: "4,152", color: "text-purple-500" },
-      { name: "Writing & Copy", icon: PenTool, count: "6,720", color: "text-orange-500" },
-      { name: "Web Development", icon: Monitor, count: "9,844", color: "text-indigo-500" },
-      { name: "Mobile Apps", icon: Smartphone, count: "3,211", color: "text-green-500" },
-      { name: "Data Science", icon: Database, count: "2,450", color: "text-cyan-500" },
-      { name: "Digital Marketing", icon: Megaphone, count: "7,890", color: "text-red-500" },
-    ]
-  },
   {
     id: "hand-artisan-skills",
     title: "Hand & Artisan Skills",
@@ -49,12 +41,30 @@ const CATEGORIES = [
     skills: [
       { name: "Electrician", icon: Plug, count: "3,102", color: "text-yellow-600" },
       { name: "Plumbing", icon: Droplets, count: "2,844", color: "text-blue-600" },
-      { name: "Mechanic", icon: Wrench, count: "4,520", color: "text-slate-600" },
-      { name: "Painting", icon: Paintbrush, count: "1,980", color: "text-emerald-600" },
       { name: "Carpentry", icon: Hammer, count: "2,311", color: "text-amber-700" },
-      { name: "Landscaping", icon: Shovel, count: "1,450", color: "text-green-700" },
-      { name: "Auto Repair", icon: Car, count: "3,122", color: "text-zinc-600" },
-      { name: "Home Repair", icon: Home, count: "5,431", color: "text-stone-600" },
+      { name: "Tailoring / Fashion Design", icon: Scissors, count: "4,520", color: "text-pink-600" },
+      { name: "Hair Styling / Braiding", icon: Scissors, count: "3,122", color: "text-zinc-600" },
+      { name: "Makeup Artist", icon: Sparkles, count: "1,980", color: "text-emerald-600" },
+      { name: "Painting", icon: Paintbrush, count: "1,450", color: "text-green-700" },
+      { name: "Phone Repair", icon: Smartphone, count: "5,431", color: "text-stone-600" },
+      { name: "Catering / Cooking", icon: Utensils, count: "2,450", color: "text-red-500" },
+      { name: "Photography", icon: Camera, count: "1,890", color: "text-indigo-500" },
+      { name: "Tutoring / Lessons", icon: GraduationCap, count: "4,152", color: "text-purple-500" },
+      { name: "Generator Repair", icon: Zap, count: "980", color: "text-orange-500" },
+    ]
+  },
+  {
+    id: "digital-skills",
+    title: "Digital Skills",
+    description: "Work with top-tier talent for your online and technical projects.",
+    skills: [
+      { name: "Web Development", icon: Monitor, count: "9,844", color: "text-indigo-500" },
+      { name: "Graphic Design", icon: Palette, count: "8,291", color: "text-pink-500" },
+      { name: "Video Editing", icon: Video, count: "4,152", color: "text-purple-500" },
+      { name: "Mobile App Development", icon: Smartphone, count: "3,211", color: "text-green-500" },
+      { name: "Social Media Management", icon: Megaphone, count: "7,890", color: "text-red-500" },
+      { name: "Content Writing", icon: PenTool, count: "6,720", color: "text-orange-500" },
+      { name: "Music Production", icon: Database, count: "1,450", color: "text-cyan-500" },
     ]
   }
 ]
@@ -74,13 +84,12 @@ export default function CategoriesPage() {
       <Navbar />
       
       <main className="flex-1">
-        {/* Header */}
         <div className="bg-primary py-24 text-primary-foreground text-center px-4 relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/bg/1600/900')] opacity-10 bg-cover bg-center"></div>
           <div className="container mx-auto max-w-4xl relative z-10">
             <h1 className="text-5xl md:text-6xl font-bold mb-6 tracking-tight">Browse Services</h1>
             <p className="text-primary-foreground/90 text-xl mb-12 max-w-2xl mx-auto leading-relaxed">
-              Find exactly what you need. From complex software development to essential home repairs.
+              Find exactly what you need. From essential artisan trades to complex digital software development.
             </p>
             <div className="relative max-w-2xl mx-auto">
               <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground h-6 w-6" />
@@ -94,7 +103,6 @@ export default function CategoriesPage() {
           </div>
         </div>
 
-        {/* Categories Grid */}
         <div className="container mx-auto px-4 py-20">
           <div className="space-y-32">
             {filteredCategories.map((group) => (
@@ -152,7 +160,6 @@ export default function CategoriesPage() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="py-16 border-t bg-card">
         <div className="container mx-auto px-4 text-center">
           <p className="text-muted-foreground">© 2024 SkillUp Inc. Empowering the future of independent work.</p>

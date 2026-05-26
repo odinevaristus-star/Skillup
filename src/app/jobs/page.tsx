@@ -1,5 +1,4 @@
-
-"use client"
+'use client';
 
 import { useState } from "react"
 import { Navbar } from "@/components/navbar"
@@ -25,8 +24,12 @@ import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
 
 const ALL_CATEGORIES = [
-  "Programming", "Graphic Design", "Video Editing", "Writing", "Web Development", "Mobile Apps", "Data Science", "Digital Marketing",
-  "Electrician", "Plumbing", "Mechanic", "Painting", "Carpentry", "Landscaping", "Auto Repair", "Home Repair"
+  "Electrician", "Plumbing", "Carpentry", "Tailoring / Fashion Design", "Hair Styling / Braiding",
+  "Makeup Artist", "Painting", "Phone Repair", "Laptop / Computer Repair", "Catering / Cooking",
+  "Laundry", "Cleaning Service", "Photography", "Videography", "Tutoring / Lessons", "Generator Repair",
+  "Graphic Design", "Video Editing", "Web Development", "Mobile App Development", "Social Media Management",
+  "Content Writing", "Copywriting", "Data Entry", "Photo Editing", "Animation", "Music Production",
+  "Voice Over", "Translation"
 ]
 
 export default function JobSearchPage() {
@@ -56,7 +59,6 @@ export default function JobSearchPage() {
     <div className="min-h-screen flex flex-col bg-muted/20">
       <Navbar />
       
-      {/* Search Hero */}
       <div className="bg-primary py-20 text-primary-foreground relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/jobs/1600/900')] opacity-5 bg-cover bg-center" />
         <div className="container mx-auto px-4 relative z-10">
@@ -80,7 +82,6 @@ export default function JobSearchPage() {
 
       <main className="container mx-auto px-4 py-16 flex-1">
         <div className="flex flex-col lg:flex-row gap-12">
-          {/* Filters Sidebar */}
           <aside className="w-full lg:w-80 space-y-8 shrink-0">
             <div className="bg-card p-8 rounded-[2.5rem] shadow-sm space-y-8 border border-muted/50">
               <div className="flex items-center justify-between">
@@ -126,7 +127,6 @@ export default function JobSearchPage() {
             </Card>
           </aside>
 
-          {/* Job List */}
           <div className="flex-1 space-y-8">
             <div className="flex items-center justify-between px-2">
               <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">

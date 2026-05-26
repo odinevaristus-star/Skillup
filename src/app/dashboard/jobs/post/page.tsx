@@ -1,5 +1,4 @@
-
-"use client"
+'use client';
 
 import { useState } from "react"
 import { useUser, useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase"
@@ -9,21 +8,29 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Send, Briefcase, Landmark, MapPin } from "lucide-react"
 
-const CATEGORIES = {
-  "Digital": ["Programming", "Graphic Design", "Video Editing", "Writing", "Web Development", "Mobile Apps", "Data Science", "Digital Marketing"],
-  "Artisan": ["Electrician", "Plumbing", "Mechanic", "Painting", "Carpentry", "Landscaping", "Auto Repair", "Home Repair"]
-}
+const ARTISAN_SKILLS = [
+  "Electrician", "Plumbing", "Carpentry", "Tailoring / Fashion Design", "Hair Styling / Braiding",
+  "Makeup Artist", "Painting", "Phone Repair", "Laptop / Computer Repair", "Catering / Cooking",
+  "Laundry", "Cleaning Service", "Photography", "Videography", "Tutoring / Lessons", "Generator Repair"
+];
+
+const DIGITAL_SKILLS = [
+  "Graphic Design", "Video Editing", "Web Development", "Mobile App Development", "Social Media Management",
+  "Content Writing", "Copywriting", "Data Entry", "Photo Editing", "Animation", "Music Production",
+  "Voice Over", "Translation"
+];
 
 export default function PostJobPage() {
   const { user } = useUser()
   const db = useFirestore()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  const [otherCategory, setOtherCategory] = useState("")
 
   const [formData, setFormData] = useState({
     title: "",
@@ -39,20 +46,22 @@ export default function PostJobPage() {
     if (!user || !db) return
 
     setIsLoading(true)
+    const finalCategory = formData.category === "Other" ? otherCategory : formData.category;
+    
     const jobData = {
       ...formData,
+      category: finalCategory,
       budget: parseFloat(formData.budget),
       clientId: user.uid,
       clientName: user.displayName || "Client",
       clientFirstName: user.displayName?.split(' ')[0] || "User",
       status: "open",
       createdAt: serverTimestamp(),
-      skillsRequired: [] 
+      skillsRequired: [finalCategory] 
     }
 
     addDoc(collection(db, "jobs"), jobData)
       .then(() => {
-        // FORCE REDIRECT immediately using window.location
         window.location.href = "/dashboard/jobs"
       })
       .catch(async (error) => {
@@ -94,30 +103,43 @@ export default function PostJobPage() {
                   />
                 </div>
                 
-                <div className="grid gap-2.5">
-                  <Label htmlFor="category" className="text-sm font-bold">Project Category</Label>
-                  <Select 
-                    onValueChange={(val) => setFormData({...formData, category: val})}
-                    required
-                  >
-                    <SelectTrigger className="h-14 rounded-2xl bg-muted/30 border-none px-6 text-left">
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
-                      <SelectGroup>
-                        <SelectLabel>Digital Skills</SelectLabel>
-                        {CATEGORIES.Digital.map(cat => (
-                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                        ))}
-                      </SelectGroup>
-                      <SelectGroup>
-                        <SelectLabel>Artisan Skills</SelectLabel>
-                        {CATEGORIES.Artisan.map(cat => (
-                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                <div className="grid gap-4">
+                  <div className="grid gap-2.5">
+                    <Label htmlFor="category" className="text-sm font-bold">Project Category</Label>
+                    <Select 
+                      onValueChange={(val) => setFormData({...formData, category: val})}
+                      required
+                    >
+                      <SelectTrigger className="h-14 rounded-2xl bg-muted/30 border-none px-6 text-left">
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-2xl">
+                        <SelectGroup>
+                          <SelectLabel>Artisan Skills</SelectLabel>
+                          {ARTISAN_SKILLS.map(cat => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                        <SelectGroup>
+                          <SelectLabel>Digital Skills</SelectLabel>
+                          {DIGITAL_SKILLS.map(cat => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                        <SelectSeparator />
+                        <SelectItem value="Other">Other (type your own)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {formData.category === "Other" && (
+                    <Input 
+                      placeholder="Enter skill needed e.g. Laundry Service" 
+                      className="h-14 rounded-2xl bg-muted/30 border-none px-6 animate-in fade-in slide-in-from-top-2"
+                      required
+                      value={otherCategory}
+                      onChange={(e) => setOtherCategory(e.target.value)}
+                    />
+                  )}
                 </div>
 
                 <div className="grid gap-2.5">

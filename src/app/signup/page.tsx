@@ -24,19 +24,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const SKILL_CATEGORIES = {
-  'Digital Skills': ['Programming', 'Graphic Design', 'Video Editing', 'Writing', 'UI/UX Design', 'Tutoring'],
-  'Hand & Artisan Skills': [
-    'Electrician',
-    'Plumbing',
-    'Mechanic',
-    'Painting',
-    'Barbering',
-    'Hair Styling',
-    'Tailoring',
-    'Phone Repair',
-  ],
-};
+const ARTISAN_SKILLS = [
+  "Electrician", "Plumbing", "Carpentry", "Tailoring / Fashion Design", "Hair Styling / Braiding",
+  "Makeup Artist", "Painting", "Phone Repair", "Laptop / Computer Repair", "Catering / Cooking",
+  "Laundry", "Cleaning Service", "Photography", "Videography", "Tutoring / Lessons", "Generator Repair"
+];
+
+const DIGITAL_SKILLS = [
+  "Graphic Design", "Video Editing", "Web Development", "Mobile App Development", "Social Media Management",
+  "Content Writing", "Copywriting", "Data Entry", "Photo Editing", "Animation", "Music Production",
+  "Voice Over", "Translation"
+];
 
 export default function SignupPage() {
   const [role, setRole] = useState<'customer' | 'freelancer' | null>(null);
@@ -46,6 +44,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [primarySkill, setPrimarySkill] = useState('');
+  const [otherSkill, setOtherSkill] = useState('');
   const { toast } = useToast();
   const auth = useAuth();
   const db = useFirestore();
@@ -63,16 +62,17 @@ export default function SignupPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // IMMEDIATE REDIRECT using window.location.href to bypass any router lag
+      // IMMEDIATE REDIRECT
       window.location.href = '/dashboard';
 
-      // BACKGROUND TASKS: Initiate profile setup without awaiting
+      const finalSkill = primarySkill === 'Other' ? otherSkill : primarySkill;
       const fullName = `${firstName} ${lastName}`;
+      
       updateProfile(user, { displayName: fullName }).catch(console.error);
 
       let skillType = '';
       if (role === 'freelancer') {
-        skillType = SKILL_CATEGORIES['Digital Skills'].includes(primarySkill) ? 'Digital' : 'Artisan';
+        skillType = DIGITAL_SKILLS.includes(finalSkill) ? 'Digital' : 'Artisan';
       }
 
       const userData = {
@@ -81,11 +81,11 @@ export default function SignupPage() {
         lastName,
         fullName,
         email,
-        role, // 'customer' for clients, 'freelancer' for freelancers
-        skills: primarySkill ? [primarySkill] : [],
+        role,
+        skills: finalSkill ? [finalSkill] : [],
         skillType,
         bio: '',
-        title: role === 'freelancer' ? primarySkill || 'Professional Freelancer' : 'Project Client',
+        title: role === 'freelancer' ? finalSkill || 'Professional Freelancer' : 'Project Client',
         avatarUrl: user.photoURL || `https://picsum.photos/seed/${user.uid}/128/128`,
         createdAt: serverTimestamp(),
         rating: null,
@@ -177,27 +177,40 @@ export default function SignupPage() {
                   <Input id="email" type="email" placeholder="john@example.com" required className="h-12 rounded-xl bg-muted/30 border-none px-4" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 {role === 'freelancer' && (
-                  <div className="grid gap-2.5">
-                    <Label htmlFor="primarySkill" className="font-bold">Primary Skill / Category</Label>
-                    <Select value={primarySkill} onValueChange={setPrimarySkill} required>
-                      <SelectTrigger id="primarySkill" className="h-12 rounded-xl bg-muted/30 border-none px-4">
-                        <SelectValue placeholder="Select your expertise" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-2xl">
-                        <SelectGroup>
-                          <SelectLabel>Digital Skills</SelectLabel>
-                          {SKILL_CATEGORIES['Digital Skills'].map((skill) => (
-                            <SelectItem key={skill} value={skill}>{skill}</SelectItem>
-                          ))}
-                        </SelectGroup>
-                        <SelectGroup>
-                          <SelectLabel>Hand & Artisan Skills</SelectLabel>
-                          {SKILL_CATEGORIES['Hand & Artisan Skills'].map((skill) => (
-                            <SelectItem key={skill} value={skill}>{skill}</SelectItem>
-                          ))}
+                  <div className="grid gap-4">
+                    <div className="grid gap-2.5">
+                      <Label htmlFor="primarySkill" className="font-bold">Primary Skill / Category</Label>
+                      <Select value={primarySkill} onValueChange={setPrimarySkill} required>
+                        <SelectTrigger id="primarySkill" className="h-12 rounded-xl bg-muted/30 border-none px-4">
+                          <SelectValue placeholder="Select your expertise" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl">
+                          <SelectGroup>
+                            <SelectLabel>Artisan Skills</SelectLabel>
+                            {ARTISAN_SKILLS.map((skill) => (
+                              <SelectItem key={skill} value={skill}>{skill}</SelectItem>
+                            ))}
+                          </SelectGroup>
+                          <SelectGroup>
+                            <SelectLabel>Digital Skills</SelectLabel>
+                            {DIGITAL_SKILLS.map((skill) => (
+                              <SelectItem key={skill} value={skill}>{skill}</SelectItem>
+                            ))}
+                          </SelectGroup>
+                          <SelectSeparator />
+                          <SelectItem value="Other">Other (type your own)</SelectItem>
                         </SelectGroup>
                       </SelectContent>
                     </Select>
+                    {primarySkill === 'Other' && (
+                      <Input 
+                        placeholder="Enter your skill e.g. Event Planning" 
+                        className="h-12 rounded-xl bg-muted/30 border-none px-4 animate-in fade-in slide-in-from-top-2"
+                        required
+                        value={otherSkill}
+                        onChange={(e) => setOtherSkill(e.target.value)}
+                      />
+                    )}
                   </div>
                 )}
                 <div className="grid gap-2.5">

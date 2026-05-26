@@ -101,10 +101,13 @@ export default function FreelancerProfilePage() {
               <Avatar className="w-40 h-40 md:w-56 md:h-56 border-8 border-background shadow-2xl rounded-[3rem] overflow-hidden">
                 <AvatarImage src={profile.avatarUrl || `https://picsum.photos/seed/${userId}/256/256`} />
                 <AvatarFallback className="text-5xl font-bold bg-primary/10 text-primary">
-                  {profile.fullName?.substring(0, 2).toUpperCase()}
+                  {(profile.fullName || "User").substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className={`absolute -bottom-2 -right-2 w-12 h-12 border-8 border-card rounded-full shadow-2xl flex items-center justify-center ${profile.isAvailable !== false ? 'bg-green-500' : 'bg-destructive'}`}>
+              <div className={cn(
+                "absolute -bottom-2 -right-2 w-12 h-12 border-8 border-card rounded-full shadow-2xl flex items-center justify-center",
+                profile.isAvailable !== false ? "bg-green-500" : "bg-destructive"
+              )}>
                  <CheckCircle2 className="h-6 w-6 text-white" />
               </div>
             </div>
@@ -121,7 +124,7 @@ export default function FreelancerProfilePage() {
                     )}
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-xl md:text-2xl text-muted-foreground font-bold tracking-tight">
-                    <span>{profile.title}</span>
+                    <span>{profile.title || "Professional Expert"}</span>
                     {profile.department && (
                       <span className="flex items-center gap-2 text-primary/70">
                         <GraduationCap className="h-6 w-6" /> {profile.department}
@@ -138,7 +141,7 @@ export default function FreelancerProfilePage() {
                     <MessageSquare className="h-6 w-6" /> Message
                   </Button>
                   <Button className="flex-1 md:flex-none h-16 px-14 font-bold text-lg rounded-[1.25rem] shadow-2xl shadow-primary/30 transition-all hover:scale-[1.03] active:scale-[0.98]">
-                    Book Consultation
+                    Book Session
                   </Button>
                 </div>
               </div>
@@ -149,7 +152,7 @@ export default function FreelancerProfilePage() {
                     <Star className="h-6 w-6 text-yellow-500 fill-current" />
                   </div>
                   <div>
-                    <p className="text-xl font-black">{profile.rating || '5.0'}</p>
+                    <p className="text-xl font-black">{profile.rating ? profile.rating.toFixed(1) : 'N/A'}</p>
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{profile.completedJobs || 0} reviews</p>
                   </div>
                 </div>
@@ -158,8 +161,8 @@ export default function FreelancerProfilePage() {
                     <Clock className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-xl font-black">Fast</p>
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Response Time</p>
+                    <p className="text-xl font-black">Top Speed</p>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Fast Response</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -168,7 +171,7 @@ export default function FreelancerProfilePage() {
                   </div>
                   <div>
                     <p className="text-xl font-black">Verified</p>
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Professional identity</p>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Profile Identity</p>
                   </div>
                 </div>
               </div>
@@ -181,11 +184,11 @@ export default function FreelancerProfilePage() {
         <div className="grid lg:grid-cols-3 gap-16">
           <div className="lg:col-span-2 space-y-16">
             <section className="space-y-6">
-              <h2 className="text-3xl font-black tracking-tight">Expert Biography</h2>
+              <h2 className="text-3xl font-black tracking-tight">Biography</h2>
               <Card className="border-none shadow-sm rounded-[2.5rem] overflow-hidden bg-card">
                 <CardContent className="p-10">
                   <p className="text-muted-foreground text-xl leading-relaxed whitespace-pre-line font-medium">
-                    {profile.bio || `Passionate professional dedicated to delivering high-quality solutions. Specialized in ${profile.title}, I bring a structured approach to complex projects, ensuring excellence in every deliverable.`}
+                    {profile.bio || `Passionate professional dedicated to delivering high-quality solutions. Specialized in ${profile.title || 'their craft'}, I bring a structured approach to complex projects, ensuring excellence in every deliverable.`}
                   </p>
                 </CardContent>
               </Card>
@@ -203,85 +206,39 @@ export default function FreelancerProfilePage() {
                 {!profile.skills?.length && <p className="text-muted-foreground italic text-lg font-medium">No specialized skills listed yet.</p>}
               </div>
             </section>
-
-            <section className="space-y-8">
-              <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-black tracking-tight">Work Showcase</h2>
-                <Button variant="ghost" className="text-primary font-bold h-12 px-6 rounded-xl gap-2">Full Portfolio <ExternalLink className="h-4 w-4" /></Button>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-8">
-                {[1, 2].map(i => (
-                  <div key={i} className="group relative overflow-hidden rounded-[2.5rem] bg-card shadow-lg aspect-video cursor-pointer">
-                    <Image 
-                      src={`https://picsum.photos/seed/portfolio-${i}-${userId}/1200/800`} 
-                      alt="Portfolio project" 
-                      fill
-                      className="object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-10">
-                      <Badge className="w-fit mb-4 bg-primary text-white border-none font-bold uppercase tracking-widest text-[10px]">Project Showcase</Badge>
-                      <h4 className="text-2xl font-black text-white leading-tight">Advanced Professional Project</h4>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
           </div>
 
           <aside className="space-y-8">
             <Card className="border-none shadow-2xl rounded-[3rem] overflow-hidden sticky top-28 bg-white border border-muted/50">
               <CardHeader className="bg-primary text-primary-foreground p-10">
                 <div className="space-y-2">
-                  <p className="text-sm font-bold uppercase tracking-[0.3em] opacity-70">Service Fees</p>
+                  <p className="text-sm font-bold uppercase tracking-[0.3em] opacity-70">Pricing</p>
                   <CardTitle className="text-4xl font-black flex items-center gap-2">
                     <Landmark className="h-8 w-8" /> {profile.priceRange || 'Contact for Price'}
                   </CardTitle>
                 </div>
-                <p className="mt-4 text-primary-foreground/80 font-bold flex items-center gap-2"><Clock className="h-4 w-4" /> Response in ~1 hour</p>
+                <p className="mt-4 text-primary-foreground/80 font-bold flex items-center gap-2"><Clock className="h-4 w-4" /> Responds ~1 hr</p>
               </CardHeader>
               <CardContent className="p-10 space-y-10">
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] flex items-center gap-3">
-                      <GraduationCap className="h-4 w-4 text-primary" /> Qualification
+                      <GraduationCap className="h-4 w-4 text-primary" /> Faculty
                     </span>
-                    <span className="font-black text-sm truncate max-w-[120px]">{profile.department || 'Verified'}</span>
+                    <span className="font-black text-sm truncate max-w-[120px]">{profile.department || 'Verified User'}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] flex items-center gap-3">
-                      <Briefcase className="h-4 w-4 text-primary" /> Total Jobs
+                      <Briefcase className="h-4 w-4 text-primary" /> Experience
                     </span>
-                    <span className="font-black text-lg">{profile.completedJobs || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] flex items-center gap-3">
-                      <Zap className="h-4 w-4 text-primary" /> Success Rate
-                    </span>
-                    <span className="font-black text-lg">99%</span>
+                    <span className="font-black text-lg">{profile.completedJobs || 0} Jobs</span>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <Button className="w-full h-16 text-xl font-bold rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all" onClick={handleMessage}>
-                    Inquire Now
+                    Get Started
                   </Button>
-                  <Button variant="outline" className="w-full h-14 rounded-2xl font-bold border-muted-foreground/20 hover:border-primary transition-all">
-                    Download CV
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-none shadow-sm rounded-[2.5rem] bg-card border overflow-hidden">
-              <CardHeader className="p-8 pb-0">
-                <CardTitle className="text-lg font-black tracking-tight">Trust Verification</CardTitle>
-              </CardHeader>
-              <CardContent className="p-8 space-y-6">
-                <div className="p-5 bg-muted/20 rounded-2xl flex items-start gap-4 border border-dashed border-muted-foreground/10">
-                  <ShieldCheck className="h-6 w-6 text-green-500 shrink-0 mt-1" />
-                  <p className="text-xs font-medium text-muted-foreground leading-relaxed">
-                    Identity and credentials verified by <span className="text-foreground font-bold text-primary">SkillUp Compliance</span>.
-                  </p>
                 </div>
               </CardContent>
             </Card>

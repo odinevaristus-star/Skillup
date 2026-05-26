@@ -55,12 +55,12 @@ export function DashboardSidebar() {
 
   const navItems = [
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
+    { label: "Hire Talent", href: "/freelancers", icon: Users },
+    { label: "Find Work", href: "/jobs", icon: Search },
     { label: "My Jobs", href: "/dashboard/jobs", icon: Briefcase },
     { label: "Messages", href: "/dashboard/messages", icon: MessageSquare, badge: unreadMessages?.length || 0 },
     { label: "Notifications", href: "/dashboard/notifications", icon: Bell, badge: unreadNotifications?.length || 0 },
     { label: "Profile", href: "/dashboard/profile", icon: User },
-    { label: "Hire Talent", href: "/freelancers", icon: Users },
-    { label: "Find Work", href: "/jobs", icon: Search },
   ]
 
   return (

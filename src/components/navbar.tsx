@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "@/hooks/use-theme"
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
-import { Sun, Moon, Zap, User, LogOut, LayoutDashboard, Bell, MessageSquare } from "lucide-react"
+import { Sun, Moon, Zap, User, LogOut, LayoutDashboard, Bell, MessageSquare, Users, Search } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,9 +58,13 @@ export function Navbar() {
           <Link href="/" className="flex items-center space-x-2">
             <span className="text-2xl font-bold tracking-tighter text-primary">SkillUp</span>
           </Link>
-          <div className="hidden md:flex items-center gap-4">
-            <Link href="/jobs" className="text-sm font-medium hover:text-primary transition-colors">Find Work</Link>
-            <Link href="/freelancers" className="text-sm font-medium hover:text-primary transition-colors">Hire Talent</Link>
+          <div className="hidden md:flex items-center gap-6">
+            <Link href="/freelancers" className="text-sm font-bold flex items-center gap-2 hover:text-primary transition-colors">
+              <Users className="h-4 w-4" /> Hire Talent
+            </Link>
+            <Link href="/jobs" className="text-sm font-bold flex items-center gap-2 hover:text-primary transition-colors">
+              <Search className="h-4 w-4" /> Find Work
+            </Link>
           </div>
         </div>
 

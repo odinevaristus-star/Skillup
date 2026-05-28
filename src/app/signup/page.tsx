@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -38,8 +37,11 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
+      // Step 1: Authenticate
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
+      // Step 2: Save Profile
+      // The AuthRedirectHandler will detect the user and redirect automatically
       await setDoc(doc(db, "users", result.user.uid), {
         uid: result.user.uid,
         email: email,
@@ -55,11 +57,7 @@ export default function SignupPage() {
         rating: null
       });
 
-      // Use window.location.replace with a delay to ensure data is written and redirect is forced
-      setTimeout(() => {
-        window.location.replace("/dashboard");
-      }, 500);
-
+      // No manual redirect needed here, AuthRedirectHandler handles it once Auth state changes.
     } catch (error: any) {
       alert(error.message);
       setIsLoading(false);

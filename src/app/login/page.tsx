@@ -1,4 +1,3 @@
-
 "use client"
 
 import Link from "next/link"
@@ -26,12 +25,7 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      
-      // Use window.location.replace with a delay for clean redirection
-      setTimeout(() => {
-        window.location.replace("/dashboard");
-      }, 500);
-
+      // Redirection is handled automatically by the global AuthRedirectHandler
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -46,9 +40,7 @@ export default function LoginPage() {
     const provider = providerName === 'google' ? new GoogleAuthProvider() : new GithubAuthProvider()
     try {
       await signInWithPopup(auth, provider)
-      setTimeout(() => {
-        window.location.replace("/dashboard");
-      }, 500);
+      // Redirection is handled automatically by the global AuthRedirectHandler
     } catch (error: any) {
       toast({
         variant: "destructive",

@@ -1,8 +1,8 @@
-
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from "@/firebase";
+import { AuthRedirectHandler } from "@/components/AuthRedirectHandler";
 
 export const metadata: Metadata = {
   title: 'SkillUp | Modern Freelance Marketplace',
@@ -23,6 +23,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased min-h-screen bg-background">
         <FirebaseClientProvider>
+          <AuthRedirectHandler />
           {children}
           <Toaster />
         </FirebaseClientProvider>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -51,6 +50,21 @@ export function Navbar() {
     await signOut(auth);
     window.location.href = '/';
   };
+
+  // Derive initials from Firestore profile (firstName + lastName)
+  const getInitials = () => {
+    if (profile?.firstName && profile?.lastName) {
+      return `${profile.firstName[0]}${profile.lastName[0]}`.toUpperCase();
+    }
+    if (profile?.fullName) {
+      const parts = profile.fullName.split(' ');
+      if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      return parts[0][0].toUpperCase();
+    }
+    return user?.displayName?.substring(0, 2).toUpperCase() || "US";
+  };
+
+  const displayName = profile?.fullName || profile?.firstName || user?.displayName || "User";
 
   return (
     <nav className="sticky top-0 z-[100] w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 h-20 flex items-center shadow-sm">
@@ -132,14 +146,16 @@ export function Navbar() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-12 w-12 rounded-2xl border-2 border-muted overflow-hidden hover:border-primary transition-all p-0">
                   <Avatar className="h-full w-full rounded-none">
-                    <AvatarImage src={user.photoURL || ""} alt={user.displayName || ""} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-black text-xs">{user.displayName?.substring(0, 2).toUpperCase() || "US"}</AvatarFallback>
+                    <AvatarImage src={user.photoURL || profile?.avatarUrl || ""} alt={displayName} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-black text-xs">
+                      {getInitials()}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-72 rounded-[2rem] p-4 shadow-2xl" align="end" forceMount>
                 <div className="flex flex-col space-y-2 p-4 border-b mb-2">
-                  <p className="text-lg font-black leading-none tracking-tight">{user.displayName}</p>
+                  <p className="text-lg font-black leading-none tracking-tight truncate">{displayName}</p>
                   <p className="text-[10px] font-black leading-none text-muted-foreground uppercase tracking-widest">{profile?.role || 'User'}</p>
                 </div>
                 <DropdownMenuItem asChild className="rounded-2xl p-4 cursor-pointer hover:bg-primary/5 transition-all">

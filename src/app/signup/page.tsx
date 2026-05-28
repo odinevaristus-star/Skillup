@@ -32,37 +32,44 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // VALIDATION: Ensure role is selected
     if (!selectedRole) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Please select a role' });
+      toast({ 
+        variant: 'destructive', 
+        title: 'Role Required', 
+        description: 'Please select "Client" or "Freelancer" to continue.' 
+      });
       return;
     }
 
     setIsLoading(true);
 
     try {
-      console.log("Starting signup process for email:", email);
-      console.log("Selected role before auth:", selectedRole);
-
+      // Step 1: Create User in Firebase Auth
+      console.log("Step 1: Starting Auth creation for", email);
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      const finalSkill = primarySkill;
-      const fullName = `${firstName} ${lastName}`;
       
-      const skillType = selectedRole === 'freelancer' ? (DIGITAL_SKILLS.includes(finalSkill) ? 'Digital' : 'Artisan') : '';
+      // Step 2: Get UID
+      const user = userCredential.user;
+      const uid = user.uid;
+      console.log("Step 2: Auth success. UID:", uid);
+
+      const fullName = `${firstName} ${lastName}`;
+      const skillType = selectedRole === 'freelancer' ? (DIGITAL_SKILLS.includes(primarySkill) ? 'Digital' : 'Artisan') : '';
 
       const userData = {
-        uid: user.uid,
+        uid: uid,
         firstName,
         lastName,
         fullName,
         email,
-        role: selectedRole, // Explicitly using the state variable
-        skills: finalSkill ? [finalSkill] : [],
+        role: selectedRole, // Using state variable directly as requested
+        skills: primarySkill ? [primarySkill] : [],
         skillType,
         bio: '',
-        title: selectedRole === 'freelancer' ? finalSkill || 'Professional Freelancer' : 'Project Client',
-        avatarUrl: user.photoURL || `https://picsum.photos/seed/${user.uid}/128/128`,
+        title: selectedRole === 'freelancer' ? primarySkill || 'Professional Freelancer' : 'Project Client',
+        avatarUrl: user.photoURL || `https://picsum.photos/seed/${uid}/128/128`,
         createdAt: serverTimestamp(),
         rating: null,
         completedJobs: 0,
@@ -70,16 +77,20 @@ export default function SignupPage() {
         isAvailable: true,
       };
 
-      console.log("Saving user to Firestore with role:", selectedRole);
-      console.log("Full User Data Object:", userData);
+      // Step 3: Save to Firestore
+      console.log("Step 3: Saving user with role: " + selectedRole);
+      console.log("Full User Data:", userData);
+      await setDoc(doc(db, 'users', uid), userData);
+      
+      // Optional but good for consistency
+      try {
+        await updateProfile(user, { displayName: fullName });
+      } catch (pErr) {
+        console.warn("Profile display name update failed, but continuing...", pErr);
+      }
 
-      // Start saving Firestore data in background
-      await setDoc(doc(db, 'users', user.uid), userData);
-      await updateProfile(user, { displayName: fullName });
-
-      console.log("Firestore write successful. Redirecting...");
-
-      // IMMEDIATE REDIRECT
+      // Step 4: Final Redirect
+      console.log("Step 4: Firestore success. Redirecting to dashboard...");
       window.location.href = '/dashboard';
 
     } catch (error: any) {

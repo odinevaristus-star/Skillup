@@ -20,8 +20,16 @@ import { Badge } from '@/components/ui/badge';
 export function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const { user } = useUser();
-  const auth = useAuth();
+  const auth = authInstance();
   const db = useFirestore();
+
+  function authInstance() {
+    try {
+      return useAuth();
+    } catch (e) {
+      return null;
+    }
+  }
 
   const userDocRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null;
@@ -47,21 +55,22 @@ export function Navbar() {
   const { data: unreadMessages } = useCollection(unreadMessagesQuery);
 
   const handleSignOut = async () => {
+    if (!auth) return;
     await signOut(auth);
     window.location.href = '/';
   };
 
-  // Derive initials from Firestore profile (firstName + lastName)
+  // Improved initials logic
   const getInitials = () => {
     if (profile?.firstName && profile?.lastName) {
       return `${profile.firstName[0]}${profile.lastName[0]}`.toUpperCase();
     }
     if (profile?.fullName) {
-      const parts = profile.fullName.split(' ');
-      if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-      return parts[0][0].toUpperCase();
+      const parts = profile.fullName.trim().split(' ');
+      if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+      if (parts[0]) return parts[0][0].toUpperCase();
     }
-    return user?.displayName?.substring(0, 2).toUpperCase() || "US";
+    return "?";
   };
 
   const displayName = profile?.fullName || profile?.firstName || user?.displayName || "User";

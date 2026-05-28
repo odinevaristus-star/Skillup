@@ -40,9 +40,10 @@ export default function SignupPage() {
       // Step 1: Authenticate
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Step 2: Save Profile
-      // The AuthRedirectHandler will detect the user and redirect automatically
-      await setDoc(doc(db, "users", result.user.uid), {
+      console.log("Step 1: Auth success for UID:", result.user.uid);
+
+      // Step 2: Save Profile Immediately
+      const userData = {
         uid: result.user.uid,
         email: email,
         firstName: firstName,
@@ -55,10 +56,16 @@ export default function SignupPage() {
         isAvailable: true,
         completedJobs: 0,
         rating: null
-      });
+      };
 
-      // No manual redirect needed here, AuthRedirectHandler handles it once Auth state changes.
+      console.log("Step 2: Saving Firestore document with role:", selectedRole);
+      
+      await setDoc(doc(db, "users", result.user.uid), userData);
+      
+      console.log("Step 3: Firestore write confirmed. Redirection will be handled by AuthRedirectHandler.");
+
     } catch (error: any) {
+      console.error("Signup Error:", error);
       alert(error.message);
       setIsLoading(false);
     }

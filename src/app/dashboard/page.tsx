@@ -1,13 +1,14 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { doc, collection, query, where, limit, orderBy, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, collection, query, where, limit, orderBy, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   TrendingUp,
   Briefcase,
@@ -32,6 +33,10 @@ export default function DashboardOverview() {
   const db = useFirestore();
   const { toast } = useToast();
   const [roleSetting, setRoleSetting] = useState(false);
+  
+  // Local state for setup gate
+  const [setupFirstName, setSetupFirstName] = useState('');
+  const [setupLastName, setSetupLastName] = useState('');
 
   const userDocRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null;
@@ -42,84 +47,82 @@ export default function DashboardOverview() {
 
   useEffect(() => {
     if (profile) {
-      console.log("Current Logged-in User ID:", user?.uid);
-      console.log("Firestore Profile Data:", profile);
-      console.log("Detected Role from Firestore:", profile.role);
+      console.log("Dashboard: Logged-in UID:", user?.uid);
+      console.log("Dashboard: Profile Data:", profile);
+      console.log("Dashboard: Detected Role:", profile.role);
+    } else if (!profileLoading && user) {
+      console.warn("Dashboard: No Firestore document found for UID:", user.uid);
     }
-  }, [profile, user]);
+  }, [profile, profileLoading, user]);
 
-  // Determine role strictly based on lowercase values
   const isFreelancer = profile?.role === 'freelancer';
   const isClient = profile?.role === 'client';
-  const hasNoRole = profile && !profile.role;
+  const needsSetup = !profile || !profile.role;
 
-  // Fetch jobs where user is client
+  // Data fetching (conditional to avoid unnecessary reads)
   const clientJobsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || !isClient) return null;
-    return query(
-      collection(db, 'jobs'),
-      where('clientId', '==', user.uid),
-      orderBy('createdAt', 'desc'),
-      limit(5)
-    );
+    return query(collection(db, 'jobs'), where('clientId', '==', user.uid), orderBy('createdAt', 'desc'), limit(5));
   }, [db, user?.uid, isClient]);
 
-  // Fetch jobs where user is hired freelancer
   const freelancerJobsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || !isFreelancer) return null;
-    return query(
-      collection(db, 'jobs'),
-      where('freelancerId', '==', user.uid),
-      orderBy('createdAt', 'desc'),
-      limit(5)
-    );
+    return query(collection(db, 'jobs'), where('freelancerId', '==', user.uid), orderBy('createdAt', 'desc'), limit(5));
   }, [db, user?.uid, isFreelancer]);
 
-  // Fetch applications if user is a freelancer
   const myApplicationsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || !isFreelancer) return null;
-    return query(
-      collection(db, 'applications'),
-      where('freelancerId', '==', user.uid),
-      orderBy('createdAt', 'desc'),
-      limit(5)
-    );
+    return query(collection(db, 'applications'), where('freelancerId', '==', user.uid), orderBy('createdAt', 'desc'), limit(5));
   }, [db, user?.uid, isFreelancer]);
+
+  const openJobsQuery = useMemoFirebase(() => {
+    if (!db || needsSetup) return null;
+    return query(collection(db, 'jobs'), where('status', '==', 'open'), orderBy('createdAt', 'desc'), limit(4));
+  }, [db, needsSetup]);
 
   const { data: clientJobs, loading: clientJobsLoading } = useCollection(clientJobsQuery);
   const { data: freelancerJobs, loading: freelancerJobsLoading } = useCollection(freelancerJobsQuery);
   const { data: myApplications } = useCollection(myApplicationsQuery);
-
-  // Fetch recommended jobs (Smart Matches)
-  const openJobsQuery = useMemoFirebase(() => {
-    if (!db) return null;
-    return query(collection(db, 'jobs'), where('status', '==', 'open'), orderBy('createdAt', 'desc'), limit(4));
-  }, [db]);
-
   const { data: openJobs, loading: openJobsLoading } = useCollection(openJobsQuery);
 
-  const handleSetRole = async (selectedRole: 'client' | 'freelancer') => {
-    if (!userDocRef) return;
+  const handleCompleteSetup = async (selectedRole: 'client' | 'freelancer') => {
+    if (!userDocRef || !user) return;
+    
+    const firstName = setupFirstName.trim() || user.displayName?.split(' ')[0] || 'User';
+    const lastName = setupLastName.trim() || user.displayName?.split(' ')[1] || '';
+
     setRoleSetting(true);
     
-    console.log("Saving one-time role selection:", selectedRole);
-    
-    updateDoc(userDocRef, {
+    const userData = {
+      uid: user.uid,
+      email: user.email,
+      firstName,
+      lastName,
+      fullName: `${firstName} ${lastName}`.trim(),
       role: selectedRole,
       updatedAt: serverTimestamp(),
-      title: selectedRole === 'client' ? 'Project Client' : 'Professional Freelancer'
-    })
-    .then(() => {
-      toast({ title: 'Welcome!', description: `Your role has been set to ${selectedRole}.` });
-    })
-    .catch(async (error) => {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: userDocRef.path,
-        operation: 'update',
-        requestResourceData: { role: selectedRole }
-      }));
-    })
-    .finally(() => setRoleSetting(false));
+      createdAt: profile?.createdAt || serverTimestamp(),
+      title: selectedRole === 'client' ? 'Project Client' : 'Professional Freelancer',
+      isAvailable: true,
+      completedJobs: profile?.completedJobs || 0,
+      rating: profile?.rating || null
+    };
+
+    console.log("Saving setup data:", userData);
+
+    setDoc(userDocRef, userData, { merge: true })
+      .then(() => {
+        toast({ title: 'Profile Created!', description: `Welcome to SkillUp as a ${selectedRole}.` });
+      })
+      .catch(async (error) => {
+        console.error("Setup Error:", error);
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: 'write',
+          requestResourceData: userData
+        }));
+      })
+      .finally(() => setRoleSetting(false));
   };
 
   if (authLoading || profileLoading) {
@@ -130,43 +133,73 @@ export default function DashboardOverview() {
     );
   }
 
-  // Role Selection Gate for existing users with no role
-  if (hasNoRole) {
+  // Profile Setup Gate
+  if (needsSetup) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-700">
-        <div className="max-w-2xl w-full text-center space-y-12">
+      <div className="flex flex-col items-center justify-center py-10 animate-in fade-in duration-700">
+        <div className="max-w-3xl w-full text-center space-y-12">
           <div className="space-y-4">
-            <h1 className="text-5xl font-black tracking-tighter">One last thing...</h1>
-            <p className="text-muted-foreground text-xl font-medium">How will you be using SkillUp today?</p>
+            <h1 className="text-5xl font-black tracking-tighter">Complete Your Setup</h1>
+            <p className="text-muted-foreground text-xl font-medium">We couldn't find your professional profile. Let's fix that now.</p>
           </div>
-          
-          <div className="grid md:grid-cols-2 gap-8">
-            <button
-              onClick={() => handleSetRole('client')}
-              disabled={roleSetting}
-              className="flex flex-col items-center p-12 border-4 border-muted hover:border-primary bg-card rounded-[3rem] transition-all group relative text-center"
-            >
-              <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
-                <User className="h-12 w-12 text-primary" />
-              </div>
-              <h2 className="text-2xl font-black mb-2">I am a Client</h2>
-              <p className="text-sm text-muted-foreground font-medium">I need to hire talent for a project</p>
-              {roleSetting && <div className="absolute inset-0 bg-background/50 flex items-center justify-center rounded-[3rem]"><Loader2 className="animate-spin text-primary" /></div>}
-            </button>
 
-            <button
-              onClick={() => handleSetRole('freelancer')}
-              disabled={roleSetting}
-              className="flex flex-col items-center p-12 border-4 border-muted hover:border-primary bg-card rounded-[3rem] transition-all group relative text-center"
-            >
-              <div className="w-24 h-24 rounded-full bg-accent/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
-                <Briefcase className="h-12 w-12 text-accent" />
+          <Card className="p-8 border-none bg-card rounded-[3rem] shadow-xl text-left space-y-8">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="font-bold">First Name</Label>
+                <Input 
+                  placeholder="e.g. John" 
+                  value={setupFirstName} 
+                  onChange={(e) => setSetupFirstName(e.target.value)}
+                  className="h-12 rounded-xl"
+                />
               </div>
-              <h2 className="text-2xl font-black mb-2">I am a Freelancer</h2>
-              <p className="text-sm text-muted-foreground font-medium">I want to offer my services</p>
-              {roleSetting && <div className="absolute inset-0 bg-background/50 flex items-center justify-center rounded-[3rem]"><Loader2 className="animate-spin text-primary" /></div>}
-            </button>
-          </div>
+              <div className="space-y-2">
+                <Label className="font-bold">Last Name</Label>
+                <Input 
+                  placeholder="e.g. Doe" 
+                  value={setupLastName} 
+                  onChange={(e) => setSetupLastName(e.target.value)}
+                  className="h-12 rounded-xl"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="font-bold text-center block">Select Your Role</Label>
+              <div className="grid md:grid-cols-2 gap-8">
+                <button
+                  onClick={() => handleCompleteSetup('client')}
+                  disabled={roleSetting}
+                  className="flex flex-col items-center p-8 border-4 border-muted hover:border-primary bg-card rounded-[2.5rem] transition-all group relative"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+                    <User className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-black">I am a Client</h3>
+                  <p className="text-xs text-muted-foreground mt-1">I want to hire talent</p>
+                </button>
+
+                <button
+                  onClick={() => handleCompleteSetup('freelancer')}
+                  disabled={roleSetting}
+                  className="flex flex-col items-center p-8 border-4 border-muted hover:border-accent bg-card rounded-[2.5rem] transition-all group relative"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
+                    <Briefcase className="h-8 w-8 text-accent" />
+                  </div>
+                  <h3 className="text-xl font-black">I am a Freelancer</h3>
+                  <p className="text-xs text-muted-foreground mt-1">I want to work</p>
+                </button>
+              </div>
+            </div>
+            
+            {roleSetting && (
+              <div className="flex justify-center pt-4">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            )}
+          </Card>
         </div>
       </div>
     );
@@ -176,7 +209,6 @@ export default function DashboardOverview() {
   const activeJobs = isFreelancer ? (freelancerJobs || []) : (clientJobs || []);
   const jobsLoading = isFreelancer ? freelancerJobsLoading : clientJobsLoading;
 
-  // Stats Configuration
   const stats = isFreelancer
     ? [
         { label: 'Active Projects', value: activeJobs.filter((j) => j.status === 'in-progress').length.toString(), icon: Briefcase, color: 'text-blue-500' },
@@ -200,15 +232,14 @@ export default function DashboardOverview() {
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground">Hello, {firstName}!</h1>
           <div className="flex flex-col gap-2">
             <p className="text-muted-foreground text-xl font-medium">Your Workspace Dashboard</p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Badge className={cn(
                 "border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
                 isFreelancer ? "bg-accent/10 text-accent" : "bg-primary/10 text-primary"
               )}>
-                {isFreelancer ? 'Freelancer Account' : isClient ? 'Client Account' : 'Account Pending'}
+                {isFreelancer ? 'Freelancer Account' : 'Client Account'}
               </Badge>
-              {/* Debug Role info */}
-              <span className="text-[8px] font-bold text-muted-foreground uppercase opacity-50">Role ID: {profile?.role || 'null'}</span>
+              <span className="text-[8px] font-bold text-muted-foreground uppercase opacity-50">Role: {profile?.role}</span>
             </div>
           </div>
         </div>
@@ -229,7 +260,6 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {stats.map((stat, i) => (
           <Card key={i} className="border-none shadow-sm hover:shadow-xl transition-all duration-500 rounded-[2.5rem] bg-card overflow-hidden">
@@ -251,7 +281,6 @@ export default function DashboardOverview() {
 
       <div className="grid lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2 space-y-12">
-          {/* Recent Activity Card */}
           <Card className="border-none shadow-sm overflow-hidden rounded-[3rem] bg-card border border-muted/30">
             <CardHeader className="flex flex-row items-center justify-between p-10 pb-6 border-b bg-muted/10">
               <div className="space-y-1">
@@ -311,54 +340,8 @@ export default function DashboardOverview() {
               )}
             </CardContent>
           </Card>
-
-          {/* Smart Matches / Latest Opportunities */}
-          <div className="bg-gradient-to-br from-primary/10 via-accent/5 to-transparent p-12 rounded-[3.5rem] border-2 border-primary/10 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-12 opacity-5">
-              <Zap className="h-48 w-48 text-primary" />
-            </div>
-            <div className="relative z-10">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 bg-primary rounded-2xl shadow-xl shadow-primary/20">
-                  <Zap className="h-6 w-6 text-primary-foreground" />
-                </div>
-                <h2 className="text-3xl font-black tracking-tight">{isFreelancer ? 'Smart Matches' : 'Latest Opportunities'}</h2>
-              </div>
-              <p className="text-muted-foreground text-lg mb-10 leading-relaxed font-medium max-w-2xl">
-                {isFreelancer
-                  ? 'Real-time opportunities from our network tailored for your unique skills.'
-                  : 'Discover the latest projects being posted by others on the platform.'}
-              </p>
-
-              <div className="grid md:grid-cols-2 gap-8">
-                {openJobsLoading ? (
-                  <div className="col-span-2 flex justify-center py-12">
-                    <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
-                  </div>
-                ) : smartMatches.length > 0 ? (
-                  smartMatches.map((job: any) => (
-                    <Link key={job.id} href={`/jobs/${job.id}`}>
-                      <div className="bg-white/80 backdrop-blur-xl p-8 rounded-[2rem] border-2 border-transparent hover:border-primary transition-all cursor-pointer group shadow-xl hover:-translate-y-1">
-                        <div className="flex justify-between items-start mb-6">
-                          <Badge className="bg-primary text-primary-foreground border-none text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full">LIVE MATCH</Badge>
-                          <span className="font-black text-2xl text-primary">₦{job.budget?.toLocaleString()}</span>
-                        </div>
-                        <h3 className="font-black text-xl group-hover:text-primary transition-colors mb-2 line-clamp-1 tracking-tight">{job.title}</h3>
-                        <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">{job.category} • {job.clientName}</p>
-                      </div>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="col-span-2 text-center py-16 bg-white/50 backdrop-blur-sm rounded-[2rem] border-2 border-dashed border-muted">
-                    <p className="text-muted-foreground font-black uppercase tracking-widest text-xs opacity-60">No live matches at the moment</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Sidebar Actions */}
         <div className="space-y-12">
           <Card className="border-none shadow-sm overflow-hidden rounded-[3rem] bg-card border border-muted/30">
             <CardHeader className="p-8 pb-4">
@@ -388,51 +371,6 @@ export default function DashboardOverview() {
                   </Link>
                 </>
               )}
-              <Link href="/dashboard/profile">
-                <Button variant="outline" className="w-full justify-start gap-5 h-16 rounded-[1.25rem] border-2 border-dashed hover:border-primary hover:bg-primary/5 transition-all px-6">
-                  <div className="p-2 bg-muted rounded-lg group-hover:bg-primary/10"><Star className="h-6 w-6 text-primary" /></div>
-                  <span className="font-black text-sm uppercase tracking-widest">My Profile</span>
-                </Button>
-              </Link>
-              <Link href="/dashboard/messages">
-                <Button variant="outline" className="w-full justify-start gap-5 h-16 rounded-[1.25rem] border-2 border-dashed hover:border-primary hover:bg-primary/5 transition-all px-6">
-                  <div className="p-2 bg-muted rounded-lg group-hover:bg-primary/10"><MessageSquare className="h-6 w-6 text-primary" /></div>
-                  <span className="font-black text-sm uppercase tracking-widest">Messages</span>
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          <Card className="border-none shadow-2xl rounded-[3rem] overflow-hidden bg-primary text-primary-foreground border-none">
-            <CardHeader className="p-10 pb-6">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-xl">
-                  <TrendingUp className="h-6 w-6" />
-                </div>
-                <CardTitle className="text-2xl font-black tracking-tight">Weekly Outlook</CardTitle>
-              </div>
-              <CardDescription className="text-primary-foreground/80 font-medium">Professional activity tracker</CardDescription>
-            </CardHeader>
-            <CardContent className="p-10 pt-4 space-y-8">
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-white shadow-xl" />
-                    <span className="text-sm font-black uppercase tracking-widest">Profile Views</span>
-                  </div>
-                  <span className="font-black text-2xl">12</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-white/40 shadow-xl" />
-                    <span className="text-sm font-black uppercase tracking-widest">Interactions</span>
-                  </div>
-                  <span className="font-black text-2xl">2</span>
-                </div>
-              </div>
-              <div className="pt-6 border-t border-white/10">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60">Status: Verified Account</p>
-              </div>
             </CardContent>
           </Card>
         </div>

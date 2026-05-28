@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { doc, collection, query, where, limit, orderBy, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, collection, query, where, limit, orderBy, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,6 @@ import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  TrendingUp,
   Briefcase,
   MessageSquare,
   Star,
@@ -34,7 +33,6 @@ export default function DashboardOverview() {
   const { toast } = useToast();
   const [roleSetting, setRoleSetting] = useState(false);
   
-  // Local state for setup gate
   const [setupFirstName, setSetupFirstName] = useState('');
   const [setupLastName, setSetupLastName] = useState('');
 
@@ -45,21 +43,11 @@ export default function DashboardOverview() {
 
   const { data: profile, loading: profileLoading } = useDoc(userDocRef);
 
-  useEffect(() => {
-    if (profile) {
-      console.log("Dashboard: Logged-in UID:", user?.uid);
-      console.log("Dashboard: Profile Data:", profile);
-      console.log("Dashboard: Detected Role:", profile.role);
-    } else if (!profileLoading && user) {
-      console.warn("Dashboard: No Firestore document found for UID:", user.uid);
-    }
-  }, [profile, profileLoading, user]);
-
   const isFreelancer = profile?.role === 'freelancer';
   const isClient = profile?.role === 'client';
-  const needsSetup = !profile || !profile.role;
+  const needsSetup = !profileLoading && (!profile || !profile.role);
 
-  // Data fetching (conditional to avoid unnecessary reads)
+  // Data fetching
   const clientJobsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || !isClient) return null;
     return query(collection(db, 'jobs'), where('clientId', '==', user.uid), orderBy('createdAt', 'desc'), limit(5));
@@ -75,47 +63,42 @@ export default function DashboardOverview() {
     return query(collection(db, 'applications'), where('freelancerId', '==', user.uid), orderBy('createdAt', 'desc'), limit(5));
   }, [db, user?.uid, isFreelancer]);
 
-  const openJobsQuery = useMemoFirebase(() => {
-    if (!db || needsSetup) return null;
-    return query(collection(db, 'jobs'), where('status', '==', 'open'), orderBy('createdAt', 'desc'), limit(4));
-  }, [db, needsSetup]);
-
   const { data: clientJobs, loading: clientJobsLoading } = useCollection(clientJobsQuery);
   const { data: freelancerJobs, loading: freelancerJobsLoading } = useCollection(freelancerJobsQuery);
   const { data: myApplications } = useCollection(myApplicationsQuery);
-  const { data: openJobs, loading: openJobsLoading } = useCollection(openJobsQuery);
 
   const handleCompleteSetup = async (selectedRole: 'client' | 'freelancer') => {
     if (!userDocRef || !user) return;
-    
-    const firstName = setupFirstName.trim() || user.displayName?.split(' ')[0] || 'User';
-    const lastName = setupLastName.trim() || user.displayName?.split(' ')[1] || '';
+    if (!setupFirstName.trim() || !setupLastName.trim()) {
+      toast({ variant: 'destructive', title: 'Name required', description: 'Please enter your first and last name.' });
+      return;
+    }
 
     setRoleSetting(true);
+    const firstName = setupFirstName.trim();
+    const lastName = setupLastName.trim();
     
     const userData = {
       uid: user.uid,
       email: user.email,
       firstName,
       lastName,
-      fullName: `${firstName} ${lastName}`.trim(),
+      fullName: `${firstName} ${lastName}`,
       role: selectedRole,
       updatedAt: serverTimestamp(),
-      createdAt: profile?.createdAt || serverTimestamp(),
-      title: selectedRole === 'client' ? 'Project Client' : 'Professional Freelancer',
+      createdAt: serverTimestamp(),
+      title: selectedRole === 'client' ? 'Project Client' : 'Campus Professional',
       isAvailable: true,
-      completedJobs: profile?.completedJobs || 0,
-      rating: profile?.rating || null
+      completedJobs: 0,
+      rating: null,
+      skills: []
     };
 
-    console.log("Saving setup data:", userData);
-
-    setDoc(userDocRef, userData, { merge: true })
+    setDoc(userDocRef, userData)
       .then(() => {
-        toast({ title: 'Profile Created!', description: `Welcome to SkillUp as a ${selectedRole}.` });
+        toast({ title: 'Welcome!', description: `Account setup as ${selectedRole} successful.` });
       })
       .catch(async (error) => {
-        console.error("Setup Error:", error);
         errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: userDocRef.path,
           operation: 'write',
@@ -133,70 +116,69 @@ export default function DashboardOverview() {
     );
   }
 
-  // Profile Setup Gate
   if (needsSetup) {
     return (
       <div className="flex flex-col items-center justify-center py-10 animate-in fade-in duration-700">
         <div className="max-w-3xl w-full text-center space-y-12">
           <div className="space-y-4">
             <h1 className="text-5xl font-black tracking-tighter">Complete Your Setup</h1>
-            <p className="text-muted-foreground text-xl font-medium">We couldn't find your professional profile. Let's fix that now.</p>
+            <p className="text-muted-foreground text-xl font-medium">Please provide your details to access the dashboard.</p>
           </div>
 
-          <Card className="p-8 border-none bg-card rounded-[3rem] shadow-xl text-left space-y-8">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="font-bold">First Name</Label>
+          <Card className="p-10 border-none bg-card rounded-[3rem] shadow-xl text-left space-y-10">
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <Label className="font-bold text-base">First Name</Label>
                 <Input 
                   placeholder="e.g. John" 
                   value={setupFirstName} 
                   onChange={(e) => setSetupFirstName(e.target.value)}
-                  className="h-12 rounded-xl"
+                  className="h-14 rounded-2xl bg-muted/50 border-none px-6 text-lg"
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="font-bold">Last Name</Label>
+              <div className="space-y-3">
+                <Label className="font-bold text-base">Last Name</Label>
                 <Input 
                   placeholder="e.g. Doe" 
                   value={setupLastName} 
                   onChange={(e) => setSetupLastName(e.target.value)}
-                  className="h-12 rounded-xl"
+                  className="h-14 rounded-2xl bg-muted/50 border-none px-6 text-lg"
                 />
               </div>
             </div>
 
-            <div className="space-y-4">
-              <Label className="font-bold text-center block">Select Your Role</Label>
+            <div className="space-y-6">
+              <Label className="font-bold text-center block text-lg">I am joining as a:</Label>
               <div className="grid md:grid-cols-2 gap-8">
                 <button
                   onClick={() => handleCompleteSetup('client')}
                   disabled={roleSetting}
-                  className="flex flex-col items-center p-8 border-4 border-muted hover:border-primary bg-card rounded-[2.5rem] transition-all group relative"
+                  className="flex flex-col items-center p-10 border-4 border-muted hover:border-primary bg-card rounded-[2.5rem] transition-all group relative"
                 >
-                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-                    <User className="h-8 w-8 text-primary" />
+                  <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-6">
+                    <User className="h-10 w-10 text-primary" />
                   </div>
-                  <h3 className="text-xl font-black">I am a Client</h3>
-                  <p className="text-xs text-muted-foreground mt-1">I want to hire talent</p>
+                  <h3 className="text-2xl font-black">Client</h3>
+                  <p className="text-sm text-muted-foreground mt-2">I want to hire talent</p>
                 </button>
 
                 <button
                   onClick={() => handleCompleteSetup('freelancer')}
                   disabled={roleSetting}
-                  className="flex flex-col items-center p-8 border-4 border-muted hover:border-accent bg-card rounded-[2.5rem] transition-all group relative"
+                  className="flex flex-col items-center p-10 border-4 border-muted hover:border-accent bg-card rounded-[2.5rem] transition-all group relative"
                 >
-                  <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
-                    <Briefcase className="h-8 w-8 text-accent" />
+                  <div className="w-20 h-20 rounded-3xl bg-accent/10 flex items-center justify-center mb-6">
+                    <Briefcase className="h-10 w-10 text-accent" />
                   </div>
-                  <h3 className="text-xl font-black">I am a Freelancer</h3>
-                  <p className="text-xs text-muted-foreground mt-1">I want to work</p>
+                  <h3 className="text-2xl font-black">Freelancer</h3>
+                  <p className="text-sm text-muted-foreground mt-2">I want to find work</p>
                 </button>
               </div>
             </div>
             
             {roleSetting && (
               <div className="flex justify-center pt-4">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
               </div>
             )}
           </Card>
@@ -205,7 +187,6 @@ export default function DashboardOverview() {
     );
   }
 
-  const firstName = profile?.firstName || user?.displayName?.split(' ')[0] || 'User';
   const activeJobs = isFreelancer ? (freelancerJobs || []) : (clientJobs || []);
   const jobsLoading = isFreelancer ? freelancerJobsLoading : clientJobsLoading;
 
@@ -223,15 +204,13 @@ export default function DashboardOverview() {
         { label: 'Messages', value: '0', icon: MessageSquare, color: 'text-indigo-500' },
       ];
 
-  const smartMatches = openJobs?.filter((job) => job.clientId !== user?.uid).slice(0, 2) || [];
-
   return (
     <div className="space-y-12 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div className="space-y-2">
-          <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground">Hello, {firstName}!</h1>
+          <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground">Hello, {profile?.firstName}!</h1>
           <div className="flex flex-col gap-2">
-            <p className="text-muted-foreground text-xl font-medium">Your Workspace Dashboard</p>
+            <p className="text-muted-foreground text-xl font-medium">Your Workspace Overview</p>
             <div className="flex items-center gap-3">
               <Badge className={cn(
                 "border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
@@ -239,7 +218,6 @@ export default function DashboardOverview() {
               )}>
                 {isFreelancer ? 'Freelancer Account' : 'Client Account'}
               </Badge>
-              <span className="text-[8px] font-bold text-muted-foreground uppercase opacity-50">Role: {profile?.role}</span>
             </div>
           </div>
         </div>
@@ -268,7 +246,6 @@ export default function DashboardOverview() {
                 <div className={cn('p-4 rounded-2xl bg-muted/50 transition-colors', stat.color)}>
                   <stat.icon className="h-8 w-8" />
                 </div>
-                <Badge variant="outline" className="text-[10px] font-black uppercase tracking-[0.2em] border-none bg-muted/50 px-3 py-1">LIVE</Badge>
               </div>
               <div className="space-y-1">
                 <h3 className="text-4xl font-black tracking-tighter">{stat.value}</h3>
@@ -314,8 +291,8 @@ export default function DashboardOverview() {
                       </div>
                       <div className="space-y-3">
                         <div className="flex justify-between text-[10px] font-black uppercase tracking-widest opacity-60">
-                          <span>Status</span>
-                          <span>{job.status === 'open' ? 'Awaiting Applicants' : 'Active Milestone'}</span>
+                          <span>Progress</span>
+                          <span>{job.status === 'in-progress' ? '50%' : '0%'}</span>
                         </div>
                         <Progress value={job.status === 'in-progress' ? 50 : 0} className="h-3 rounded-full" />
                       </div>
@@ -328,9 +305,6 @@ export default function DashboardOverview() {
                     <Briefcase className="h-12 w-12" />
                   </div>
                   <h3 className="text-2xl font-black text-foreground tracking-tight">Nothing here yet</h3>
-                  <p className="text-lg max-w-xs mx-auto mt-4 leading-relaxed font-medium">
-                    {isFreelancer ? 'Browse available jobs to start earning today.' : 'Post a new job to find talented professionals.'}
-                  </p>
                   <Link href={isFreelancer ? '/jobs' : '/dashboard/jobs/post'}>
                     <Button variant="outline" className="mt-10 rounded-2xl font-black text-sm uppercase tracking-widest h-14 px-10 border-muted-foreground/20 hover:border-primary transition-all">
                       {isFreelancer ? 'Explore Job Board' : 'Post First Gig'}

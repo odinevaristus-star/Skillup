@@ -20,16 +20,8 @@ import { Badge } from '@/components/ui/badge';
 export function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const { user } = useUser();
-  const auth = authInstance();
+  const auth = useAuth();
   const db = useFirestore();
-
-  function authInstance() {
-    try {
-      return useAuth();
-    } catch (e) {
-      return null;
-    }
-  }
 
   const userDocRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null;
@@ -60,7 +52,6 @@ export function Navbar() {
     window.location.href = '/';
   };
 
-  // Improved initials logic
   const getInitials = () => {
     if (profile?.firstName && profile?.lastName) {
       return `${profile.firstName[0]}${profile.lastName[0]}`.toUpperCase();

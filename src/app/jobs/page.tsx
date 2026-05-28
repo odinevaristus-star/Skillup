@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from "react"
@@ -15,7 +14,6 @@ import {
   Loader2, 
   ArrowRight, 
   Filter,
-  Zap,
   Landmark
 } from "lucide-react"
 import Link from "next/link"
@@ -24,7 +22,6 @@ import { collection, query, where, orderBy } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
 import { SearchableSelect } from "@/components/ui/searchable-select"
-import { ALL_CATEGORIES } from "@/lib/constants"
 
 export default function JobSearchPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -92,17 +89,6 @@ export default function JobSearchPage() {
                 />
               </div>
             </div>
-
-            <Card className="border-none bg-accent/5 rounded-[2.5rem] overflow-hidden p-8 border border-accent/10">
-              <CardContent className="p-0 space-y-4 text-center">
-                <div className="w-14 h-14 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                  <Zap className="h-7 w-7 text-accent" />
-                </div>
-                <h4 className="font-bold text-lg tracking-tight">Boost Your Reach</h4>
-                <p className="text-xs text-muted-foreground leading-relaxed font-medium">Unlock priority bidding and early access to high-budget campus projects.</p>
-                <Button className="w-full h-12 rounded-xl font-bold bg-accent text-accent-foreground hover:opacity-90">Go Pro Now</Button>
-              </CardContent>
-            </Card>
           </aside>
 
           <div className="flex-1 space-y-8">

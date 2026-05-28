@@ -42,9 +42,11 @@ export default function DashboardOverview() {
 
   useEffect(() => {
     if (profile) {
-      console.log("Current User Role:", profile.role);
+      console.log("Current Logged-in User ID:", user?.uid);
+      console.log("Firestore Profile Data:", profile);
+      console.log("Detected Role from Firestore:", profile.role);
     }
-  }, [profile]);
+  }, [profile, user]);
 
   // Determine role strictly based on lowercase values
   const isFreelancer = profile?.role === 'freelancer';
@@ -53,36 +55,36 @@ export default function DashboardOverview() {
 
   // Fetch jobs where user is client
   const clientJobsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid || isFreelancer) return null;
+    if (!db || !user?.uid || !isClient) return null;
     return query(
       collection(db, 'jobs'),
       where('clientId', '==', user.uid),
       orderBy('createdAt', 'desc'),
       limit(5)
     );
-  }, [db, user?.uid, isFreelancer]);
+  }, [db, user?.uid, isClient]);
 
   // Fetch jobs where user is hired freelancer
   const freelancerJobsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid || isClient) return null;
+    if (!db || !user?.uid || !isFreelancer) return null;
     return query(
       collection(db, 'jobs'),
       where('freelancerId', '==', user.uid),
       orderBy('createdAt', 'desc'),
       limit(5)
     );
-  }, [db, user?.uid, isClient]);
+  }, [db, user?.uid, isFreelancer]);
 
   // Fetch applications if user is a freelancer
   const myApplicationsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid || isClient) return null;
+    if (!db || !user?.uid || !isFreelancer) return null;
     return query(
       collection(db, 'applications'),
       where('freelancerId', '==', user.uid),
       orderBy('createdAt', 'desc'),
       limit(5)
     );
-  }, [db, user?.uid, isClient]);
+  }, [db, user?.uid, isFreelancer]);
 
   const { data: clientJobs, loading: clientJobsLoading } = useCollection(clientJobsQuery);
   const { data: freelancerJobs, loading: freelancerJobsLoading } = useCollection(freelancerJobsQuery);
@@ -99,6 +101,8 @@ export default function DashboardOverview() {
   const handleSetRole = async (selectedRole: 'client' | 'freelancer') => {
     if (!userDocRef) return;
     setRoleSetting(true);
+    
+    console.log("Saving one-time role selection:", selectedRole);
     
     updateDoc(userDocRef, {
       role: selectedRole,
@@ -194,11 +198,18 @@ export default function DashboardOverview() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div className="space-y-2">
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground">Hello, {firstName}!</h1>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-2">
             <p className="text-muted-foreground text-xl font-medium">Your Workspace Dashboard</p>
-            <Badge className="bg-primary/10 text-primary border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
-              {profile?.role === 'freelancer' ? 'Freelancer Account' : 'Client Account'}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className={cn(
+                "border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
+                isFreelancer ? "bg-accent/10 text-accent" : "bg-primary/10 text-primary"
+              )}>
+                {isFreelancer ? 'Freelancer Account' : isClient ? 'Client Account' : 'Account Pending'}
+              </Badge>
+              {/* Debug Role info */}
+              <span className="text-[8px] font-bold text-muted-foreground uppercase opacity-50">Role ID: {profile?.role || 'null'}</span>
+            </div>
           </div>
         </div>
         <div className="flex gap-4">

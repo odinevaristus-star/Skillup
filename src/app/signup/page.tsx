@@ -19,7 +19,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { ARTISAN_SKILLS, DIGITAL_SKILLS } from '@/lib/constants';
 
 export default function SignupPage() {
-  const [role, setRole] = useState<'client' | 'freelancer' | null>(null);
+  const [selectedRole, setSelectedRole] = useState<'client' | 'freelancer' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -32,7 +32,7 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!role) {
+    if (!selectedRole) {
       toast({ variant: 'destructive', title: 'Error', description: 'Please select a role' });
       return;
     }
@@ -40,13 +40,16 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
+      console.log("Starting signup process for email:", email);
+      console.log("Selected role before auth:", selectedRole);
+
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
       const finalSkill = primarySkill;
       const fullName = `${firstName} ${lastName}`;
       
-      const skillType = role === 'freelancer' ? (DIGITAL_SKILLS.includes(finalSkill) ? 'Digital' : 'Artisan') : '';
+      const skillType = selectedRole === 'freelancer' ? (DIGITAL_SKILLS.includes(finalSkill) ? 'Digital' : 'Artisan') : '';
 
       const userData = {
         uid: user.uid,
@@ -54,11 +57,11 @@ export default function SignupPage() {
         lastName,
         fullName,
         email,
-        role, // Strictly lowercase 'client' or 'freelancer'
+        role: selectedRole, // Explicitly using the state variable
         skills: finalSkill ? [finalSkill] : [],
         skillType,
         bio: '',
-        title: role === 'freelancer' ? finalSkill || 'Professional Freelancer' : 'Project Client',
+        title: selectedRole === 'freelancer' ? finalSkill || 'Professional Freelancer' : 'Project Client',
         avatarUrl: user.photoURL || `https://picsum.photos/seed/${user.uid}/128/128`,
         createdAt: serverTimestamp(),
         rating: null,
@@ -67,14 +70,20 @@ export default function SignupPage() {
         isAvailable: true,
       };
 
+      console.log("Saving user to Firestore with role:", selectedRole);
+      console.log("Full User Data Object:", userData);
+
       // Start saving Firestore data in background
-      setDoc(doc(db, 'users', user.uid), userData).catch(console.error);
-      updateProfile(user, { displayName: fullName }).catch(console.error);
+      await setDoc(doc(db, 'users', user.uid), userData);
+      await updateProfile(user, { displayName: fullName });
+
+      console.log("Firestore write successful. Redirecting...");
 
       // IMMEDIATE REDIRECT
       window.location.href = '/dashboard';
 
     } catch (error: any) {
+      console.error("Signup error occurred:", error);
       toast({
         variant: 'destructive',
         title: 'Signup failed',
@@ -97,15 +106,15 @@ export default function SignupPage() {
             <div className="grid md:grid-cols-2 gap-6">
               <button
                 type="button"
-                onClick={() => setRole('client')}
+                onClick={() => setSelectedRole('client')}
                 className={cn(
                   'flex flex-col items-center p-8 border-4 rounded-[2rem] transition-all relative overflow-hidden group',
-                  role === 'client'
+                  selectedRole === 'client'
                     ? 'border-primary bg-primary/5 shadow-2xl scale-[1.02]'
                     : 'border-muted bg-card hover:border-primary/30'
                 )}
               >
-                {role === 'client' && (
+                {selectedRole === 'client' && (
                   <div className="absolute top-4 right-4 bg-primary text-primary-foreground p-1.5 rounded-full shadow-lg">
                     <Check className="h-4 w-4" />
                   </div>
@@ -118,15 +127,15 @@ export default function SignupPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setRole('freelancer')}
+                onClick={() => setSelectedRole('freelancer')}
                 className={cn(
                   'flex flex-col items-center p-8 border-4 rounded-[2rem] transition-all relative overflow-hidden group',
-                  role === 'freelancer'
+                  selectedRole === 'freelancer'
                     ? 'border-primary bg-primary/5 shadow-2xl scale-[1.02]'
                     : 'border-muted bg-card hover:border-primary/30'
                 )}
               >
-                {role === 'freelancer' && (
+                {selectedRole === 'freelancer' && (
                   <div className="absolute top-4 right-4 bg-primary text-primary-foreground p-1.5 rounded-full shadow-lg">
                     <Check className="h-4 w-4" />
                   </div>
@@ -139,7 +148,7 @@ export default function SignupPage() {
               </button>
             </div>
 
-            {role && (
+            {selectedRole && (
               <form onSubmit={handleSignup} className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="grid gap-2.5">
@@ -155,7 +164,7 @@ export default function SignupPage() {
                   <Label htmlFor="email" className="font-bold">Email address</Label>
                   <Input id="email" type="email" placeholder="john@example.com" required className="h-12 rounded-xl bg-muted/30 border-none px-4" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
-                {role === 'freelancer' && (
+                {selectedRole === 'freelancer' && (
                   <div className="grid gap-2.5">
                     <Label htmlFor="primarySkill" className="font-bold">Primary Skill / Category</Label>
                     <SearchableSelect 

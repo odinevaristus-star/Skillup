@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState } from 'react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,8 +41,6 @@ export default function SignupPage() {
       // Step 1: Authenticate
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
-      console.log("Step 1: Auth success for UID:", result.user.uid);
-
       // Step 2: Save Profile Immediately
       const userData = {
         uid: result.user.uid,
@@ -52,20 +51,19 @@ export default function SignupPage() {
         role: selectedRole,
         skills: primarySkill ? [primarySkill] : [],
         title: selectedRole === 'freelancer' ? primarySkill || 'Professional Freelancer' : 'Project Client',
-        createdAt: new Date().toISOString(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
         isAvailable: true,
         completedJobs: 0,
         rating: null
       };
 
-      console.log("Step 2: Saving Firestore document with role:", selectedRole);
-      
       await setDoc(doc(db, "users", result.user.uid), userData);
       
-      console.log("Step 3: Firestore write confirmed. Redirection will be handled by AuthRedirectHandler.");
+      // Step 3: Redirect
+      window.location.replace("/dashboard");
 
     } catch (error: any) {
-      console.error("Signup Error:", error);
       alert(error.message);
       setIsLoading(false);
     }
@@ -78,7 +76,7 @@ export default function SignupPage() {
         <Card className="w-full max-w-2xl shadow-2xl border-none overflow-hidden rounded-[2.5rem]">
           <CardHeader className="space-y-4 text-center pb-8 border-b">
             <CardTitle className="text-4xl font-black tracking-tighter">Join SkillUp</CardTitle>
-            <CardDescription className="text-lg font-medium">Select your professional path to get started</CardDescription>
+            <CardDescription className="text-lg font-medium">Create your campus professional account</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-10 p-8">
             <div className="grid md:grid-cols-2 gap-6">
@@ -97,7 +95,7 @@ export default function SignupPage() {
                     <Check className="h-4 w-4" />
                   </div>
                 )}
-                <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-6">
                   <User className="h-10 w-10 text-primary" />
                 </div>
                 <h3 className="text-xl font-black mb-2">I am a Client</h3>
@@ -118,7 +116,7 @@ export default function SignupPage() {
                     <Check className="h-4 w-4" />
                   </div>
                 )}
-                <div className="w-20 h-20 rounded-3xl bg-accent/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <div className="w-20 h-20 rounded-3xl bg-accent/10 flex items-center justify-center mb-6">
                   <Briefcase className="h-10 w-10 text-accent" />
                 </div>
                 <h3 className="text-xl font-black mb-2">I am a Freelancer</h3>
@@ -131,16 +129,16 @@ export default function SignupPage() {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="grid gap-2.5">
                     <Label htmlFor="firstName" className="font-bold">First Name</Label>
-                    <Input id="firstName" placeholder="John" required className="h-12 rounded-xl bg-muted/30 border-none px-4" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                    <Input id="firstName" placeholder="John" required className="h-12 rounded-xl" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                   </div>
                   <div className="grid gap-2.5">
                     <Label htmlFor="lastName" className="font-bold">Last Name</Label>
-                    <Input id="lastName" placeholder="Doe" required className="h-12 rounded-xl bg-muted/30 border-none px-4" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                    <Input id="lastName" placeholder="Doe" required className="h-12 rounded-xl" value={lastName} onChange={(e) => setLastName(e.target.value)} />
                   </div>
                 </div>
                 <div className="grid gap-2.5">
                   <Label htmlFor="email" className="font-bold">Email address</Label>
-                  <Input id="email" type="email" placeholder="john@example.com" required className="h-12 rounded-xl bg-muted/30 border-none px-4" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Input id="email" type="email" placeholder="john@example.com" required className="h-12 rounded-xl" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 {selectedRole === 'freelancer' && (
                   <div className="grid gap-2.5">
@@ -154,7 +152,7 @@ export default function SignupPage() {
                 )}
                 <div className="grid gap-2.5">
                   <Label htmlFor="password" className="font-bold">Password</Label>
-                  <Input id="password" type="password" required className="h-12 rounded-xl bg-muted/30 border-none px-4" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <Input id="password" type="password" required className="h-12 rounded-xl" value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
                 <Button className="w-full h-14 text-lg font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20" type="submit" disabled={isLoading}>
                   {isLoading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}

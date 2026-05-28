@@ -43,15 +43,14 @@ export default function PostJobPage() {
       clientFirstName: user.displayName?.split(' ')[0] || "User",
       status: "open",
       createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
       skillsRequired: [formData.category] 
     }
 
     addDoc(collection(db, "jobs"), jobData)
       .then(() => {
-        // Use window.location.replace with a delay for clean redirection
-        setTimeout(() => {
-          window.location.replace("/dashboard/jobs");
-        }, 500);
+        toast({ title: "Project Published!", description: "Your job is now visible to the professional community." })
+        window.location.replace("/dashboard/jobs");
       })
       .catch(async (error) => {
         setIsLoading(false)
@@ -108,11 +107,11 @@ export default function PostJobPage() {
                     className="flex gap-4"
                     onValueChange={(val) => setFormData({...formData, location: val})}
                   >
-                    <div className="flex items-center space-x-2 bg-muted/30 px-4 py-3 rounded-xl border border-transparent hover:border-primary/20 transition-all cursor-pointer">
+                    <div className="flex items-center space-x-2 bg-muted/30 px-4 py-3 rounded-xl cursor-pointer">
                       <RadioGroupItem value="Remote" id="remote" />
                       <Label htmlFor="remote" className="cursor-pointer">Remote</Label>
                     </div>
-                    <div className="flex items-center space-x-2 bg-muted/30 px-4 py-3 rounded-xl border border-transparent hover:border-primary/20 transition-all cursor-pointer">
+                    <div className="flex items-center space-x-2 bg-muted/30 px-4 py-3 rounded-xl cursor-pointer">
                       <RadioGroupItem value="On-campus" id="oncampus" />
                       <Label htmlFor="oncampus" className="cursor-pointer">On-campus</Label>
                     </div>
@@ -171,24 +170,6 @@ export default function PostJobPage() {
                   Post Project
                 </Button>
               </CardFooter>
-            </Card>
-
-            <Card className="border-none shadow-sm rounded-3xl bg-card overflow-hidden">
-              <CardContent className="p-8">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-muted rounded-2xl shrink-0">
-                    <Briefcase className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-sm">Quality Checklist</h4>
-                    <ul className="space-y-2 text-xs text-muted-foreground list-disc pl-4 font-medium">
-                      <li>Be clear about deliverables</li>
-                      <li>Specify required tools or equipment</li>
-                      <li>Be realistic with the budget</li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
             </Card>
           </div>
         </div>

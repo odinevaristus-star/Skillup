@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -49,7 +50,7 @@ export function Navbar() {
   const handleSignOut = async () => {
     if (!auth) return;
     await signOut(auth);
-    window.location.href = '/';
+    window.location.replace('/');
   };
 
   const getInitials = () => {

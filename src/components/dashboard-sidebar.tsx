@@ -52,7 +52,7 @@ export function DashboardSidebar() {
 
   const handleLogout = async () => {
     await signOut(auth);
-    router.push('/');
+    window.location.replace('/');
   };
 
   const navItems = [

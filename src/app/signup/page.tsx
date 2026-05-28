@@ -1,8 +1,10 @@
 
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { useAuth, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,12 +13,8 @@ import { Navbar } from '@/components/navbar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Briefcase, User, Loader2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth, useFirestore } from '@/firebase';
+import Link from 'next/link';
 import { SearchableSelect } from '@/components/ui/searchable-select';
-import { ARTISAN_SKILLS, DIGITAL_SKILLS } from '@/lib/constants';
 
 export default function SignupPage() {
   const [selectedRole, setSelectedRole] = useState<'client' | 'freelancer' | null>(null);
@@ -26,80 +24,44 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [primarySkill, setPrimarySkill] = useState('');
-  const { toast } = useToast();
+  
   const auth = useAuth();
   const db = useFirestore();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // VALIDATION: Ensure role is selected
     if (!selectedRole) {
-      toast({ 
-        variant: 'destructive', 
-        title: 'Role Required', 
-        description: 'Please select "Client" or "Freelancer" to continue.' 
-      });
+      alert("Please select Client or Freelancer");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Step 1: Create User in Firebase Auth
-      console.log("Step 1: Starting Auth creation for", email);
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Step 1: Create User
+      const result = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Step 2: Get UID
-      const user = userCredential.user;
-      const uid = user.uid;
-      console.log("Step 2: Auth success. UID:", uid);
-
-      const fullName = `${firstName} ${lastName}`;
-      const skillType = selectedRole === 'freelancer' ? (DIGITAL_SKILLS.includes(primarySkill) ? 'Digital' : 'Artisan') : '';
-
-      const userData = {
-        uid: uid,
-        firstName,
-        lastName,
-        fullName,
-        email,
-        role: selectedRole, // Using state variable directly as requested
+      // Step 2 & 3: Save to Firestore
+      await setDoc(doc(db, "users", result.user.uid), {
+        uid: result.user.uid,
+        email: email,
+        firstName: firstName,
+        lastName: lastName,
+        fullName: `${firstName} ${lastName}`,
+        role: selectedRole,
         skills: primarySkill ? [primarySkill] : [],
-        skillType,
-        bio: '',
         title: selectedRole === 'freelancer' ? primarySkill || 'Professional Freelancer' : 'Project Client',
-        avatarUrl: user.photoURL || `https://picsum.photos/seed/${uid}/128/128`,
-        createdAt: serverTimestamp(),
-        rating: null,
-        completedJobs: 0,
-        totalHires: 0,
+        createdAt: new Date().toISOString(),
         isAvailable: true,
-      };
-
-      // Step 3: Save to Firestore
-      console.log("Step 3: Saving user with role: " + selectedRole);
-      console.log("Full User Data:", userData);
-      await setDoc(doc(db, 'users', uid), userData);
-      
-      // Optional but good for consistency
-      try {
-        await updateProfile(user, { displayName: fullName });
-      } catch (pErr) {
-        console.warn("Profile display name update failed, but continuing...", pErr);
-      }
-
-      // Step 4: Final Redirect
-      console.log("Step 4: Firestore success. Redirecting to dashboard...");
-      window.location.href = '/dashboard';
-
-    } catch (error: any) {
-      console.error("Signup error occurred:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Signup failed',
-        description: error.message,
+        completedJobs: 0,
+        rating: null
       });
+
+      // Step 4: Immediate Redirect
+      window.location.href = "/dashboard";
+    } catch (error: any) {
+      alert(error.message);
       setIsLoading(false);
     }
   };
@@ -188,12 +150,6 @@ export default function SignupPage() {
                 <div className="grid gap-2.5">
                   <Label htmlFor="password" className="font-bold">Password</Label>
                   <Input id="password" type="password" required className="h-12 rounded-xl bg-muted/30 border-none px-4" value={password} onChange={(e) => setPassword(e.target.value)} />
-                </div>
-                <div className="flex items-start space-x-3 pt-2">
-                  <Checkbox id="terms" required className="mt-1" />
-                  <label htmlFor="terms" className="text-xs text-muted-foreground leading-relaxed font-medium">
-                    By creating an account, you agree to our <Link href="#" className="text-primary hover:underline font-bold">Terms of Service</Link> and <Link href="#" className="text-primary hover:underline font-bold">Privacy Policy</Link>.
-                  </label>
                 </div>
                 <Button className="w-full h-14 text-lg font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20" type="submit" disabled={isLoading}>
                   {isLoading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}

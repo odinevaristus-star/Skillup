@@ -34,7 +34,7 @@ export function DashboardSidebar() {
 
   const { data: profile } = useDoc(userDocRef);
   const isFreelancer = profile?.role === 'freelancer';
-  const isCustomer = profile?.role === 'customer';
+  const isClient = profile?.role === 'client';
 
   const unreadMessagesQuery = useMemoFirebase(() => {
     if (!db || !user?.uid) return null;
@@ -62,7 +62,7 @@ export function DashboardSidebar() {
           { label: 'Find Work', href: '/jobs', icon: Search },
           { label: 'My Proposals', href: '/dashboard/jobs', icon: FileText },
         ]
-      : isCustomer
+      : isClient
       ? [
           { label: 'Hire Talent', href: '/freelancers', icon: Users },
           { label: 'My Jobs', href: '/dashboard/jobs', icon: Briefcase },
@@ -112,7 +112,7 @@ export function DashboardSidebar() {
       </div>
 
       <div className="p-6 border-t space-y-4">
-        {isCustomer && (
+        {isClient && (
           <Link href="/dashboard/jobs/post">
             <button className="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
               <PlusCircle className="h-5 w-5" /> Post a Job

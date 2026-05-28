@@ -31,7 +31,7 @@ export function Navbar() {
 
   const { data: profile } = useDoc(userDocRef);
   const isFreelancer = profile?.role === 'freelancer';
-  const isCustomer = profile?.role === 'customer';
+  const isClient = profile?.role === 'client';
 
   const unreadNotificationsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid) return null;
@@ -66,7 +66,7 @@ export function Navbar() {
                   <Link href="/jobs" className="text-xs font-black uppercase tracking-widest flex items-center gap-3 hover:text-primary transition-colors">
                     <Search className="h-4 w-4" /> Find Work
                   </Link>
-                ) : isCustomer ? (
+                ) : isClient ? (
                   <>
                     <Link href="/freelancers" className="text-xs font-black uppercase tracking-widest flex items-center gap-3 hover:text-primary transition-colors">
                       <Users className="h-4 w-4" /> Hire Talent

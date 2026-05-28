@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { doc, collection, query, where, limit, orderBy, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
@@ -21,7 +22,6 @@ import {
   FileText,
   Users,
   User,
-  Check,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -40,9 +40,15 @@ export default function DashboardOverview() {
 
   const { data: profile, loading: profileLoading } = useDoc(userDocRef);
 
-  // Determine role
+  useEffect(() => {
+    if (profile) {
+      console.log("Current User Role:", profile.role);
+    }
+  }, [profile]);
+
+  // Determine role strictly based on lowercase values
   const isFreelancer = profile?.role === 'freelancer';
-  const isCustomer = profile?.role === 'customer';
+  const isClient = profile?.role === 'client';
   const hasNoRole = profile && !profile.role;
 
   // Fetch jobs where user is client
@@ -58,31 +64,31 @@ export default function DashboardOverview() {
 
   // Fetch jobs where user is hired freelancer
   const freelancerJobsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid || isCustomer) return null;
+    if (!db || !user?.uid || isClient) return null;
     return query(
       collection(db, 'jobs'),
       where('freelancerId', '==', user.uid),
       orderBy('createdAt', 'desc'),
       limit(5)
     );
-  }, [db, user?.uid, isCustomer]);
+  }, [db, user?.uid, isClient]);
 
   // Fetch applications if user is a freelancer
   const myApplicationsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid || isCustomer) return null;
+    if (!db || !user?.uid || isClient) return null;
     return query(
       collection(db, 'applications'),
       where('freelancerId', '==', user.uid),
       orderBy('createdAt', 'desc'),
       limit(5)
     );
-  }, [db, user?.uid, isCustomer]);
+  }, [db, user?.uid, isClient]);
 
   const { data: clientJobs, loading: clientJobsLoading } = useCollection(clientJobsQuery);
   const { data: freelancerJobs, loading: freelancerJobsLoading } = useCollection(freelancerJobsQuery);
   const { data: myApplications } = useCollection(myApplicationsQuery);
 
-  // Fetch recommended jobs (Smart Matches) - General open jobs
+  // Fetch recommended jobs (Smart Matches)
   const openJobsQuery = useMemoFirebase(() => {
     if (!db) return null;
     return query(collection(db, 'jobs'), where('status', '==', 'open'), orderBy('createdAt', 'desc'), limit(4));
@@ -90,14 +96,14 @@ export default function DashboardOverview() {
 
   const { data: openJobs, loading: openJobsLoading } = useCollection(openJobsQuery);
 
-  const handleSetRole = async (selectedRole: 'customer' | 'freelancer') => {
+  const handleSetRole = async (selectedRole: 'client' | 'freelancer') => {
     if (!userDocRef) return;
     setRoleSetting(true);
     
     updateDoc(userDocRef, {
       role: selectedRole,
       updatedAt: serverTimestamp(),
-      title: selectedRole === 'customer' ? 'Project Client' : 'Professional Freelancer'
+      title: selectedRole === 'client' ? 'Project Client' : 'Professional Freelancer'
     })
     .then(() => {
       toast({ title: 'Welcome!', description: `Your role has been set to ${selectedRole}.` });
@@ -120,7 +126,7 @@ export default function DashboardOverview() {
     );
   }
 
-  // Role Selection Gate
+  // Role Selection Gate for existing users with no role
   if (hasNoRole) {
     return (
       <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-700">
@@ -132,9 +138,9 @@ export default function DashboardOverview() {
           
           <div className="grid md:grid-cols-2 gap-8">
             <button
-              onClick={() => handleSetRole('customer')}
+              onClick={() => handleSetRole('client')}
               disabled={roleSetting}
-              className="flex flex-col items-center p-12 border-4 border-muted hover:border-primary bg-card rounded-[3rem] transition-all group relative"
+              className="flex flex-col items-center p-12 border-4 border-muted hover:border-primary bg-card rounded-[3rem] transition-all group relative text-center"
             >
               <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
                 <User className="h-12 w-12 text-primary" />
@@ -147,7 +153,7 @@ export default function DashboardOverview() {
             <button
               onClick={() => handleSetRole('freelancer')}
               disabled={roleSetting}
-              className="flex flex-col items-center p-12 border-4 border-muted hover:border-primary bg-card rounded-[3rem] transition-all group relative"
+              className="flex flex-col items-center p-12 border-4 border-muted hover:border-primary bg-card rounded-[3rem] transition-all group relative text-center"
             >
               <div className="w-24 h-24 rounded-full bg-accent/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
                 <Briefcase className="h-12 w-12 text-accent" />
@@ -188,7 +194,12 @@ export default function DashboardOverview() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div className="space-y-2">
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground">Hello, {firstName}!</h1>
-          <p className="text-muted-foreground text-xl font-medium">Here's your <span className="text-primary font-black uppercase tracking-widest text-xs">{profile?.role}</span> workspace overview.</p>
+          <div className="flex items-center gap-3">
+            <p className="text-muted-foreground text-xl font-medium">Your Workspace Dashboard</p>
+            <Badge className="bg-primary/10 text-primary border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+              {profile?.role === 'freelancer' ? 'Freelancer Account' : 'Client Account'}
+            </Badge>
+          </div>
         </div>
         <div className="flex gap-4">
           {isFreelancer ? (
@@ -290,7 +301,7 @@ export default function DashboardOverview() {
             </CardContent>
           </Card>
 
-          {/* Smart Matches / Browse Talent */}
+          {/* Smart Matches / Latest Opportunities */}
           <div className="bg-gradient-to-br from-primary/10 via-accent/5 to-transparent p-12 rounded-[3.5rem] border-2 border-primary/10 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-12 opacity-5">
               <Zap className="h-48 w-48 text-primary" />
@@ -305,7 +316,7 @@ export default function DashboardOverview() {
               <p className="text-muted-foreground text-lg mb-10 leading-relaxed font-medium max-w-2xl">
                 {isFreelancer
                   ? 'Real-time opportunities from our network tailored for your unique skills.'
-                  : 'Discover the latest projects being posted by others on the campus platform.'}
+                  : 'Discover the latest projects being posted by others on the platform.'}
               </p>
 
               <div className="grid md:grid-cols-2 gap-8">

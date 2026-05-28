@@ -15,7 +15,7 @@
         "department": { "type": "string", "description": "Academic department or course of study" },
         "priceRange": { "type": "string", "description": "Price range for services in Naira" },
         "skills": { "type": "array", "items": { "type": "string" } },
-        "role": { "type": "string", "enum": ["customer", "freelancer"] },
+        "role": { "type": "string", "enum": ["client", "freelancer"] },
         "skillType": { "type": "string", "enum": ["Digital", "Artisan"] },
         "avatarUrl": { "type": "string" },
         "hourlyRate": { "type": "number" },

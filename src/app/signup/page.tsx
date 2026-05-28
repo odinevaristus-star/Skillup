@@ -15,12 +15,11 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useFirestore } from '@/firebase';
-import { useRouter } from 'next/navigation';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { ARTISAN_SKILLS, DIGITAL_SKILLS } from '@/lib/constants';
 
 export default function SignupPage() {
-  const [role, setRole] = useState<'customer' | 'freelancer' | null>(null);
+  const [role, setRole] = useState<'client' | 'freelancer' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -44,18 +43,10 @@ export default function SignupPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // IMMEDIATE REDIRECT using window.location.href for stability
-      window.location.href = '/dashboard';
-
       const finalSkill = primarySkill;
       const fullName = `${firstName} ${lastName}`;
       
-      updateProfile(user, { displayName: fullName }).catch(console.error);
-
-      let skillType = '';
-      if (role === 'freelancer') {
-        skillType = DIGITAL_SKILLS.includes(finalSkill) ? 'Digital' : 'Artisan';
-      }
+      const skillType = role === 'freelancer' ? (DIGITAL_SKILLS.includes(finalSkill) ? 'Digital' : 'Artisan') : '';
 
       const userData = {
         uid: user.uid,
@@ -63,7 +54,7 @@ export default function SignupPage() {
         lastName,
         fullName,
         email,
-        role,
+        role, // Strictly lowercase 'client' or 'freelancer'
         skills: finalSkill ? [finalSkill] : [],
         skillType,
         bio: '',
@@ -76,7 +67,13 @@ export default function SignupPage() {
         isAvailable: true,
       };
 
+      // Start saving Firestore data in background
       setDoc(doc(db, 'users', user.uid), userData).catch(console.error);
+      updateProfile(user, { displayName: fullName }).catch(console.error);
+
+      // IMMEDIATE REDIRECT
+      window.location.href = '/dashboard';
+
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -100,15 +97,15 @@ export default function SignupPage() {
             <div className="grid md:grid-cols-2 gap-6">
               <button
                 type="button"
-                onClick={() => setRole('customer')}
+                onClick={() => setRole('client')}
                 className={cn(
                   'flex flex-col items-center p-8 border-4 rounded-[2rem] transition-all relative overflow-hidden group',
-                  role === 'customer'
+                  role === 'client'
                     ? 'border-primary bg-primary/5 shadow-2xl scale-[1.02]'
                     : 'border-muted bg-card hover:border-primary/30'
                 )}
               >
-                {role === 'customer' && (
+                {role === 'client' && (
                   <div className="absolute top-4 right-4 bg-primary text-primary-foreground p-1.5 rounded-full shadow-lg">
                     <Check className="h-4 w-4" />
                   </div>

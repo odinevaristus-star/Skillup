@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
 import { Navbar } from '@/components/navbar';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Briefcase, User, Loader2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -39,10 +38,8 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      // Step 1: Create User
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Step 2 & 3: Save to Firestore
       await setDoc(doc(db, "users", result.user.uid), {
         uid: result.user.uid,
         email: email,
@@ -58,8 +55,11 @@ export default function SignupPage() {
         rating: null
       });
 
-      // Step 4: Immediate Redirect
-      window.location.href = "/dashboard";
+      // Use window.location.replace with a delay to ensure data is written and redirect is forced
+      setTimeout(() => {
+        window.location.replace("/dashboard");
+      }, 500);
+
     } catch (error: any) {
       alert(error.message);
       setIsLoading(false);

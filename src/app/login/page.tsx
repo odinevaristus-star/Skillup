@@ -27,8 +27,10 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password)
       
-      // IMMEDIATE REDIRECT using window.location.href to force immediate navigation
-      window.location.href = '/dashboard'
+      // Use window.location.replace with a delay for clean redirection
+      setTimeout(() => {
+        window.location.replace("/dashboard");
+      }, 500);
 
     } catch (error: any) {
       toast({
@@ -44,7 +46,9 @@ export default function LoginPage() {
     const provider = providerName === 'google' ? new GoogleAuthProvider() : new GithubAuthProvider()
     try {
       await signInWithPopup(auth, provider)
-      window.location.href = '/dashboard'
+      setTimeout(() => {
+        window.location.replace("/dashboard");
+      }, 500);
     } catch (error: any) {
       toast({
         variant: "destructive",

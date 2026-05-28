@@ -74,8 +74,11 @@ export default function ManageJobApplicantsPage() {
         })
 
         toast({ title: "Freelancer Hired!", description: `${app.freelancerName} is now assigned to this project.` })
-        // FORCE REDIRECT immediately
-        window.location.href = "/dashboard/jobs"
+        
+        // Use window.location.replace with a delay for clean redirection
+        setTimeout(() => {
+          window.location.replace("/dashboard/jobs");
+        }, 500);
       })
       .catch(async (error) => {
         setIsHiring(false)
@@ -148,7 +151,7 @@ export default function ManageJobApplicantsPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-3xl font-bold text-primary">${app.bidAmount}</p>
+                        <p className="text-3xl font-black text-primary">${app.bidAmount}</p>
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Proposal Bid</p>
                       </div>
                     </div>

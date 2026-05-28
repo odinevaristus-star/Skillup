@@ -48,7 +48,10 @@ export default function PostJobPage() {
 
     addDoc(collection(db, "jobs"), jobData)
       .then(() => {
-        window.location.href = "/dashboard/jobs"
+        // Use window.location.replace with a delay for clean redirection
+        setTimeout(() => {
+          window.location.replace("/dashboard/jobs");
+        }, 500);
       })
       .catch(async (error) => {
         setIsLoading(false)

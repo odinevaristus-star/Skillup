@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { useEffect } from 'react';
 
 export default function DashboardOverview() {
   const { user, loading: authLoading } = useUser();
@@ -35,6 +36,13 @@ export default function DashboardOverview() {
   }, [db, user?.uid]);
 
   const { data: profile, loading: profileLoading } = useDoc(userDocRef);
+
+  // Debug logging to help identify field issues in Firestore
+  useEffect(() => {
+    if (!profileLoading && profile) {
+      console.log("Dashboard Profile Data Fetched:", profile);
+    }
+  }, [profile, profileLoading]);
 
   const isFreelancer = profile?.role === 'freelancer';
   const isClient = profile?.role === 'client';
@@ -85,9 +93,11 @@ export default function DashboardOverview() {
       ];
 
   // Logic to handle both firstName/first_name and lastName/last_name variations
-  const hasFirstName = profile?.firstName || profile?.first_name;
-  const hasLastName = profile?.lastName || profile?.last_name;
-  const showSetupAlert = !profile || !hasFirstName || !hasLastName || !profile.role;
+  const firstName = profile?.firstName || profile?.first_name || user?.displayName?.split(' ')[0] || 'User';
+  const lastName = profile?.lastName || profile?.last_name || user?.displayName?.split(' ')[1] || '';
+  
+  // Show setup banner only if user is missing core identity data in Firestore
+  const showSetupAlert = !profile || !(profile.firstName || profile.first_name) || !profile.role;
 
   // Determine where to send the user to complete their profile
   const setupLink = isFreelancer ? "/dashboard/profile" : "/dashboard/settings";
@@ -112,21 +122,20 @@ export default function DashboardOverview() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div className="space-y-2">
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground">
-            Hello, {hasFirstName || user?.displayName?.split(' ')[0] || 'User'}!
+            Hello, {firstName}!
           </h1>
           <div className="flex flex-col gap-2">
             <p className="text-muted-foreground text-xl font-medium">Your Workspace Overview</p>
-            {profile?.role && (
+            {profile ? (
               <div className="flex items-center gap-3">
                 <Badge className={cn(
                   "border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
                   isFreelancer ? "bg-accent/10 text-accent" : "bg-primary/10 text-primary"
                 )}>
-                  {isFreelancer ? 'Freelancer Account' : 'Client Account'}
+                  {profile.role ? `${profile.role} Account` : 'Role Not Assigned'}
                 </Badge>
               </div>
-            )}
-            {!profile?.role && (
+            ) : (
               <div className="flex items-center gap-3">
                 <Badge variant="destructive" className="border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
                   Account Pending

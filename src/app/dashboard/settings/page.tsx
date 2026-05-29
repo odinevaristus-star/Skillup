@@ -40,7 +40,7 @@ export default function ClientSettings() {
     const data = {
       firstName,
       lastName,
-      fullName: `${firstName} ${lastName}`,
+      fullName: `${firstName} ${lastName}`.trim(),
       updatedAt: new Date().toISOString()
     };
 
@@ -50,17 +50,24 @@ export default function ClientSettings() {
           title: "Settings updated",
           description: "Your information has been updated successfully."
         })
+        // Force immediate redirect to dashboard to clear state and refresh data
+        setTimeout(() => {
+          window.location.replace("/dashboard");
+        }, 300);
       })
       .catch(async (serverError) => {
+        setIsSaving(false)
         errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: `users/${user.uid}`,
           operation: 'write',
           requestResourceData: data,
         }));
-      })
-      .finally(() => {
-        setIsSaving(false)
-      })
+        toast({
+          variant: "destructive",
+          title: "Error saving changes",
+          description: "Please check your permissions and try again."
+        })
+      });
   }
 
   if (authLoading || profileLoading) {

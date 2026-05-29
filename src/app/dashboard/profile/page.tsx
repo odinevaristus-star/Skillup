@@ -82,17 +82,23 @@ export default function ProfileManagement() {
           title: "Profile updated",
           description: "Your professional details have been saved successfully."
         })
+        setTimeout(() => {
+          window.location.replace("/dashboard");
+        }, 300);
       })
       .catch(async (serverError) => {
+        setIsSaving(false)
         errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: `users/${user.uid}`,
           operation: 'write',
           requestResourceData: data,
         }));
-      })
-      .finally(() => {
-        setIsSaving(false)
-      })
+        toast({
+          variant: "destructive",
+          title: "Error saving profile",
+          description: "Please check your connectivity and try again."
+        })
+      });
   }
 
   if (authLoading || profileLoading) {
@@ -238,30 +244,6 @@ export default function ProfileManagement() {
                   <Plus className="h-6 w-6" />
                 </Button>
               </form>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-10">
-          <Card className="border-none shadow-sm rounded-3xl bg-card">
-            <CardHeader className="p-8">
-              <CardTitle className="text-lg">Visibility Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="p-8 pt-0 space-y-6">
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30">
-                <div className="space-y-0.5">
-                  <p className="text-sm font-bold">Public Discoverability</p>
-                  <p className="text-xs text-muted-foreground font-medium">Show in search results.</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30">
-                <div className="space-y-0.5">
-                  <p className="text-sm font-bold">Direct Messaging</p>
-                  <p className="text-xs text-muted-foreground font-medium">Allow unassigned clients to text you.</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
             </CardContent>
           </Card>
         </div>

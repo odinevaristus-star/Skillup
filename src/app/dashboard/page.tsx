@@ -94,10 +94,12 @@ export default function DashboardOverview() {
 
   // Logic to handle both firstName/first_name and lastName/last_name variations
   const firstName = profile?.firstName || profile?.first_name || user?.displayName?.split(' ')[0] || 'User';
-  const lastName = profile?.lastName || profile?.last_name || user?.displayName?.split(' ')[1] || '';
   
-  // Show setup banner only if user is missing core identity data in Firestore
-  const showSetupAlert = !profile || !(profile.firstName || profile.first_name) || !profile.role;
+  // Robust check for setup banner: only show if essential fields (names or role) are missing
+  const hasFirstName = profile?.firstName || profile?.first_name;
+  const hasLastName = profile?.lastName || profile?.last_name;
+  const hasRole = profile?.role;
+  const showSetupAlert = !profile || !hasFirstName || !hasLastName || !hasRole;
 
   // Determine where to send the user to complete their profile
   const setupLink = isFreelancer ? "/dashboard/profile" : "/dashboard/settings";
@@ -234,36 +236,6 @@ export default function DashboardOverview() {
                     </Button>
                   </Link>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-12">
-          <Card className="border-none shadow-sm overflow-hidden rounded-[3rem] bg-card border border-muted/30">
-            <CardHeader className="p-8 pb-4">
-              <CardTitle className="text-xl font-black tracking-tight uppercase tracking-[0.1em]">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4 p-8 pt-4">
-              <Link href="/freelancers">
-                <Button variant="outline" className="w-full justify-start gap-5 h-16 rounded-[1.25rem] border-2 border-dashed hover:border-primary hover:bg-primary/5 transition-all px-6">
-                  <div className="p-2 bg-muted rounded-lg group-hover:bg-primary/10"><Users className="h-6 w-6 text-primary" /></div>
-                  <span className="font-black text-sm uppercase tracking-widest">Browse Experts</span>
-                </Button>
-              </Link>
-              <Link href="/jobs">
-                <Button variant="outline" className="w-full justify-start gap-5 h-16 rounded-[1.25rem] border-2 border-dashed hover:border-primary hover:bg-primary/5 transition-all px-6">
-                  <div className="p-2 bg-muted rounded-lg group-hover:bg-primary/10"><Search className="h-6 w-6 text-primary" /></div>
-                  <span className="font-black text-sm uppercase tracking-widest">View Job Board</span>
-                </Button>
-              </Link>
-              {!isFreelancer && (
-                <Link href="/dashboard/jobs/post">
-                  <Button variant="outline" className="w-full justify-start gap-5 h-16 rounded-[1.25rem] border-2 border-dashed hover:border-primary hover:bg-primary/5 transition-all px-6">
-                    <div className="p-2 bg-muted rounded-lg group-hover:bg-primary/10"><PlusCircle className="h-6 w-6 text-primary" /></div>
-                    <span className="font-black text-sm uppercase tracking-widest">Post a Job</span>
-                  </Button>
-                </Link>
               )}
             </CardContent>
           </Card>

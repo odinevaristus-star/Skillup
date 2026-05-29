@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
@@ -6,6 +7,7 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Briefcase,
   MessageSquare,
@@ -18,6 +20,8 @@ import {
   CheckCircle2,
   FileText,
   Users,
+  AlertCircle,
+  ArrowRight
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -64,17 +68,6 @@ export default function DashboardOverview() {
     );
   }
 
-  // Fallback for missing profile (should not happen with new signup flow)
-  if (!profile) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4">
-        <h2 className="text-2xl font-bold">Profile not found</h2>
-        <p className="text-muted-foreground">We couldn't retrieve your professional profile.</p>
-        <Link href="/signup"><Button>Go to Signup</Button></Link>
-      </div>
-    );
-  }
-
   const activeJobs = isFreelancer ? (freelancerJobs || []) : (clientJobs || []);
   const jobsLoading = isFreelancer ? freelancerJobsLoading : clientJobsLoading;
 
@@ -93,20 +86,39 @@ export default function DashboardOverview() {
       ];
 
   return (
-    <div className="space-y-12 animate-in fade-in duration-500">
+    <div className="space-y-10 animate-in fade-in duration-500">
+      {!profile && (
+        <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 rounded-3xl p-6">
+          <AlertCircle className="h-5 w-5" />
+          <AlertTitle className="font-bold text-lg mb-1">Account setup incomplete</AlertTitle>
+          <AlertDescription className="text-sm font-medium flex items-center justify-between">
+            Your professional profile was not found. Please complete your registration to start hiring or finding work.
+            <Link href="/dashboard/profile">
+              <Button variant="outline" size="sm" className="ml-4 rounded-xl font-bold border-destructive text-destructive hover:bg-destructive hover:text-white">
+                Complete Profile <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div className="space-y-2">
-          <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground">Hello, {profile?.firstName}!</h1>
+          <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground">
+            Hello, {profile?.firstName || user?.displayName?.split(' ')[0] || 'User'}!
+          </h1>
           <div className="flex flex-col gap-2">
             <p className="text-muted-foreground text-xl font-medium">Your Workspace Overview</p>
-            <div className="flex items-center gap-3">
-              <Badge className={cn(
-                "border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
-                isFreelancer ? "bg-accent/10 text-accent" : "bg-primary/10 text-primary"
-              )}>
-                {isFreelancer ? 'Freelancer Account' : 'Client Account'}
-              </Badge>
-            </div>
+            {profile?.role && (
+              <div className="flex items-center gap-3">
+                <Badge className={cn(
+                  "border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
+                  isFreelancer ? "bg-accent/10 text-accent" : "bg-primary/10 text-primary"
+                )}>
+                  {isFreelancer ? 'Freelancer Account' : 'Client Account'}
+                </Badge>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex gap-4">
@@ -210,28 +222,25 @@ export default function DashboardOverview() {
               <CardTitle className="text-xl font-black tracking-tight uppercase tracking-[0.1em]">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 p-8 pt-4">
-              {isFreelancer ? (
-                <Link href="/jobs">
+              <Link href="/freelancers">
+                <Button variant="outline" className="w-full justify-start gap-5 h-16 rounded-[1.25rem] border-2 border-dashed hover:border-primary hover:bg-primary/5 transition-all px-6">
+                  <div className="p-2 bg-muted rounded-lg group-hover:bg-primary/10"><Users className="h-6 w-6 text-primary" /></div>
+                  <span className="font-black text-sm uppercase tracking-widest">Browse Experts</span>
+                </Button>
+              </Link>
+              <Link href="/jobs">
+                <Button variant="outline" className="w-full justify-start gap-5 h-16 rounded-[1.25rem] border-2 border-dashed hover:border-primary hover:bg-primary/5 transition-all px-6">
+                  <div className="p-2 bg-muted rounded-lg group-hover:bg-primary/10"><Search className="h-6 w-6 text-primary" /></div>
+                  <span className="font-black text-sm uppercase tracking-widest">View Job Board</span>
+                </Button>
+              </Link>
+              {!isFreelancer && (
+                <Link href="/dashboard/jobs/post">
                   <Button variant="outline" className="w-full justify-start gap-5 h-16 rounded-[1.25rem] border-2 border-dashed hover:border-primary hover:bg-primary/5 transition-all px-6">
-                    <div className="p-2 bg-muted rounded-lg group-hover:bg-primary/10"><Search className="h-6 w-6 text-primary" /></div>
-                    <span className="font-black text-sm uppercase tracking-widest">Browse Jobs</span>
+                    <div className="p-2 bg-muted rounded-lg group-hover:bg-primary/10"><PlusCircle className="h-6 w-6 text-primary" /></div>
+                    <span className="font-black text-sm uppercase tracking-widest">Post a Job</span>
                   </Button>
                 </Link>
-              ) : (
-                <>
-                  <Link href="/dashboard/jobs/post">
-                    <Button variant="outline" className="w-full justify-start gap-5 h-16 rounded-[1.25rem] border-2 border-dashed hover:border-primary hover:bg-primary/5 transition-all px-6">
-                      <div className="p-2 bg-muted rounded-lg group-hover:bg-primary/10"><PlusCircle className="h-6 w-6 text-primary" /></div>
-                      <span className="font-black text-sm uppercase tracking-widest">Post a Gig</span>
-                    </Button>
-                  </Link>
-                  <Link href="/freelancers">
-                    <Button variant="outline" className="w-full justify-start gap-5 h-16 rounded-[1.25rem] border-2 border-dashed hover:border-primary hover:bg-primary/5 transition-all px-6">
-                      <div className="p-2 bg-muted rounded-lg group-hover:bg-primary/10"><Users className="h-6 w-6 text-primary" /></div>
-                      <span className="font-black text-sm uppercase tracking-widest">Hire Expert</span>
-                    </Button>
-                  </Link>
-                </>
               )}
             </CardContent>
           </Card>

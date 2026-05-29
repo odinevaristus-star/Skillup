@@ -62,6 +62,11 @@ export function Navbar() {
       if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
       if (parts[0]) return parts[0][0].toUpperCase();
     }
+    if (user?.displayName) {
+      const parts = user.displayName.split(' ');
+      if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      return parts[0][0].toUpperCase();
+    }
     return "?";
   };
 
@@ -90,7 +95,12 @@ export function Navbar() {
                       <PlusCircle className="h-4 w-4" /> Post Job
                     </Link>
                   </>
-                ) : null}
+                ) : (
+                  <>
+                    <Link href="/freelancers" className="text-xs font-black uppercase tracking-widest hover:text-primary transition-colors">Experts</Link>
+                    <Link href="/jobs" className="text-xs font-black uppercase tracking-widest hover:text-primary transition-colors">Jobs</Link>
+                  </>
+                )}
               </>
             ) : (
               <>

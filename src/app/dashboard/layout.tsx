@@ -1,11 +1,36 @@
-import { DashboardSidebar } from "@/components/dashboard-sidebar"
-import { Navbar } from "@/components/navbar"
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useUser } from '@/firebase';
+import { DashboardSidebar } from "@/components/dashboard-sidebar";
+import { Navbar } from "@/components/navbar";
+import { Loader2 } from "lucide-react";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const { user, loading } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/login');
+    }
+  }, [user, loading, router]);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-muted/20">
+        <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
   return (
     <div className="min-h-screen bg-muted/20">
       <DashboardSidebar />
@@ -20,5 +45,5 @@ export default function DashboardLayout({
         </main>
       </div>
     </div>
-  )
+  );
 }

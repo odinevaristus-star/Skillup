@@ -5,9 +5,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useUser } from '@/firebase';
 
 /**
- * Global component to handle automatic redirects based on authentication state.
- * Redirects logged-in users away from /login and /signup to /dashboard.
- * Redirects logged-out users away from /dashboard to /login.
+ * Handles redirection for public auth pages (login/signup).
+ * Logged-in users are redirected to the dashboard.
  */
 export function AuthRedirectHandler() {
   const { user, loading } = useUser();
@@ -18,18 +17,10 @@ export function AuthRedirectHandler() {
     if (loading) return;
 
     if (user) {
-      // User is logged in. 
-      // Redirect away from public auth pages and the landing page to the dashboard.
-      if (pathname === '/login' || pathname === '/signup' || pathname === '/') {
+      // If a logged-in user hits login or signup, send them to dashboard
+      if (pathname === '/login' || pathname === '/signup') {
         router.replace('/dashboard');
       }
-    } else {
-      // User is logged out.
-      // Redirect away from protected dashboard pages to login.
-      if (pathname.startsWith('/dashboard')) {
-        router.replace('/login');
-      }
-      // Logged out users stay on / (homepage) or other public pages
     }
   }, [user, loading, pathname, router]);
 

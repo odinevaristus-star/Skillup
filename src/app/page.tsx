@@ -1,5 +1,10 @@
+'use client';
+
 import Link from "next/link"
 import Image from "next/image"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useUser } from "@/firebase"
 import { Button } from "@/components/ui/button"
 import { Navbar } from "@/components/navbar"
 import { Card, CardContent } from "@/components/ui/card"
@@ -23,7 +28,15 @@ import {
 } from "lucide-react"
 
 export default function LandingPage() {
-  const heroImage = PlaceHolderImages.find(img => img.id === 'hero-freelancer')
+  const { user, loading } = useUser();
+  const router = useRouter();
+  const heroImage = PlaceHolderImages.find(img => img.id === 'hero-freelancer');
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace('/dashboard');
+    }
+  }, [user, loading, router]);
 
   const digitalSkills = [
     { name: "Programming", icon: Code, color: "bg-blue-500/10 text-blue-600" },
@@ -38,6 +51,8 @@ export default function LandingPage() {
     { name: "Mechanic", icon: Wrench, color: "bg-slate-500/10 text-slate-600" },
     { name: "Painting", icon: Paintbrush, color: "bg-green-500/10 text-green-600" },
   ]
+
+  if (loading || user) return null;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -55,7 +70,7 @@ export default function LandingPage() {
                 Connect with top-rated professionals for any job, anywhere. SkillUp is your portal to world-class services at your fingertips.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                <Link href="/jobs">
+                <Link href="/signup">
                   <Button size="lg" className="w-full sm:w-auto text-lg px-8 py-6 rounded-xl">
                     Get Started
                   </Button>
@@ -140,92 +155,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Digital Skills Section */}
-      <section className="py-24 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
-            <div className="max-w-2xl">
-              <h2 className="text-4xl font-bold mb-4 tracking-tight">Explore Digital Skills</h2>
-              <p className="text-muted-foreground text-lg">Work with world-class experts for your next digital project.</p>
-            </div>
-            <Link href="/categories#digital-skills">
-              <Button variant="outline" className="rounded-full px-6 group">
-                View All Digital Categories <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {digitalSkills.map((skill) => (
-              <Link key={skill.name} href={`/freelancers?category=${skill.name}`}>
-                <Card className="group border-none shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 overflow-hidden cursor-pointer bg-card">
-                  <CardContent className="p-8 flex flex-col items-center text-center">
-                    <div className={`p-4 rounded-2xl ${skill.color} mb-6 transition-transform group-hover:scale-110 duration-300`}>
-                      <skill.icon className="h-8 w-8" />
-                    </div>
-                    <h4 className="font-bold text-xl group-hover:text-primary transition-colors">{skill.name}</h4>
-                    <p className="text-sm text-muted-foreground mt-2">Hire top-rated professionals</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Hand & Artisan Skills Section */}
-      <section className="py-24 bg-muted/20">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
-            <div className="max-w-2xl">
-              <h2 className="text-4xl font-bold mb-4 tracking-tight">Hand & Artisan Skills</h2>
-              <p className="text-muted-foreground text-lg">Connect with reliable and verified local professionals for home and offline services.</p>
-            </div>
-            <Link href="/categories#hand-artisan-skills">
-              <Button variant="outline" className="rounded-full px-6 group">
-                View All Artisan Categories <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {handSkills.map((skill) => (
-              <Link key={skill.name} href={`/freelancers?category=${skill.name}`}>
-                <Card className="group border-none shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 overflow-hidden cursor-pointer bg-card">
-                  <CardContent className="p-8 flex flex-col items-center text-center">
-                    <div className={`p-4 rounded-2xl ${skill.color} mb-6 transition-transform group-hover:scale-110 duration-300`}>
-                      <skill.icon className="h-8 w-8" />
-                    </div>
-                    <h4 className="font-bold text-xl group-hover:text-accent transition-colors">{skill.name}</h4>
-                    <p className="text-sm text-muted-foreground mt-2">Connect with verified pros</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-20 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {[
-              { label: "Freelancers", val: "50k+" },
-              { label: "Jobs Completed", val: "200k+" },
-              { label: "Avg. Rating", val: "4.8" },
-              { label: "Secure Payments", val: "$10M+" }
-            ].map((stat, i) => (
-              <div key={i}>
-                <p className="text-4xl font-bold mb-2">{stat.val}</p>
-                <p className="text-primary-foreground/70 uppercase text-xs tracking-widest font-semibold">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
       <footer className="py-12 border-t mt-auto">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8 mb-12">
@@ -240,25 +169,18 @@ export default function LandingPage() {
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><Link href="/freelancers" className="hover:text-primary">Find Talent</Link></li>
                 <li><Link href="/jobs" className="hover:text-primary">Find Work</Link></li>
-                <li><Link href="/dashboard" className="hover:text-primary">Dashboard</Link></li>
+                <li><Link href="/login" className="hover:text-primary">Log In</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold mb-4">Company</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/about" className="hover:text-primary">About Us</Link></li>
-                <li><Link href="/contact" className="hover:text-primary">Contact</Link></li>
                 <li><Link href="/privacy" className="hover:text-primary">Privacy Policy</Link></li>
               </ul>
             </div>
           </div>
           <div className="flex justify-between items-center text-xs text-muted-foreground border-t pt-8">
             <p>© 2024 SkillUp Inc. All rights reserved.</p>
-            <div className="flex gap-4">
-              <span>Twitter</span>
-              <span>LinkedIn</span>
-              <span>Instagram</span>
-            </div>
           </div>
         </div>
       </footer>

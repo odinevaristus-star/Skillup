@@ -84,7 +84,8 @@ export default function DashboardOverview() {
         { label: 'Messages', value: '0', icon: MessageSquare, color: 'text-indigo-500' },
       ];
 
-  const showSetupAlert = !profile || !profile.role || !profile.fullName;
+  // Only show the banner if core identity/role fields are missing
+  const showSetupAlert = !profile || !profile.firstName || !profile.lastName || !profile.role;
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
@@ -117,6 +118,13 @@ export default function DashboardOverview() {
                   isFreelancer ? "bg-accent/10 text-accent" : "bg-primary/10 text-primary"
                 )}>
                   {isFreelancer ? 'Freelancer Account' : 'Client Account'}
+                </Badge>
+              </div>
+            )}
+            {!profile?.role && (
+              <div className="flex items-center gap-3">
+                <Badge variant="destructive" className="border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                  Account Pending
                 </Badge>
               </div>
             )}

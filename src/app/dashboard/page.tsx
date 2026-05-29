@@ -1,9 +1,10 @@
 
 'use client';
 
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, where, limit, orderBy } from 'firebase/firestore';
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { doc, getDoc, collection, query, where, limit, orderBy } from 'firebase/firestore';
+import { Card, CardContent, CardTitle, CardDescription, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -22,78 +23,88 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { useEffect } from 'react';
 
 export default function DashboardOverview() {
   const { user, loading: authLoading } = useUser();
   const db = useFirestore();
 
-  const userDocRef = useMemoFirebase(() => {
-    if (!db || !user?.uid) return null;
-    return doc(db, 'users', user.uid);
-  }, [db, user?.uid]);
+  const [profile, setProfile] = useState<any>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
 
-  const { data: profile, loading: profileLoading } = useDoc(userDocRef);
+  // Manual fetch as requested to ensure data integrity
+  useEffect(() => {
+    async function fetchProfile() {
+      if (user && db) {
+        setProfileLoading(true);
+        try {
+          const docRef = doc(db, 'users', user.uid);
+          const docSnap = await getDoc(docRef);
+          
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            console.log('Firestore data:', data);
+            setProfile(data);
+          } else {
+            console.log('No such document in Firestore!');
+            setProfile(null);
+          }
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+        } finally {
+          setProfileLoading(false);
+        }
+      }
+    }
+    fetchProfile();
+  }, [user, db]);
 
-  // Profile data mapping
   const isFreelancer = profile?.role === 'freelancer';
   const isClient = profile?.role === 'client';
   
-  // Resolve first name from multiple possible field names
-  const firstName = profile?.firstName || profile?.first_name || user?.displayName?.split(' ')[0] || 'User';
+  // Resolve name from Firestore fields
+  const firstNameDisplay = profile?.firstName || profile?.first_name || "User";
 
-  // Data fetching for stats based on confirmed role
-  // We define these hooks at the top level to follow Rules of Hooks
-  const clientJobsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid || !isClient) return null;
-    return query(collection(db, 'jobs'), where('clientId', '==', user.uid), orderBy('createdAt', 'desc'), limit(5));
-  }, [db, user?.uid, isClient]);
-
-  const freelancerJobsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid || !isFreelancer) return null;
-    return query(collection(db, 'jobs'), where('freelancerId', '==', user.uid), orderBy('createdAt', 'desc'), limit(5));
-  }, [db, user?.uid, isFreelancer]);
+  // Related data queries
+  const activeJobsQuery = useMemoFirebase(() => {
+    if (!db || !user?.uid || !profile) return null;
+    if (isFreelancer) {
+      return query(collection(db, 'jobs'), where('freelancerId', '==', user.uid), orderBy('createdAt', 'desc'), limit(5));
+    }
+    if (isClient) {
+      return query(collection(db, 'jobs'), where('clientId', '==', user.uid), orderBy('createdAt', 'desc'), limit(5));
+    }
+    return null;
+  }, [db, user?.uid, isFreelancer, isClient, !!profile]);
 
   const myApplicationsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || !isFreelancer) return null;
     return query(collection(db, 'applications'), where('freelancerId', '==', user.uid), orderBy('createdAt', 'desc'), limit(5));
   }, [db, user?.uid, isFreelancer]);
 
-  const { data: clientJobs, loading: clientJobsLoading } = useCollection(clientJobsQuery);
-  const { data: freelancerJobs, loading: freelancerJobsLoading } = useCollection(freelancerJobsQuery);
+  const { data: activeJobs, loading: jobsLoading } = useCollection(activeJobsQuery);
   const { data: myApplications } = useCollection(myApplicationsQuery);
-
-  // Explicit debug logging for profile
-  useEffect(() => {
-    if (!profileLoading && profile) {
-      console.log("DASHBOARD PROFILE DATA:", profile);
-    }
-  }, [profile, profileLoading]);
 
   if (authLoading || profileLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="text-muted-foreground font-bold animate-pulse uppercase tracking-widest text-xs">Syncing workspace...</p>
+          <p className="text-muted-foreground font-bold uppercase tracking-widest text-xs">Loading workspace...</p>
         </div>
       </div>
     );
   }
 
-  const activeJobs = isFreelancer ? (freelancerJobs || []) : (clientJobs || []);
-  const jobsLoading = isFreelancer ? freelancerJobsLoading : clientJobsLoading;
-
   const stats = isFreelancer
     ? [
-        { label: 'Active Projects', value: activeJobs.filter((j) => j.status === 'in-progress').length.toString(), icon: Briefcase, color: 'text-blue-500' },
-        { label: 'Submitted Proposals', value: myApplications?.length.toString() || '0', icon: FileText, color: 'text-purple-500' },
-        { label: 'Completed Jobs', value: profile?.completedJobs?.toString() || '0', icon: CheckCircle2, color: 'text-green-500' },
-        { label: 'Average Rating', value: profile?.rating ? profile.rating.toFixed(1) : 'N/A', icon: Star, color: 'text-yellow-500' },
+        { label: 'Active Projects', value: activeJobs?.filter((j) => j.status === 'in-progress').length.toString() || '0', icon: Briefcase, color: 'text-blue-500' },
+        { label: 'Proposals', value: myApplications?.length.toString() || '0', icon: FileText, color: 'text-purple-500' },
+        { label: 'Completed', value: profile?.completedJobs?.toString() || '0', icon: CheckCircle2, color: 'text-green-500' },
+        { label: 'Rating', value: profile?.rating ? profile.rating.toFixed(1) : 'N/A', icon: Star, color: 'text-yellow-500' },
       ]
     : [
-        { label: 'Open Postings', value: activeJobs.filter((j) => j.status === 'open').length.toString(), icon: Zap, color: 'text-orange-500' },
-        { label: 'Active Contracts', value: activeJobs.filter((j) => j.status === 'in-progress').length.toString(), icon: Briefcase, color: 'text-blue-500' },
+        { label: 'Open Postings', value: activeJobs?.filter((j) => j.status === 'open').length.toString() || '0', icon: Zap, color: 'text-orange-500' },
+        { label: 'Active Contracts', value: activeJobs?.filter((j) => j.status === 'in-progress').length.toString() || '0', icon: Briefcase, color: 'text-blue-500' },
         { label: 'Total Hires', value: profile?.totalHires?.toString() || '0', icon: Users, color: 'text-cyan-500' },
         { label: 'Messages', value: '0', icon: MessageSquare, color: 'text-indigo-500' },
       ];
@@ -102,31 +113,28 @@ export default function DashboardOverview() {
     <div className="space-y-10 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div className="space-y-2">
-          <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground">
-            Hello, {firstName}!
+          <h1 className="text-4xl md:text-6xl font-black tracking-tighter">
+            Hello, {firstNameDisplay}!
           </h1>
-          <div className="flex flex-col gap-2">
-            <p className="text-muted-foreground text-xl font-medium">Your Workspace Overview</p>
-            <div className="flex items-center gap-3">
-              <Badge className={cn(
-                "border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
-                isFreelancer ? "bg-accent/10 text-accent" : "bg-primary/10 text-primary"
-              )}>
-                {profile?.role ? `${profile.role} Account` : 'Role Not Assigned'}
-              </Badge>
-            </div>
+          <div className="flex items-center gap-3">
+            <Badge className={cn(
+              "border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
+              isFreelancer ? "bg-accent/10 text-accent" : "bg-primary/10 text-primary"
+            )}>
+              {profile?.role ? `${profile.role} Account` : 'Role Not Assigned'}
+            </Badge>
           </div>
         </div>
         <div className="flex gap-4">
           {isFreelancer ? (
             <Link href="/jobs">
-              <Button className="h-16 px-10 rounded-2xl font-black text-sm uppercase tracking-widest gap-3 shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+              <Button className="h-16 px-10 rounded-2xl font-black text-sm uppercase tracking-widest gap-3 shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02]">
                 <Search className="h-5 w-5" /> Find Work
               </Button>
             </Link>
           ) : (
             <Link href="/dashboard/jobs/post">
-              <Button className="h-16 px-10 rounded-2xl font-black text-sm uppercase tracking-widest gap-3 shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+              <Button className="h-16 px-10 rounded-2xl font-black text-sm uppercase tracking-widest gap-3 shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02]">
                 <PlusCircle className="h-5 w-5" /> Post a Job
               </Button>
             </Link>
@@ -139,7 +147,7 @@ export default function DashboardOverview() {
           <Card key={i} className="border-none shadow-sm hover:shadow-xl transition-all duration-500 rounded-[2.5rem] bg-card overflow-hidden">
             <CardContent className="p-10">
               <div className="flex items-center justify-between mb-8">
-                <div className={cn('p-4 rounded-2xl bg-muted/50 transition-colors', stat.color)}>
+                <div className={cn('p-4 rounded-2xl bg-muted/50', stat.color)}>
                   <stat.icon className="h-8 w-8" />
                 </div>
               </div>
@@ -155,55 +163,41 @@ export default function DashboardOverview() {
       <div className="grid lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2 space-y-12">
           <Card className="border-none shadow-sm overflow-hidden rounded-[3rem] bg-card border border-muted/30">
-            <CardHeader className="flex flex-row items-center justify-between p-10 pb-6 border-b bg-muted/10">
-              <div className="space-y-1">
-                <CardTitle className="text-2xl font-black tracking-tight">{isFreelancer ? 'Current Contracts' : 'My Recent Postings'}</CardTitle>
-                <CardDescription className="font-medium text-base">{isFreelancer ? 'Jobs you are currently working on' : 'Monitor progress of your active projects'}</CardDescription>
-              </div>
-              <Link href="/dashboard/jobs">
-                <Button variant="ghost" size="sm" className="font-black text-xs uppercase tracking-widest text-primary hover:bg-primary/5 rounded-xl px-4">View All</Button>
-              </Link>
+            <CardHeader className="p-10 pb-6 border-b bg-muted/10">
+              <CardTitle className="text-2xl font-black tracking-tight">{isFreelancer ? 'Current Contracts' : 'My Recent Postings'}</CardTitle>
             </CardHeader>
             <CardContent className="p-10 pt-8">
               {jobsLoading ? (
                 <div className="flex justify-center py-20">
                   <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
                 </div>
-              ) : activeJobs.length ? (
+              ) : activeJobs && activeJobs.length ? (
                 <div className="space-y-8">
                   {activeJobs.map((job: any) => (
-                    <div key={job.id} className="group p-8 rounded-[2.5rem] border-2 border-muted bg-card hover:border-primary/30 transition-all shadow-sm">
+                    <div key={job.id} className="group p-8 rounded-[2.5rem] border-2 border-muted bg-card hover:border-primary/30 transition-all">
                       <div className="flex items-start justify-between mb-8">
                         <div className="space-y-3">
-                          <h4 className="font-black text-2xl group-hover:text-primary transition-colors tracking-tight leading-tight">{job.title}</h4>
+                          <h4 className="font-black text-2xl group-hover:text-primary transition-colors tracking-tight">{job.title}</h4>
                           <div className="flex items-center gap-4 text-xs font-black uppercase tracking-widest text-muted-foreground">
-                            <span className="flex items-center gap-2"><Clock className="h-4 w-4 text-primary" /> {job.deadline ? `Due ${job.deadline}` : 'No deadline'}</span>
-                            <Badge className="bg-primary/10 text-primary border-none px-4 py-1.5 rounded-full">{job.status.replace('-', ' ')}</Badge>
+                            <span className="flex items-center gap-2"><Clock className="h-4 w-4" /> {job.deadline || 'No deadline'}</span>
+                            <Badge className="bg-primary/10 text-primary border-none px-4 py-1.5 rounded-full">{job.status}</Badge>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-3xl font-black text-primary">₦{job.budget?.toLocaleString()}</p>
-                        </div>
+                        <p className="text-3xl font-black text-primary">₦{job.budget?.toLocaleString()}</p>
                       </div>
                       <div className="space-y-3">
-                        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest opacity-60">
-                          <span>Progress</span>
-                          <span>{job.status === 'in-progress' ? '50%' : '0%'}</span>
-                        </div>
                         <Progress value={job.status === 'in-progress' ? 50 : 0} className="h-3 rounded-full" />
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-24 text-muted-foreground border-2 border-dashed border-muted rounded-[2.5rem] px-8">
-                  <div className="w-24 h-24 bg-muted/50 rounded-3xl flex items-center justify-center mx-auto mb-8 opacity-20">
-                    <Briefcase className="h-12 w-12" />
-                  </div>
-                  <h3 className="text-2xl font-black text-foreground tracking-tight">Nothing here yet</h3>
+                <div className="text-center py-24 text-muted-foreground border-2 border-dashed border-muted rounded-[2.5rem]">
+                  <Briefcase className="h-12 w-12 mx-auto mb-8 opacity-20" />
+                  <h3 className="text-2xl font-black text-foreground">Nothing here yet</h3>
                   <Link href={isFreelancer ? '/jobs' : '/dashboard/jobs/post'}>
-                    <Button variant="outline" className="mt-10 rounded-2xl font-black text-sm uppercase tracking-widest h-14 px-10 border-muted-foreground/20 hover:border-primary transition-all">
-                      {isFreelancer ? 'Explore Job Board' : 'Post First Gig'}
+                    <Button variant="outline" className="mt-8 rounded-2xl font-black text-sm uppercase tracking-widest h-14 px-10">
+                      {isFreelancer ? 'Explore Jobs' : 'Post First Job'}
                     </Button>
                   </Link>
                 </div>

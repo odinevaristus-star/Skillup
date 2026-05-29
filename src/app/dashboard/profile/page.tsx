@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
@@ -11,7 +10,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Progress } from "@/components/ui/progress"
 import { Switch } from "@/components/ui/switch"
 import { Camera, X, Plus, Save, Loader2, Landmark } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -40,7 +38,7 @@ export default function ProfileManagement() {
 
   useEffect(() => {
     if (profile) {
-      setFullName(profile.fullName || "")
+      setFullName(profile.fullName || profile.full_name || "")
       setTitle(profile.title || "")
       setBio(profile.bio || "")
       setDepartment(profile.department || "")
@@ -104,14 +102,6 @@ export default function ProfileManagement() {
       </div>
     )
   }
-
-  const profileStrength = [
-    !!fullName,
-    !!title,
-    !!bio,
-    !!department,
-    skills.length > 0
-  ].filter(Boolean).length * 20
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
@@ -253,38 +243,6 @@ export default function ProfileManagement() {
         </div>
 
         <div className="space-y-10">
-          <Card className="border-none shadow-2xl rounded-3xl bg-primary text-primary-foreground overflow-hidden">
-            <CardHeader className="p-8 pb-4">
-              <CardTitle className="text-xl">Profile Strength</CardTitle>
-              <CardDescription className="text-primary-foreground/70 font-medium">Complete these milestones to boost search ranking.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-8 pt-0 space-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-black uppercase tracking-widest">
-                  <span>Progress</span>
-                  <span>{profileStrength}%</span>
-                </div>
-                <Progress value={profileStrength} className="h-2.5 bg-white/20" />
-              </div>
-              <ul className="space-y-4">
-                {[
-                  { check: !!fullName, label: "Identity Verified" },
-                  { check: !!title, label: "Headline Optimized" },
-                  { check: !!bio, label: "Bio Completed" },
-                  { check: !!department, label: "Academic Info Added" },
-                  { check: skills.length > 0, label: "Skills Showcased" }
-                ].map((item, i) => (
-                  <li key={i} className={`flex items-center gap-3 text-sm font-bold ${item.check ? 'text-white' : 'text-white/40'}`}>
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center border-2 ${item.check ? 'bg-white border-white' : 'border-white/20'}`}>
-                      {item.check && <Save className="h-3 w-3 text-primary" />}
-                    </div>
-                    {item.label}
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-
           <Card className="border-none shadow-sm rounded-3xl bg-card">
             <CardHeader className="p-8">
               <CardTitle className="text-lg">Visibility Settings</CardTitle>

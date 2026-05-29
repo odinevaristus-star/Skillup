@@ -84,8 +84,13 @@ export default function DashboardOverview() {
         { label: 'Messages', value: '0', icon: MessageSquare, color: 'text-indigo-500' },
       ];
 
-  // Only show the banner if core identity/role fields are missing
-  const showSetupAlert = !profile || !profile.firstName || !profile.lastName || !profile.role;
+  // Logic to handle both firstName/first_name and lastName/last_name variations
+  const hasFirstName = profile?.firstName || profile?.first_name;
+  const hasLastName = profile?.lastName || profile?.last_name;
+  const showSetupAlert = !profile || !hasFirstName || !hasLastName || !profile.role;
+
+  // Determine where to send the user to complete their profile
+  const setupLink = isFreelancer ? "/dashboard/profile" : "/dashboard/settings";
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
@@ -94,10 +99,10 @@ export default function DashboardOverview() {
           <AlertCircle className="h-5 w-5" />
           <AlertTitle className="font-bold text-lg mb-1">Account setup incomplete</AlertTitle>
           <AlertDescription className="text-sm font-medium flex items-center justify-between">
-            Your professional profile details are missing. Please complete your registration to start hiring or finding work.
-            <Link href="/dashboard/profile">
+            Your profile details are missing. Please complete your registration to start hiring or finding work.
+            <Link href={setupLink}>
               <Button variant="outline" size="sm" className="ml-4 rounded-xl font-bold border-destructive text-destructive hover:bg-destructive hover:text-white">
-                Complete Profile <ArrowRight className="h-4 w-4 ml-2" />
+                Complete Setup <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </Link>
           </AlertDescription>
@@ -107,7 +112,7 @@ export default function DashboardOverview() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div className="space-y-2">
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground">
-            Hello, {profile?.firstName || user?.displayName?.split(' ')[0] || 'User'}!
+            Hello, {hasFirstName || user?.displayName?.split(' ')[0] || 'User'}!
           </h1>
           <div className="flex flex-col gap-2">
             <p className="text-muted-foreground text-xl font-medium">Your Workspace Overview</p>

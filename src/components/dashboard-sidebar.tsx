@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -15,6 +14,7 @@ import {
   PlusCircle,
   Users,
   FileText,
+  Settings,
 } from 'lucide-react';
 import { useAuth, useUser, useFirestore, useMemoFirebase, useCollection, useDoc } from '@/firebase';
 import { signOut } from 'firebase/auth';
@@ -61,16 +61,19 @@ export function DashboardSidebar() {
       ? [
           { label: 'Find Work', href: '/jobs', icon: Search },
           { label: 'My Proposals', href: '/dashboard/jobs', icon: FileText },
+          { label: 'Profile', href: '/dashboard/profile', icon: User },
         ]
       : isClient
       ? [
           { label: 'Hire Talent', href: '/freelancers', icon: Users },
           { label: 'My Jobs', href: '/dashboard/jobs', icon: Briefcase },
+          { label: 'Settings', href: '/dashboard/settings', icon: Settings },
         ]
-      : []),
+      : [
+          { label: 'Profile', href: '/dashboard/profile', icon: User },
+        ]),
     { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare, badge: unreadMessages?.length || 0 },
     { label: 'Notifications', href: '/dashboard/notifications', icon: Bell, badge: unreadNotifications?.length || 0 },
-    { label: 'Profile', href: '/dashboard/profile', icon: User },
   ];
 
   return (

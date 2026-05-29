@@ -1,15 +1,11 @@
-
 'use client';
 
-import { useState } from 'react';
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { doc, collection, query, where, limit, orderBy, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { doc, collection, query, where, limit, orderBy } from 'firebase/firestore';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Briefcase,
   MessageSquare,
@@ -22,20 +18,13 @@ import {
   CheckCircle2,
   FileText,
   Users,
-  User,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
 
 export default function DashboardOverview() {
   const { user, loading: authLoading } = useUser();
   const db = useFirestore();
-  const { toast } = useToast();
-  const [roleSetting, setRoleSetting] = useState(false);
-  
-  const [setupFirstName, setSetupFirstName] = useState('');
-  const [setupLastName, setSetupLastName] = useState('');
 
   const userDocRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null;
@@ -46,7 +35,6 @@ export default function DashboardOverview() {
 
   const isFreelancer = profile?.role === 'freelancer';
   const isClient = profile?.role === 'client';
-  const needsSetup = !profileLoading && (!profile || !profile.role);
 
   // Data fetching
   const clientJobsQuery = useMemoFirebase(() => {
@@ -68,47 +56,6 @@ export default function DashboardOverview() {
   const { data: freelancerJobs, loading: freelancerJobsLoading } = useCollection(freelancerJobsQuery);
   const { data: myApplications } = useCollection(myApplicationsQuery);
 
-  const handleCompleteSetup = async (selectedRole: 'client' | 'freelancer') => {
-    if (!userDocRef || !user) return;
-    if (!setupFirstName.trim() || !setupLastName.trim()) {
-      toast({ variant: 'destructive', title: 'Name required', description: 'Please enter your first and last name.' });
-      return;
-    }
-
-    setRoleSetting(true);
-    const firstName = setupFirstName.trim();
-    const lastName = setupLastName.trim();
-    
-    const userData = {
-      uid: user.uid,
-      email: user.email,
-      firstName,
-      lastName,
-      fullName: `${firstName} ${lastName}`,
-      role: selectedRole,
-      updatedAt: serverTimestamp(),
-      createdAt: serverTimestamp(),
-      title: selectedRole === 'client' ? 'Project Client' : 'Campus Professional',
-      isAvailable: true,
-      completedJobs: 0,
-      rating: null,
-      skills: []
-    };
-
-    setDoc(userDocRef, userData)
-      .then(() => {
-        toast({ title: 'Welcome!', description: `Account setup as ${selectedRole} successful.` });
-      })
-      .catch(async (error) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: userDocRef.path,
-          operation: 'write',
-          requestResourceData: userData
-        }));
-      })
-      .finally(() => setRoleSetting(false));
-  };
-
   if (authLoading || profileLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -117,73 +64,13 @@ export default function DashboardOverview() {
     );
   }
 
-  if (needsSetup) {
+  // Fallback for missing profile (should not happen with new signup flow)
+  if (!profile) {
     return (
-      <div className="flex flex-col items-center justify-center py-10 animate-in fade-in duration-700">
-        <div className="max-w-3xl w-full text-center space-y-12">
-          <div className="space-y-4">
-            <h1 className="text-5xl font-black tracking-tighter">Complete Your Setup</h1>
-            <p className="text-muted-foreground text-xl font-medium">Please provide your details to access the dashboard.</p>
-          </div>
-
-          <Card className="p-10 border-none bg-card rounded-[3rem] shadow-xl text-left space-y-10">
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="space-y-3">
-                <Label className="font-bold text-base">First Name</Label>
-                <Input 
-                  placeholder="e.g. John" 
-                  value={setupFirstName} 
-                  onChange={(e) => setSetupFirstName(e.target.value)}
-                  className="h-14 rounded-2xl bg-muted/50 border-none px-6 text-lg"
-                />
-              </div>
-              <div className="space-y-3">
-                <Label className="font-bold text-base">Last Name</Label>
-                <Input 
-                  placeholder="e.g. Doe" 
-                  value={setupLastName} 
-                  onChange={(e) => setSetupLastName(e.target.value)}
-                  className="h-14 rounded-2xl bg-muted/50 border-none px-6 text-lg"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <Label className="font-bold text-center block text-lg">I am joining as a:</Label>
-              <div className="grid md:grid-cols-2 gap-8">
-                <button
-                  onClick={() => handleCompleteSetup('client')}
-                  disabled={roleSetting}
-                  className="flex flex-col items-center p-10 border-4 border-muted hover:border-primary bg-card rounded-[2.5rem] transition-all group relative"
-                >
-                  <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-6">
-                    <User className="h-10 w-10 text-primary" />
-                  </div>
-                  <h3 className="text-2xl font-black">Client</h3>
-                  <p className="text-sm text-muted-foreground mt-2">I want to hire talent</p>
-                </button>
-
-                <button
-                  onClick={() => handleCompleteSetup('freelancer')}
-                  disabled={roleSetting}
-                  className="flex flex-col items-center p-10 border-4 border-muted hover:border-accent bg-card rounded-[2.5rem] transition-all group relative"
-                >
-                  <div className="w-20 h-20 rounded-3xl bg-accent/10 flex items-center justify-center mb-6">
-                    <Briefcase className="h-10 w-10 text-accent" />
-                  </div>
-                  <h3 className="text-2xl font-black">Freelancer</h3>
-                  <p className="text-sm text-muted-foreground mt-2">I want to find work</p>
-                </button>
-              </div>
-            </div>
-            
-            {roleSetting && (
-              <div className="flex justify-center pt-4">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              </div>
-            )}
-          </Card>
-        </div>
+      <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4">
+        <h2 className="text-2xl font-bold">Profile not found</h2>
+        <p className="text-muted-foreground">We couldn't retrieve your professional profile.</p>
+        <Link href="/signup"><Button>Go to Signup</Button></Link>
       </div>
     );
   }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -49,7 +48,7 @@ export default function SignupPage() {
         lastName: lastName,
         fullName: `${firstName} ${lastName}`,
         role: selectedRole,
-        skills: primarySkill ? [primarySkill] : [],
+        skills: selectedRole === 'freelancer' ? [primarySkill] : [],
         title: selectedRole === 'freelancer' ? primarySkill || 'Professional Freelancer' : 'Project Client',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -58,10 +57,13 @@ export default function SignupPage() {
         rating: null
       };
 
+      console.log("Saving user with role: " + selectedRole);
       await setDoc(doc(db, "users", result.user.uid), userData);
       
-      // Step 3: Redirect
-      window.location.replace("/dashboard");
+      // Step 3: Forced Redirect
+      setTimeout(() => {
+        window.location.replace("/dashboard");
+      }, 500);
 
     } catch (error: any) {
       alert(error.message);

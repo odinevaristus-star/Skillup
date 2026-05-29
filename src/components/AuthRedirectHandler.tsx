@@ -19,7 +19,7 @@ export function AuthRedirectHandler() {
 
     if (user) {
       // User is logged in. 
-      // Redirect away from public auth pages to the dashboard.
+      // Redirect away from public auth pages and the landing page to the dashboard.
       if (pathname === '/login' || pathname === '/signup' || pathname === '/') {
         router.replace('/dashboard');
       }
@@ -29,6 +29,7 @@ export function AuthRedirectHandler() {
       if (pathname.startsWith('/dashboard')) {
         router.replace('/login');
       }
+      // Logged out users stay on / (homepage) or other public pages
     }
   }, [user, loading, pathname, router]);
 

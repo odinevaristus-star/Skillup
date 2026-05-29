@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
@@ -85,14 +84,16 @@ export default function DashboardOverview() {
         { label: 'Messages', value: '0', icon: MessageSquare, color: 'text-indigo-500' },
       ];
 
+  const showSetupAlert = !profile || !profile.role || !profile.fullName;
+
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
-      {!profile && (
+      {showSetupAlert && (
         <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 rounded-3xl p-6">
           <AlertCircle className="h-5 w-5" />
           <AlertTitle className="font-bold text-lg mb-1">Account setup incomplete</AlertTitle>
           <AlertDescription className="text-sm font-medium flex items-center justify-between">
-            Your professional profile was not found. Please complete your registration to start hiring or finding work.
+            Your professional profile details are missing. Please complete your registration to start hiring or finding work.
             <Link href="/dashboard/profile">
               <Button variant="outline" size="sm" className="ml-4 rounded-xl font-bold border-destructive text-destructive hover:bg-destructive hover:text-white">
                 Complete Profile <ArrowRight className="h-4 w-4 ml-2" />

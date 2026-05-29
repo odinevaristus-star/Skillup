@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, collection, query, where, limit, orderBy } from 'firebase/firestore';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,17 +38,42 @@ export default function DashboardOverview() {
 
   const { data: profile, loading: profileLoading } = useDoc(userDocRef);
 
-  // Debug logging to help identify field issues in Firestore
+  // Explicit debug logging to see the exact structure in Firestore
   useEffect(() => {
     if (!profileLoading && profile) {
-      console.log("Dashboard Profile Data Fetched:", profile);
+      console.log("DASHBOARD DATA FETCHED:", profile);
+    } else if (!profileLoading && !profile && user) {
+      console.log("DASHBOARD DATA: No document found for UID:", user.uid);
     }
-  }, [profile, profileLoading]);
+  }, [profile, profileLoading, user]);
 
+  // Wait for both Auth and Firestore to be absolutely ready
+  if (authLoading || profileLoading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-muted-foreground font-bold animate-pulse uppercase tracking-widest text-xs">Syncing workspace...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Profile data mapping (Handling both new and legacy field names)
   const isFreelancer = profile?.role === 'freelancer';
   const isClient = profile?.role === 'client';
+  const firstName = profile?.firstName || profile?.first_name || user?.displayName?.split(' ')[0] || 'User';
+  const lastName = profile?.lastName || profile?.last_name || '';
+  const role = profile?.role;
 
-  // Data fetching
+  // Banner logic: Only show if the profile document is missing OR if essential fields are null/empty
+  // If the document exists but fields are missing, it's an "incomplete setup"
+  // If the document doesn't exist at all, it's "Account Pending"
+  const docExists = !!profile;
+  const missingEssentialFields = !firstName || firstName === 'User' || !lastName || !role;
+  const showSetupAlert = !docExists || missingEssentialFields;
+
+  // Data fetching for stats based on confirmed role
   const clientJobsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || !isClient) return null;
     return query(collection(db, 'jobs'), where('clientId', '==', user.uid), orderBy('createdAt', 'desc'), limit(5));
@@ -67,14 +93,6 @@ export default function DashboardOverview() {
   const { data: freelancerJobs, loading: freelancerJobsLoading } = useCollection(freelancerJobsQuery);
   const { data: myApplications } = useCollection(myApplicationsQuery);
 
-  if (authLoading || profileLoading) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   const activeJobs = isFreelancer ? (freelancerJobs || []) : (clientJobs || []);
   const jobsLoading = isFreelancer ? freelancerJobsLoading : clientJobsLoading;
 
@@ -92,32 +110,24 @@ export default function DashboardOverview() {
         { label: 'Messages', value: '0', icon: MessageSquare, color: 'text-indigo-500' },
       ];
 
-  // Logic to handle both firstName/first_name and lastName/last_name variations
-  const firstName = profile?.firstName || profile?.first_name || user?.displayName?.split(' ')[0] || 'User';
-  
-  // Robust check for setup banner: only show if essential fields (names or role) are missing
-  const hasFirstName = profile?.firstName || profile?.first_name;
-  const hasLastName = profile?.lastName || profile?.last_name;
-  const hasRole = profile?.role;
-  const showSetupAlert = !profile || !hasFirstName || !hasLastName || !hasRole;
-
-  // Determine where to send the user to complete their profile
   const setupLink = isFreelancer ? "/dashboard/profile" : "/dashboard/settings";
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       {showSetupAlert && (
-        <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 rounded-3xl p-6">
-          <AlertCircle className="h-5 w-5" />
-          <AlertTitle className="font-bold text-lg mb-1">Account setup incomplete</AlertTitle>
-          <AlertDescription className="text-sm font-medium flex items-center justify-between">
-            Your profile details are missing. Please complete your registration to start hiring or finding work.
-            <Link href={setupLink}>
-              <Button variant="outline" size="sm" className="ml-4 rounded-xl font-bold border-destructive text-destructive hover:bg-destructive hover:text-white">
-                Complete Setup <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </Link>
-          </AlertDescription>
+        <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 rounded-[2rem] p-8">
+          <AlertCircle className="h-6 w-6" />
+          <div className="flex-1">
+            <AlertTitle className="font-black text-xl mb-1">Account setup incomplete</AlertTitle>
+            <AlertDescription className="text-base font-medium flex flex-col md:flex-row md:items-center justify-between gap-4">
+              Your professional details are missing. Please complete your registration to start hiring or finding work.
+              <Link href={setupLink}>
+                <Button variant="outline" size="sm" className="rounded-xl font-bold border-destructive text-destructive hover:bg-destructive hover:text-white px-6 h-11">
+                  Complete Setup <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </Link>
+            </AlertDescription>
+          </div>
         </Alert>
       )}
 
@@ -128,22 +138,20 @@ export default function DashboardOverview() {
           </h1>
           <div className="flex flex-col gap-2">
             <p className="text-muted-foreground text-xl font-medium">Your Workspace Overview</p>
-            {profile ? (
-              <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
+              {docExists ? (
                 <Badge className={cn(
                   "border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
                   isFreelancer ? "bg-accent/10 text-accent" : "bg-primary/10 text-primary"
                 )}>
-                  {profile.role ? `${profile.role} Account` : 'Role Not Assigned'}
+                  {role ? `${role} Account` : 'Role Not Assigned'}
                 </Badge>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
+              ) : (
                 <Badge variant="destructive" className="border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
                   Account Pending
                 </Badge>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
         <div className="flex gap-4">

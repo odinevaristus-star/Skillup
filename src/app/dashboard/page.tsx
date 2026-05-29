@@ -7,7 +7,6 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Briefcase,
   MessageSquare,
@@ -20,8 +19,6 @@ import {
   CheckCircle2,
   FileText,
   Users,
-  AlertCircle,
-  ArrowRight
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -38,14 +35,15 @@ export default function DashboardOverview() {
 
   const { data: profile, loading: profileLoading } = useDoc(userDocRef);
 
-  // Profile data mapping (Handling both new and legacy field names)
+  // Profile data mapping
   const isFreelancer = profile?.role === 'freelancer';
   const isClient = profile?.role === 'client';
+  
+  // Resolve first name from multiple possible field names
   const firstName = profile?.firstName || profile?.first_name || user?.displayName?.split(' ')[0] || 'User';
-  const lastName = profile?.lastName || profile?.last_name || '';
-  const role = profile?.role;
 
-  // Data fetching for stats based on confirmed role - MUST BE CALLED BEFORE EARLY RETURNS
+  // Data fetching for stats based on confirmed role
+  // We define these hooks at the top level to follow Rules of Hooks
   const clientJobsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || !isClient) return null;
     return query(collection(db, 'jobs'), where('clientId', '==', user.uid), orderBy('createdAt', 'desc'), limit(5));
@@ -65,14 +63,12 @@ export default function DashboardOverview() {
   const { data: freelancerJobs, loading: freelancerJobsLoading } = useCollection(freelancerJobsQuery);
   const { data: myApplications } = useCollection(myApplicationsQuery);
 
-  // Explicit debug logging
+  // Explicit debug logging for profile
   useEffect(() => {
     if (!profileLoading && profile) {
-      console.log("DASHBOARD DATA FETCHED:", profile);
-    } else if (!profileLoading && !profile && user) {
-      console.log("DASHBOARD DATA: No document found for UID:", user.uid);
+      console.log("DASHBOARD PROFILE DATA:", profile);
     }
-  }, [profile, profileLoading, user]);
+  }, [profile, profileLoading]);
 
   if (authLoading || profileLoading) {
     return (
@@ -84,11 +80,6 @@ export default function DashboardOverview() {
       </div>
     );
   }
-
-  // Banner logic: Only show if the profile document is missing OR if essential fields are null/empty
-  const docExists = !!profile;
-  const missingEssentialFields = !firstName || firstName === 'User' || !lastName || !role;
-  const showSetupAlert = !docExists || missingEssentialFields;
 
   const activeJobs = isFreelancer ? (freelancerJobs || []) : (clientJobs || []);
   const jobsLoading = isFreelancer ? freelancerJobsLoading : clientJobsLoading;
@@ -107,27 +98,8 @@ export default function DashboardOverview() {
         { label: 'Messages', value: '0', icon: MessageSquare, color: 'text-indigo-500' },
       ];
 
-  const setupLink = isFreelancer ? "/dashboard/profile" : "/dashboard/settings";
-
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
-      {showSetupAlert && (
-        <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 rounded-[2rem] p-8">
-          <AlertCircle className="h-6 w-6" />
-          <div className="flex-1">
-            <AlertTitle className="font-black text-xl mb-1">Account setup incomplete</AlertTitle>
-            <AlertDescription className="text-base font-medium flex flex-col md:flex-row md:items-center justify-between gap-4">
-              Your professional details are missing. Please complete your registration to start hiring or finding work.
-              <Link href={setupLink}>
-                <Button variant="outline" size="sm" className="rounded-xl font-bold border-destructive text-destructive hover:bg-destructive hover:text-white px-6 h-11">
-                  Complete Setup <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </Link>
-            </AlertDescription>
-          </div>
-        </Alert>
-      )}
-
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div className="space-y-2">
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground">
@@ -136,18 +108,12 @@ export default function DashboardOverview() {
           <div className="flex flex-col gap-2">
             <p className="text-muted-foreground text-xl font-medium">Your Workspace Overview</p>
             <div className="flex items-center gap-3">
-              {docExists ? (
-                <Badge className={cn(
-                  "border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
-                  isFreelancer ? "bg-accent/10 text-accent" : "bg-primary/10 text-primary"
-                )}>
-                  {role ? `${role} Account` : 'Role Not Assigned'}
-                </Badge>
-              ) : (
-                <Badge variant="destructive" className="border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
-                  Account Pending
-                </Badge>
-              )}
+              <Badge className={cn(
+                "border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
+                isFreelancer ? "bg-accent/10 text-accent" : "bg-primary/10 text-primary"
+              )}>
+                {profile?.role ? `${profile.role} Account` : 'Role Not Assigned'}
+              </Badge>
             </div>
           </div>
         </div>

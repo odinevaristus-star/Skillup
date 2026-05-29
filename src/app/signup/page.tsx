@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -49,6 +50,7 @@ export default function SignupPage() {
         fullName: `${firstName} ${lastName}`,
         role: selectedRole,
         skills: selectedRole === 'freelancer' ? [primarySkill] : [],
+        skill: selectedRole === 'freelancer' ? primarySkill : '',
         title: selectedRole === 'freelancer' ? primarySkill || 'Professional Freelancer' : 'Project Client',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -57,13 +59,12 @@ export default function SignupPage() {
         rating: null
       };
 
-      console.log("Saving user with role: " + selectedRole);
+      console.log("Creating user profile for: " + userData.fullName);
       await setDoc(doc(db, "users", result.user.uid), userData);
       
-      // Step 3: Forced Redirect
-      setTimeout(() => {
-        window.location.replace("/dashboard");
-      }, 500);
+      // Step 3: Redirect to dashboard
+      // The global AuthRedirectHandler will also help, but forced redirect ensures UI consistency
+      window.location.replace("/dashboard");
 
     } catch (error: any) {
       alert(error.message);

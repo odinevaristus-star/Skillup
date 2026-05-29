@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection, query, where, limit, orderBy } from 'firebase/firestore';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,27 +38,6 @@ export default function DashboardOverview() {
 
   const { data: profile, loading: profileLoading } = useDoc(userDocRef);
 
-  // Explicit debug logging to see the exact structure in Firestore
-  useEffect(() => {
-    if (!profileLoading && profile) {
-      console.log("DASHBOARD DATA FETCHED:", profile);
-    } else if (!profileLoading && !profile && user) {
-      console.log("DASHBOARD DATA: No document found for UID:", user.uid);
-    }
-  }, [profile, profileLoading, user]);
-
-  // Wait for both Auth and Firestore to be absolutely ready
-  if (authLoading || profileLoading) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="text-muted-foreground font-bold animate-pulse uppercase tracking-widest text-xs">Syncing workspace...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Profile data mapping (Handling both new and legacy field names)
   const isFreelancer = profile?.role === 'freelancer';
   const isClient = profile?.role === 'client';
@@ -66,14 +45,7 @@ export default function DashboardOverview() {
   const lastName = profile?.lastName || profile?.last_name || '';
   const role = profile?.role;
 
-  // Banner logic: Only show if the profile document is missing OR if essential fields are null/empty
-  // If the document exists but fields are missing, it's an "incomplete setup"
-  // If the document doesn't exist at all, it's "Account Pending"
-  const docExists = !!profile;
-  const missingEssentialFields = !firstName || firstName === 'User' || !lastName || !role;
-  const showSetupAlert = !docExists || missingEssentialFields;
-
-  // Data fetching for stats based on confirmed role
+  // Data fetching for stats based on confirmed role - MUST BE CALLED BEFORE EARLY RETURNS
   const clientJobsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || !isClient) return null;
     return query(collection(db, 'jobs'), where('clientId', '==', user.uid), orderBy('createdAt', 'desc'), limit(5));
@@ -92,6 +64,31 @@ export default function DashboardOverview() {
   const { data: clientJobs, loading: clientJobsLoading } = useCollection(clientJobsQuery);
   const { data: freelancerJobs, loading: freelancerJobsLoading } = useCollection(freelancerJobsQuery);
   const { data: myApplications } = useCollection(myApplicationsQuery);
+
+  // Explicit debug logging
+  useEffect(() => {
+    if (!profileLoading && profile) {
+      console.log("DASHBOARD DATA FETCHED:", profile);
+    } else if (!profileLoading && !profile && user) {
+      console.log("DASHBOARD DATA: No document found for UID:", user.uid);
+    }
+  }, [profile, profileLoading, user]);
+
+  if (authLoading || profileLoading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-muted-foreground font-bold animate-pulse uppercase tracking-widest text-xs">Syncing workspace...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Banner logic: Only show if the profile document is missing OR if essential fields are null/empty
+  const docExists = !!profile;
+  const missingEssentialFields = !firstName || firstName === 'User' || !lastName || !role;
+  const showSetupAlert = !docExists || missingEssentialFields;
 
   const activeJobs = isFreelancer ? (freelancerJobs || []) : (clientJobs || []);
   const jobsLoading = isFreelancer ? freelancerJobsLoading : clientJobsLoading;

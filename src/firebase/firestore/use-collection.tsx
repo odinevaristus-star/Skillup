@@ -21,13 +21,14 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     const unsubscribe = onSnapshot(
       query,
       (snapshot: QuerySnapshot<T>) => {
-        const items = snapshot.docs.map((doc) => doc.data());
+        const items = snapshot.docs.map((doc) => ({
+          ...doc.data(),
+          id: doc.id
+        } as T));
         setData(items);
         setLoading(false);
       },
       async (serverError) => {
-        // Since we can't easily get the path from a complex query in a generic way
-        // we use a simplified approach for error reporting.
         const permissionError = new FirestorePermissionError({
           path: 'collection_query',
           operation: 'list',
@@ -39,7 +40,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [query]); // Note: Ensure query is memoized in the component
+  }, [query]);
 
   return { data, loading, error };
 }

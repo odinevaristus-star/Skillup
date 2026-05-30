@@ -1,6 +1,5 @@
-
 {
-  "comment": "Triggering security rules synchronization for new dashboard query patterns.",
+  "comment": "Synchronizing backend architecture to resolve Firestore collection read permissions.",
   "entities": {
     "UserProfile": {
       "title": "User Profile",

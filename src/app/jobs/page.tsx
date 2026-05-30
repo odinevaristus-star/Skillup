@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Navbar } from "@/components/navbar"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -18,7 +18,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
-import { collection, query, where, orderBy } from "firebase/firestore"
+import { collection } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
 import { SearchableSelect } from "@/components/ui/searchable-select"
@@ -28,23 +28,30 @@ export default function JobSearchPage() {
   const [activeCategory, setActiveCategory] = useState("all")
   const db = useFirestore()
 
-  const jobsQuery = useMemoFirebase(() => {
+  const jobsRef = useMemoFirebase(() => {
     if (!db) return null
-    return query(
-      collection(db, "jobs"), 
-      where("status", "==", "open"),
-      orderBy("createdAt", "desc")
-    )
+    return collection(db, "jobs")
   }, [db])
 
-  const { data: jobs, loading } = useCollection(jobsQuery)
+  const { data: rawJobs, loading } = useCollection(jobsRef)
 
-  const filteredJobs = jobs?.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        job.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = activeCategory === "all" || job.category === activeCategory
-    return matchesSearch && matchesCategory
-  })
+  const filteredJobs = useMemo(() => {
+    if (!rawJobs) return []
+    return rawJobs
+      .filter((job: any) => {
+        const matchesSearch = 
+          job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          job.description?.toLowerCase().includes(searchTerm.toLowerCase())
+        const matchesCategory = activeCategory === "all" || job.category === activeCategory
+        const isOpen = job.status === "open"
+        return matchesSearch && matchesCategory && isOpen
+      })
+      .sort((a: any, b: any) => {
+        const dateA = a.createdAt?.seconds || 0
+        const dateB = b.createdAt?.seconds || 0
+        return dateB - dateA
+      })
+  }, [rawJobs, searchTerm, activeCategory])
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/20">
@@ -140,7 +147,7 @@ export default function JobSearchPage() {
                           <div className="md:w-56 flex flex-col items-start md:items-end justify-between gap-6 md:border-l md:pl-10 pt-8 md:pt-0">
                             <div className="md:text-right">
                               <p className="text-4xl font-black text-primary flex items-center gap-1 md:justify-end">
-                                <span className="text-2xl font-bold opacity-70">₦</span>{job.budget.toLocaleString()}
+                                <span className="text-2xl font-bold opacity-70">₦</span>{job.budget?.toLocaleString() || 0}
                               </p>
                               <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1">Est. Budget</p>
                             </div>

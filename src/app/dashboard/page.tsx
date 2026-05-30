@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -8,11 +7,7 @@ import {
   doc, 
   getDoc, 
   collection, 
-  query, 
-  where, 
-  getDocs, 
-  orderBy, 
-  limit 
+  getDocs 
 } from 'firebase/firestore'
 import { 
   Loader2, 
@@ -56,74 +51,64 @@ export default function Dashboard() {
       }
 
       try {
-        // 1. Fetch User Profile
         const docRef = doc(db, 'users', user.uid)
         const snap = await getDoc(docRef)
         
         let profile: any = null
         if (snap.exists()) {
-          profile = snap.data()
+          profile = { id: snap.id, ...snap.data() }
           setUserData(profile)
-          console.log('Dashboard Data Fetched:', profile)
         } else {
-          // Fallback if doc doesn't exist yet
-          profile = { firstName: user.email?.split('@')[0] || 'User', role: 'client' }
+          profile = { id: user.uid, firstName: user.email?.split('@')[0] || 'User', role: 'client' }
           setUserData(profile)
         }
 
-        // 2. Fetch Real Stats based on Role using getDocs (non-realtime for better stability during login)
-        if (profile?.role === 'client') {
-          // Active Listings
-          const openJobsQuery = query(collection(db, 'jobs'), where('clientId', '==', user.uid), where('status', '==', 'open'))
-          const openJobsSnap = await getDocs(openJobsQuery)
-          
-          // Experts Hired (In Progress or Completed)
-          const hiredQuery = query(collection(db, 'jobs'), where('clientId', '==', user.uid), where('status', 'in', ['in-progress', 'completed']))
-          const hiredSnap = await getDocs(hiredQuery)
+        // Fetch all jobs and applications to perform client-side filtering/counting
+        // This avoids requirements for complex composite indexes which might be missing.
+        const jobsSnap = await getDocs(collection(db, 'jobs'))
+        const allJobs = jobsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
 
-          // Pending Proposals
-          const jobIds = openJobsSnap.docs.map(d => d.id)
-          let pendingCount = 0
-          if (jobIds.length > 0) {
-            const appsQuery = query(
-              collection(db, 'applications'), 
-              where('jobId', 'in', jobIds.slice(0, 30)),
-              where('status', '==', 'pending')
-            )
-            const appsSnap = await getDocs(appsQuery)
-            pendingCount = appsSnap.size
-          }
+        const appsSnap = await getDocs(collection(db, 'applications'))
+        const allApps = appsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+
+        if (profile?.role === 'client') {
+          const myJobs = allJobs.filter((j: any) => j.clientId === user.uid)
+          const openJobs = myJobs.filter((j: any) => j.status === 'open')
+          const hiredJobs = myJobs.filter((j: any) => ['in-progress', 'completed'].includes(j.status))
+
+          const openJobIds = openJobs.map(j => j.id)
+          const pendingCount = allApps.filter((a: any) => openJobIds.includes(a.jobId) && a.status === 'pending').length
           
           setStats(prev => ({
             ...prev,
-            activeJobs: openJobsSnap.size,
-            expertsHired: hiredSnap.size,
+            activeJobs: openJobs.length,
+            expertsHired: hiredJobs.length,
             pendingProposals: pendingCount
           }))
         } else {
-          // Freelancer Stats
-          const appsQuery = query(collection(db, 'applications'), where('freelancerId', '==', user.uid))
-          const appsSnap = await getDocs(appsQuery)
-          
-          const workQuery = query(collection(db, 'jobs'), where('freelancerId', '==', user.uid), where('status', '==', 'in-progress'))
-          const workSnap = await getDocs(workQuery)
+          const myApps = allApps.filter((a: any) => a.freelancerId === user.uid)
+          const workCount = allJobs.filter((j: any) => j.freelancerId === user.uid && j.status === 'in-progress').length
           
           setStats(prev => ({
             ...prev,
-            myProposals: appsSnap.size,
-            activeProjects: workSnap.size
+            myProposals: myApps.length,
+            activeProjects: workCount
           }))
         }
 
-        // 3. Fetch Recent Activity (Notifications)
-        const activityQuery = query(
-          collection(db, 'notifications'), 
-          where('userId', '==', user.uid), 
-          orderBy('createdAt', 'desc'), 
-          limit(5)
-        )
-        const activitySnap = await getDocs(activityQuery)
-        setRecentActivity(activitySnap.docs.map(d => ({ id: d.id, ...d.data() })))
+        // Fetch all notifications for client-side filtering/sorting
+        const notifsSnap = await getDocs(collection(db, 'notifications'))
+        const myNotifs = notifsSnap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter((n: any) => n.userId === user.uid)
+          .sort((a: any, b: any) => {
+            const dateA = a.createdAt?.seconds || 0
+            const dateB = b.createdAt?.seconds || 0
+            return dateB - dateA
+          })
+          .slice(0, 5)
+
+        setRecentActivity(myNotifs)
 
       } catch (e) {
         console.error('Error fetching dashboard data:', e)
@@ -145,14 +130,13 @@ export default function Dashboard() {
   }
 
   const isFreelancer = userData?.role === 'freelancer'
-  const firstName = userData?.firstName || userData?.first_name || 'User'
+  const firstName = userData?.firstName || 'User'
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
-      {/* Hero Welcome Section */}
       <div className="bg-card p-10 md:p-14 rounded-[3rem] border border-muted/50 shadow-sm overflow-hidden relative group">
         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-          <LayoutDashboardIcon className="h-40 w-40 -mr-10 -mt-10" />
+          <LayoutDashboard className="h-40 w-40 -mr-10 -mt-10" />
         </div>
         <div className="relative z-10 space-y-6">
           <div className="flex items-center gap-3">
@@ -169,7 +153,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {isFreelancer ? (
           <>
@@ -186,7 +169,6 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Main Content */}
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
           <div className="flex items-center justify-between px-2">
@@ -287,24 +269,5 @@ function QuickLink({ icon: Icon, label, href }: any) {
       </div>
       <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all translate-x-[-4px] group-hover:translate-x-0" />
     </Link>
-  )
-}
-
-function LayoutDashboardIcon({ className }: { className?: string }) {
-  return (
-    <svg 
-      className={className} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <rect width="7" height="9" x="3" y="3" rx="1" />
-      <rect width="7" height="5" x="14" y="3" rx="1" />
-      <rect width="7" height="9" x="14" y="12" rx="1" />
-      <rect width="7" height="5" x="3" y="16" rx="1" />
-    </svg>
   )
 }

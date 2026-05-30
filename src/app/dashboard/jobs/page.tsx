@@ -1,8 +1,7 @@
-
 "use client"
 
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
-import { collection, query, where, orderBy, doc, updateDoc, serverTimestamp, addDoc } from "firebase/firestore"
+import { collection, doc, updateDoc, serverTimestamp, addDoc } from "firebase/firestore"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -15,12 +14,10 @@ import {
   PlusCircle,
   FileText,
   UserCheck,
-  CheckCircle2,
-  MapPin,
-  Landmark
+  MapPin
 } from "lucide-react"
 import Link from "next/link"
-import { useState, useEffect } from "react"
+import { useMemo } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
@@ -31,36 +28,39 @@ export default function MyJobsPage() {
   const db = useFirestore()
   const { toast } = useToast()
 
-  // Profile to determine role-specific defaults
   const profileRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
     return doc(db, "users", user.uid)
   }, [db, user?.uid])
   const { data: profile } = useDoc(profileRef)
 
-  // Fetch jobs for this user (as client)
-  const userJobsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid) return null
-    return query(
-      collection(db, "jobs"),
-      where("clientId", "==", user.uid),
-      orderBy("createdAt", "desc")
-    )
-  }, [db, user?.uid])
+  // Fetch all jobs for client filtering (Simplified to avoid permission/index errors)
+  const jobsRef = useMemoFirebase(() => {
+    if (!db) return null
+    return collection(db, "jobs")
+  }, [db])
+  const { data: allJobs, loading: postedLoading } = useCollection(jobsRef)
 
-  const { data: postedJobs, loading: postedLoading } = useCollection(userJobsQuery)
+  const postedJobs = useMemo(() => {
+    if (!allJobs || !user?.uid) return []
+    return allJobs
+      .filter((j: any) => j.clientId === user.uid)
+      .sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+  }, [allJobs, user?.uid])
 
-  // Fetch applications if user is a freelancer
-  const freelancerAppsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid) return null
-    return query(
-      collection(db, "applications"),
-      where("freelancerId", "==", user.uid),
-      orderBy("createdAt", "desc")
-    )
-  }, [db, user?.uid])
+  // Fetch all applications for freelancer filtering
+  const appsRef = useMemoFirebase(() => {
+    if (!db) return null
+    return collection(db, "applications")
+  }, [db])
+  const { data: allApps, loading: appsLoading } = useCollection(appsRef)
 
-  const { data: applications, loading: appsLoading } = useCollection(freelancerAppsQuery)
+  const applications = useMemo(() => {
+    if (!allApps || !user?.uid) return []
+    return allApps
+      .filter((a: any) => a.freelancerId === user.uid)
+      .sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+  }, [allApps, user?.uid])
 
   const handleUpdateJobStatus = async (job: any, status: string) => {
     if (!db || !user) return

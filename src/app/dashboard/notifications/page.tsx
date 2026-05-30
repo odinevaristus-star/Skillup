@@ -2,7 +2,7 @@
 "use client"
 
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
-import { collection, query, where, orderBy, limit, doc, updateDoc, writeBatch } from "firebase/firestore"
+import { collection, query, where, doc, updateDoc, writeBatch } from "firebase/firestore"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,22 +10,31 @@ import { Bell, Loader2, MessageSquare, Briefcase, UserCheck, CheckCircle2, Clock
 import Link from "next/link"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
+import { useMemo } from "react"
 
 export default function NotificationsPage() {
   const { user } = useUser()
   const db = useFirestore()
 
+  // Simplified: no orderBy to avoid permission/index errors
   const notificationsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
     return query(
       collection(db, "notifications"),
-      where("userId", "==", user.uid),
-      orderBy("createdAt", "desc"),
-      limit(50)
+      where("userId", "==", user.uid)
     )
   }, [db, user?.uid])
 
-  const { data: notifications, loading } = useCollection(notificationsQuery)
+  const { data: rawNotifications, loading } = useCollection(notificationsQuery)
+
+  // Sort on client
+  const notifications = useMemo(() => {
+    return [...rawNotifications].sort((a: any, b: any) => {
+      const timeA = a.createdAt?.seconds || 0
+      const timeB = b.createdAt?.seconds || 0
+      return timeB - timeA
+    })
+  }, [rawNotifications])
 
   const handleMarkAllAsRead = async () => {
     if (!db || !user?.uid || !notifications) return
@@ -35,8 +44,6 @@ export default function NotificationsPage() {
 
     const batch = writeBatch(db)
     unread.forEach(n => {
-      // Assuming 'n' has an 'id' property from useCollection which maps Firestore docs
-      // Note: useCollection docs usually include their ID as 'id'
       const id = (n as any).id
       if (id) {
         batch.update(doc(db, "notifications", id), { read: true })

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react"
 import { useUser, useFirestore, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase"
-import { collection, query, where, orderBy, addDoc, serverTimestamp, or, doc, getDoc, limit, updateDoc, writeBatch } from "firebase/firestore"
+import { collection, query, where, addDoc, serverTimestamp, or, doc, getDoc, limit, writeBatch } from "firebase/firestore"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -27,25 +27,32 @@ export default function MessagesPage() {
   const [loadingContact, setLoadingContact] = useState(false)
   const [showSidebar, setShowSidebar] = useState(true)
 
-  // 1. Fetch all messages involving the current user to build the "Conversations" list
+  // 1. Fetch all messages involving the current user (Simplified: no orderBy)
   const allUserMessagesQuery = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
     return query(
       collection(db, "messages"),
-      or(where("senderId", "==", user.uid), where("receiverId", "==", user.uid)),
-      orderBy("timestamp", "desc"),
-      limit(200)
+      or(where("senderId", "==", user.uid), where("receiverId", "==", user.uid))
     )
   }, [db, user?.uid])
 
-  const { data: allMessages, loading: messagesLoading } = useCollection(allUserMessagesQuery)
+  const { data: rawMessages, loading: messagesLoading } = useCollection(allUserMessagesQuery)
+
+  // Sort messages client-side
+  const allMessagesSorted = useMemo(() => {
+    return [...rawMessages].sort((a: any, b: any) => {
+      const timeA = a.timestamp?.seconds || 0
+      const timeB = b.timestamp?.seconds || 0
+      return timeB - timeA
+    })
+  }, [rawMessages])
 
   // 2. Derive unique contacts from messages for the sidebar
   const conversations = useMemo(() => {
-    if (!allMessages || !user?.uid) return []
+    if (!allMessagesSorted || !user?.uid) return []
     const contactsMap = new Map()
     
-    allMessages.forEach((msg: any) => {
+    allMessagesSorted.forEach((msg: any) => {
       const otherUserId = msg.senderId === user.uid ? msg.receiverId : msg.senderId
       if (!contactsMap.has(otherUserId)) {
         contactsMap.set(otherUserId, {
@@ -58,7 +65,7 @@ export default function MessagesPage() {
       }
     })
     return Array.from(contactsMap.values())
-  }, [allMessages, user?.uid])
+  }, [allMessagesSorted, user?.uid])
 
   // 3. If a userId is passed in URL, fetch their profile to start a chat
   useEffect(() => {
@@ -83,7 +90,7 @@ export default function MessagesPage() {
         viewport.scrollTop = viewport.scrollHeight
       }
     }
-  }, [selectedChatUser, allMessages])
+  }, [selectedChatUser, rawMessages])
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -102,7 +109,6 @@ export default function MessagesPage() {
 
     addDoc(collection(db, "messages"), msgData)
       .then(() => {
-        // Create notification for receiver
         addDoc(collection(db, "notifications"), {
           userId: selectedChatUser.id,
           title: "New Message",
@@ -124,18 +130,25 @@ export default function MessagesPage() {
       .finally(() => setIsSending(false))
   }
 
-  // Current active chat messages listener
+  // Current active chat messages listener (Simplified: no orderBy)
   const activeChatQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || !selectedChatUser?.id) return null
     const chatId = [user.uid, selectedChatUser.id].sort().join("_")
     return query(
       collection(db, "messages"),
-      where("chatId", "==", chatId),
-      orderBy("timestamp", "asc")
+      where("chatId", "==", chatId)
     )
   }, [db, user?.uid, selectedChatUser?.id])
 
-  const { data: activeMessages } = useCollection(activeChatQuery)
+  const { data: rawActiveMessages } = useCollection(activeChatQuery)
+
+  const activeMessages = useMemo(() => {
+    return [...rawActiveMessages].sort((a: any, b: any) => {
+      const timeA = a.timestamp?.seconds || 0
+      const timeB = b.timestamp?.seconds || 0
+      return timeA - timeB
+    })
+  }, [rawActiveMessages])
 
   // Mark messages as read when viewing a chat
   useEffect(() => {
@@ -156,7 +169,6 @@ export default function MessagesPage() {
 
   return (
     <div className="h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-0 lg:gap-6 bg-background rounded-[2rem] overflow-hidden shadow-xl border">
-      {/* Sidebar - Conversation List */}
       <div className={cn(
         "lg:w-96 flex flex-col border-r bg-card h-full transition-all",
         !showSidebar && "hidden lg:flex"
@@ -203,14 +215,12 @@ export default function MessagesPage() {
         </ScrollArea>
       </div>
 
-      {/* Main Chat Area */}
       <div className={cn(
         "flex-1 flex flex-col bg-card h-full transition-all",
         showSidebar && "hidden lg:flex"
       )}>
         {selectedChatUser ? (
           <>
-            {/* Chat Header */}
             <div className="p-4 border-b bg-card flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Button 
@@ -230,7 +240,6 @@ export default function MessagesPage() {
               </div>
             </div>
 
-            {/* Message Stream */}
             <ScrollArea className="flex-1 p-6 bg-muted/5" ref={scrollRef}>
               <div className="space-y-6">
                 {activeMessages?.map((msg: any, i: number) => {
@@ -271,7 +280,6 @@ export default function MessagesPage() {
               </div>
             </ScrollArea>
 
-            {/* Input Area */}
             <div className="p-6 border-t bg-card">
               <form onSubmit={handleSendMessage} className="flex gap-4 items-center max-w-5xl mx-auto">
                 <Input 

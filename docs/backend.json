@@ -1,5 +1,6 @@
+
 {
-  "comment": "Synchronizing backend architecture to resolve Firestore collection read permissions.",
+  "comment": "Synchronizing collection list permissions to ensure simplified queries are allowed for messages and notifications.",
   "entities": {
     "UserProfile": {
       "title": "User Profile",

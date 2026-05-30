@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -19,6 +20,7 @@ import {
 import { useAuth, useUser, useFirestore, useMemoFirebase, useCollection, useDoc } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { collection, query, where, doc } from 'firebase/firestore';
+import { useMemo } from 'react';
 
 export function DashboardSidebar() {
   const pathname = usePathname();
@@ -36,19 +38,26 @@ export function DashboardSidebar() {
   const isFreelancer = profile?.role === 'freelancer';
   const isClient = profile?.role === 'client';
 
-  const unreadMessagesQuery = useMemoFirebase(() => {
+  // Simplified: remove complex where to ensure list permission
+  const messagesQuery = useMemoFirebase(() => {
     if (!db || !user?.uid) return null;
-    return query(collection(db, 'messages'), where('receiverId', '==', user.uid), where('read', '==', false));
+    return query(collection(db, 'messages'), where('receiverId', '==', user.uid));
   }, [db, user?.uid]);
 
-  const { data: unreadMessages } = useCollection(unreadMessagesQuery);
+  const { data: allReceivedMessages } = useCollection(messagesQuery);
+  const unreadMessagesCount = useMemo(() => {
+    return allReceivedMessages.filter((m: any) => !m.read).length;
+  }, [allReceivedMessages]);
 
-  const unreadNotificationsQuery = useMemoFirebase(() => {
+  const notificationsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid) return null;
-    return query(collection(db, 'notifications'), where('userId', '==', user.uid), where('read', '==', false));
+    return query(collection(db, 'notifications'), where('userId', '==', user.uid));
   }, [db, user?.uid]);
 
-  const { data: unreadNotifications } = useCollection(unreadNotificationsQuery);
+  const { data: allNotifications } = useCollection(notificationsQuery);
+  const unreadNotificationsCount = useMemo(() => {
+    return allNotifications.filter((n: any) => !n.read).length;
+  }, [allNotifications]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -72,8 +81,8 @@ export function DashboardSidebar() {
       : [
           { label: 'Profile', href: '/dashboard/profile', icon: User },
         ]),
-    { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare, badge: unreadMessages?.length || 0 },
-    { label: 'Notifications', href: '/dashboard/notifications', icon: Bell, badge: unreadNotifications?.length || 0 },
+    { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare, badge: unreadMessagesCount },
+    { label: 'Notifications', href: '/dashboard/notifications', icon: Bell, badge: unreadNotificationsCount },
   ];
 
   return (

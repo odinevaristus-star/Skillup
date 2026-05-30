@@ -17,6 +17,7 @@ import { signOut } from 'firebase/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
+import { useMemo } from 'react';
 
 export function Navbar() {
   const { theme, toggleTheme } = useTheme();
@@ -33,19 +34,26 @@ export function Navbar() {
   const isFreelancer = profile?.role === 'freelancer';
   const isClient = profile?.role === 'client';
 
-  const unreadNotificationsQuery = useMemoFirebase(() => {
+  // Simplified: fetch all by userId and filter client-side to avoid permission/index issues
+  const notificationsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid) return null;
-    return query(collection(db, 'notifications'), where('userId', '==', user.uid), where('read', '==', false));
+    return query(collection(db, 'notifications'), where('userId', '==', user.uid));
   }, [db, user?.uid]);
 
-  const { data: unreadNotifications } = useCollection(unreadNotificationsQuery);
+  const { data: allNotifications } = useCollection(notificationsQuery);
+  const unreadNotificationsCount = useMemo(() => {
+    return allNotifications.filter((n: any) => !n.read).length;
+  }, [allNotifications]);
 
-  const unreadMessagesQuery = useMemoFirebase(() => {
+  const messagesQuery = useMemoFirebase(() => {
     if (!db || !user?.uid) return null;
-    return query(collection(db, 'messages'), where('receiverId', '==', user.uid), where('read', '==', false));
+    return query(collection(db, 'messages'), where('receiverId', '==', user.uid));
   }, [db, user?.uid]);
 
-  const { data: unreadMessages } = useCollection(unreadMessagesQuery);
+  const { data: allReceivedMessages } = useCollection(messagesQuery);
+  const unreadMessagesCount = useMemo(() => {
+    return allReceivedMessages.filter((m: any) => !m.read).length;
+  }, [allReceivedMessages]);
 
   const handleSignOut = async () => {
     if (!auth) return;
@@ -132,9 +140,9 @@ export function Navbar() {
               <Link href="/dashboard/messages" className="relative">
                 <Button variant="ghost" size="icon" className="rounded-2xl h-12 w-12 hover:bg-muted transition-all">
                   <MessageSquare className="h-5 w-5" />
-                  {unreadMessages && unreadMessages.length > 0 && (
+                  {unreadMessagesCount > 0 && (
                     <Badge className="absolute -top-1 -right-1 h-6 w-6 p-0 flex items-center justify-center bg-primary text-primary-foreground rounded-full text-[10px] font-black border-4 border-background shadow-lg">
-                      {unreadMessages.length > 9 ? '9+' : unreadMessages.length}
+                      {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
                     </Badge>
                   )}
                 </Button>
@@ -142,9 +150,9 @@ export function Navbar() {
               <Link href="/dashboard/notifications" className="relative">
                 <Button variant="ghost" size="icon" className="rounded-2xl h-12 w-12 hover:bg-muted transition-all">
                   <Bell className="h-5 w-5" />
-                  {unreadNotifications && unreadNotifications.length > 0 && (
+                  {unreadNotificationsCount > 0 && (
                     <Badge className="absolute -top-1 -right-1 h-6 w-6 p-0 flex items-center justify-center bg-destructive text-destructive-foreground rounded-full text-[10px] font-black border-4 border-background shadow-lg">
-                      {unreadNotifications.length > 9 ? '9+' : unreadNotifications.length}
+                      {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                     </Badge>
                   )}
                 </Button>

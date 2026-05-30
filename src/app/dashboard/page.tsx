@@ -18,17 +18,13 @@ import {
   Loader2, 
   Briefcase, 
   Users, 
-  Star, 
   CheckCircle2, 
   ArrowRight, 
   PlusCircle, 
   Search, 
   FileText, 
-  MessageSquare, 
-  Bell,
-  Clock,
-  LayoutDashboard,
-  UserCircle
+  MessageSquare,
+  LayoutDashboard
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -38,11 +34,12 @@ import Link from "next/link"
 export default function Dashboard() {
   const [userData, setUserData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState<any>({
+  const [stats, setStats] = useState({
     activeJobs: 0,
-    totalProposals: 0,
-    activeContracts: 0,
-    hiredCount: 0
+    expertsHired: 0,
+    pendingProposals: 0,
+    activeProjects: 0,
+    myProposals: 0
   })
   const [recentActivity, setRecentActivity] = useState<any[]>([])
 
@@ -57,54 +54,76 @@ export default function Dashboard() {
       }
 
       try {
-        // 1. Fetch User Profile using direct getDoc
+        // 1. Fetch User Profile
         const docRef = doc(db, 'users', user.uid)
         const snap = await getDoc(docRef)
         
+        let profile: any = null
         if (snap.exists()) {
-          const profile = snap.data()
-          console.log('Firestore data:', profile)
+          profile = snap.data()
           setUserData(profile)
-          
-          // 2. Fetch Real Stats
-          if (profile.role === 'client') {
-            const openJobsQuery = query(collection(db, 'jobs'), where('clientId', '==', user.uid), where('status', '==', 'open'))
-            const openJobsSnap = await getDocs(openJobsQuery)
-            
-            const hiredQuery = query(collection(db, 'jobs'), where('clientId', '==', user.uid), where('status', 'in', ['in-progress', 'completed']))
-            const hiredSnap = await getDocs(hiredQuery)
-            
-            setStats({
-              activeJobs: openJobsSnap.size,
-              hiredCount: hiredSnap.size
-            })
-          } else {
-            const appsQuery = query(collection(db, 'applications'), where('freelancerId', '==', user.uid))
-            const appsSnap = await getDocs(appsQuery)
-            
-            const workQuery = query(collection(db, 'jobs'), where('freelancerId', '==', user.uid), where('status', '==', 'in-progress'))
-            const workSnap = await getDocs(workQuery)
-            
-            setStats({
-              totalProposals: appsSnap.size,
-              activeContracts: workSnap.size
-            })
-          }
-
-          // 3. Fetch Recent Activity (Notifications)
-          const activityQuery = query(
-            collection(db, 'notifications'), 
-            where('userId', '==', user.uid), 
-            orderBy('createdAt', 'desc'), 
-            limit(3)
-          )
-          const activitySnap = await getDocs(activityQuery)
-          setRecentActivity(activitySnap.docs.map(d => ({ id: d.id, ...d.data() })))
-
         } else {
           // Fallback if doc doesn't exist yet
-          setUserData({ firstName: user.email?.split('@')[0] || 'User', role: 'PENDING' })
+          profile = { firstName: user.email?.split('@')[0] || 'User', role: 'client' }
+          setUserData(profile)
         }
+
+        // 2. Fetch Real Stats based on Role
+        if (profile?.role === 'client') {
+          // Active Listings
+          const openJobsQuery = query(collection(db, 'jobs'), where('clientId', '==', user.uid), where('status', '==', 'open'))
+          const openJobsSnap = await getDocs(openJobsQuery)
+          
+          // Experts Hired (In Progress or Completed)
+          const hiredQuery = query(collection(db, 'jobs'), where('clientId', '==', user.uid), where('status', 'in', ['in-progress', 'completed']))
+          const hiredSnap = await getDocs(hiredQuery)
+
+          // Pending Proposals (Applications for this client's jobs)
+          // We'll get job IDs first
+          const jobIds = openJobsSnap.docs.map(d => d.id)
+          let pendingCount = 0
+          if (jobIds.length > 0) {
+            // Firestore 'in' query limit is 30, but this is a campus app MVP
+            const appsQuery = query(
+              collection(db, 'applications'), 
+              where('jobId', 'in', jobIds.slice(0, 30)),
+              where('status', '==', 'pending')
+            )
+            const appsSnap = await getDocs(appsQuery)
+            pendingCount = appsSnap.size
+          }
+          
+          setStats(prev => ({
+            ...prev,
+            activeJobs: openJobsSnap.size,
+            expertsHired: hiredSnap.size,
+            pendingProposals: pendingCount
+          }))
+        } else {
+          // Freelancer Stats
+          const appsQuery = query(collection(db, 'applications'), where('freelancerId', '==', user.uid))
+          const appsSnap = await getDocs(appsQuery)
+          
+          const workQuery = query(collection(db, 'jobs'), where('freelancerId', '==', user.uid), where('status', '==', 'in-progress'))
+          const workSnap = await getDocs(workQuery)
+          
+          setStats(prev => ({
+            ...prev,
+            myProposals: appsSnap.size,
+            activeProjects: workSnap.size
+          }))
+        }
+
+        // 3. Fetch Recent Activity (Notifications)
+        const activityQuery = query(
+          collection(db, 'notifications'), 
+          where('userId', '==', user.uid), 
+          orderBy('createdAt', 'desc'), 
+          limit(5)
+        )
+        const activitySnap = await getDocs(activityQuery)
+        setRecentActivity(activitySnap.docs.map(d => ({ id: d.id, ...d.data() })))
+
       } catch (e) {
         console.error('Error fetching dashboard data:', e)
       } finally {
@@ -119,13 +138,13 @@ export default function Dashboard() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
-        <p className="font-bold text-muted-foreground animate-pulse tracking-widest uppercase text-xs">Synchronizing Workspace...</p>
+        <p className="font-bold text-muted-foreground animate-pulse tracking-widest uppercase text-xs">Loading Workspace...</p>
       </div>
     )
   }
 
   const isFreelancer = userData?.role === 'freelancer'
-  const displayName = userData?.firstName || userData?.first_name || 'User'
+  const firstName = userData?.firstName || userData?.first_name || 'User'
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
@@ -137,67 +156,36 @@ export default function Dashboard() {
         <div className="relative z-10 space-y-6">
           <div className="flex items-center gap-3">
             <Badge className="bg-primary/10 text-primary border-none font-black text-[10px] uppercase tracking-widest px-4 py-1.5 rounded-full">
-              {userData?.role || 'Campus Member'}
+              {userData?.role?.toUpperCase() || 'MEMBER'}
             </Badge>
           </div>
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">
-            Hello, <span className="text-primary">{displayName}!</span>
+            Hello, <span className="text-primary">{firstName}!</span>
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl font-medium max-w-2xl leading-relaxed">
             Manage your campus projects and collaborations from your central command center.
           </p>
-          <div className="flex flex-wrap gap-4 pt-4">
-            {isFreelancer ? (
-              <>
-                <Link href="/jobs">
-                  <Button className="h-14 px-8 rounded-2xl font-black text-xs uppercase tracking-widest gap-3 shadow-xl shadow-primary/20">
-                    <Search className="h-5 w-5" /> Find Work
-                  </Button>
-                </Link>
-                <Link href="/dashboard/profile">
-                  <Button variant="outline" className="h-14 px-8 rounded-2xl font-black text-xs uppercase tracking-widest border-muted-foreground/20 hover:bg-primary/5">
-                    Update Profile
-                  </Button>
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link href="/dashboard/jobs/post">
-                  <Button className="h-14 px-8 rounded-2xl font-black text-xs uppercase tracking-widest gap-3 shadow-xl shadow-primary/20">
-                    <PlusCircle className="h-5 w-5" /> Post a Job
-                  </Button>
-                </Link>
-                <Link href="/freelancers">
-                  <Button variant="outline" className="h-14 px-8 rounded-2xl font-black text-xs uppercase tracking-widest border-muted-foreground/20 hover:bg-primary/5">
-                    Browse Experts
-                  </Button>
-                </Link>
-              </>
-            )}
-          </div>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {isFreelancer ? (
           <>
-            <StatsCard icon={Star} label="Avg Rating" value={userData?.rating ? userData.rating.toFixed(1) : "N/A"} sub="User Feedback" color="text-yellow-500" />
-            <StatsCard icon={Briefcase} label="Active Projects" value={stats.activeContracts} sub="Current Contracts" color="text-blue-500" />
-            <StatsCard icon={FileText} label="Proposals" value={stats.totalProposals} sub="Submitted Bids" color="text-purple-500" />
-            <StatsCard icon={CheckCircle2} label="Job Success" value={userData?.completedJobs > 0 ? "98%" : "0%"} sub="Completed Tasks" color="text-green-500" />
+            <StatsCard icon={Briefcase} label="Active Projects" value={stats.activeProjects} sub="Current Contracts" color="text-blue-500" />
+            <StatsCard icon={FileText} label="Proposals" value={stats.myProposals} sub="Submitted Bids" color="text-purple-500" />
+            <StatsCard icon={CheckCircle2} label="Job Success" value={userData?.completedJobs > 0 ? "100%" : "0%"} sub="Completed Tasks" color="text-green-500" />
           </>
         ) : (
           <>
-            <StatsCard icon={Briefcase} label="Open Jobs" value={stats.activeJobs} sub="Active Listings" color="text-blue-500" />
-            <StatsCard icon={Users} label="Experts Hired" value={stats.hiredCount} sub="Lifetime Network" color="text-purple-500" />
-            <StatsCard icon={FileText} label="Review Needed" value={stats.totalProposals || 0} sub="Pending Proposals" color="text-orange-500" />
-            <StatsCard icon={CheckCircle2} label="Verified" value="Yes" sub="Profile Status" color="text-green-500" />
+            <StatsCard icon={Briefcase} label="Active Listings" value={stats.activeJobs} sub="Open Jobs" color="text-blue-500" />
+            <StatsCard icon={Users} label="Experts Hired" value={stats.expertsHired} sub="Contractors" color="text-purple-500" />
+            <StatsCard icon={FileText} label="Pending Proposals" value={stats.pendingProposals} sub="Awaiting Review" color="text-orange-500" />
           </>
         )}
       </div>
 
-      {/* Secondary Content */}
+      {/* Main Content */}
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
           <div className="flex items-center justify-between px-2">
@@ -213,7 +201,7 @@ export default function Dashboard() {
                 key={activity.id}
                 icon={activity.type === 'message' ? MessageSquare : Briefcase} 
                 title={activity.title} 
-                time={activity.createdAt ? new Date(activity.createdAt.seconds * 1000).toLocaleString() : 'Recent'} 
+                time={activity.createdAt ? new Date(activity.createdAt.seconds * 1000).toLocaleDateString() : 'Recent'} 
                 desc={activity.message}
                 isNew={!activity.read}
               />
@@ -233,7 +221,7 @@ export default function Dashboard() {
                 {isFreelancer ? (
                   <>
                     <QuickLink icon={Search} label="Find Work" href="/jobs" />
-                    <QuickLink icon={UserCircle} label="Edit Profile" href="/dashboard/profile" />
+                    <QuickLink icon={CheckCircle2} label="Edit Profile" href="/dashboard/profile" />
                   </>
                 ) : (
                   <>
@@ -241,14 +229,6 @@ export default function Dashboard() {
                     <QuickLink icon={Users} label="Browse Freelancers" href="/freelancers" />
                   </>
                 )}
-              </div>
-              <div className="pt-6 border-t">
-                <div className="p-6 bg-primary/5 rounded-2xl space-y-2">
-                  <p className="text-[10px] font-black text-primary uppercase tracking-widest">Campus Tip</p>
-                  <p className="text-sm font-medium leading-relaxed">
-                    Keep your professional profile updated with new skills to appear in more relevant job searches.
-                  </p>
-                </div>
               </div>
             </CardContent>
           </Card>

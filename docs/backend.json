@@ -1,5 +1,6 @@
 
 {
+  "comment": "Triggering security rules synchronization for new dashboard query patterns.",
   "entities": {
     "UserProfile": {
       "title": "User Profile",

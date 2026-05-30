@@ -64,13 +64,14 @@ export default function Dashboard() {
         if (snap.exists()) {
           profile = snap.data()
           setUserData(profile)
+          console.log('Dashboard Data Fetched:', profile)
         } else {
           // Fallback if doc doesn't exist yet
           profile = { firstName: user.email?.split('@')[0] || 'User', role: 'client' }
           setUserData(profile)
         }
 
-        // 2. Fetch Real Stats based on Role
+        // 2. Fetch Real Stats based on Role using getDocs (non-realtime for better stability during login)
         if (profile?.role === 'client') {
           // Active Listings
           const openJobsQuery = query(collection(db, 'jobs'), where('clientId', '==', user.uid), where('status', '==', 'open'))
@@ -80,11 +81,10 @@ export default function Dashboard() {
           const hiredQuery = query(collection(db, 'jobs'), where('clientId', '==', user.uid), where('status', 'in', ['in-progress', 'completed']))
           const hiredSnap = await getDocs(hiredQuery)
 
-          // Pending Proposals (Applications for this client's jobs)
+          // Pending Proposals
           const jobIds = openJobsSnap.docs.map(d => d.id)
           let pendingCount = 0
           if (jobIds.length > 0) {
-            // Firestore 'in' query limit is 30, but this is a campus app MVP
             const appsQuery = query(
               collection(db, 'applications'), 
               where('jobId', 'in', jobIds.slice(0, 30)),

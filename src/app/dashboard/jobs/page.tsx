@@ -1,7 +1,8 @@
+
 "use client"
 
-import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
-import { collection, doc, updateDoc, serverTimestamp, addDoc } from "firebase/firestore"
+import { useUser, useFirestore } from "@/firebase"
+import { collection, doc, updateDoc, serverTimestamp, addDoc, getDocs } from "firebase/firestore"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -17,7 +18,7 @@ import {
   MapPin
 } from "lucide-react"
 import Link from "next/link"
-import { useMemo } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
@@ -27,19 +28,40 @@ export default function MyJobsPage() {
   const { user } = useUser()
   const db = useFirestore()
   const { toast } = useToast()
+  
+  const [allJobs, setAllJobs] = useState<any[]>([])
+  const [allApps, setAllApps] = useState<any[]>([])
+  const [profile, setProfile] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  const profileRef = useMemoFirebase(() => {
-    if (!db || !user?.uid) return null
-    return doc(db, "users", user.uid)
+  useEffect(() => {
+    async function fetchData() {
+      if (!db || !user?.uid) return
+      setLoading(true)
+      try {
+        const jobsRef = collection(db, 'jobs')
+        const appsRef = collection(db, 'applications')
+        const profileRef = doc(db, 'users', user.uid)
+        
+        const [jobsSnap, appsSnap, profileSnap] = await Promise.all([
+          getDocs(jobsRef),
+          getDocs(appsRef),
+          getDocs(profileRef)
+        ])
+        
+        setAllJobs(jobsSnap.docs.map(d => ({ id: d.id, ...d.data() })))
+        setAllApps(appsSnap.docs.map(d => ({ id: d.id, ...d.data() })))
+        if (profileSnap.exists()) {
+          setProfile(profileSnap.data())
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
   }, [db, user?.uid])
-  const { data: profile } = useDoc(profileRef)
-
-  // Fetch all jobs for client filtering (Simplified to avoid permission/index errors)
-  const jobsRef = useMemoFirebase(() => {
-    if (!db) return null
-    return collection(db, "jobs")
-  }, [db])
-  const { data: allJobs, loading: postedLoading } = useCollection(jobsRef)
 
   const postedJobs = useMemo(() => {
     if (!allJobs || !user?.uid) return []
@@ -47,13 +69,6 @@ export default function MyJobsPage() {
       .filter((j: any) => j.clientId === user.uid)
       .sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
   }, [allJobs, user?.uid])
-
-  // Fetch all applications for freelancer filtering
-  const appsRef = useMemoFirebase(() => {
-    if (!db) return null
-    return collection(db, "applications")
-  }, [db])
-  const { data: allApps, loading: appsLoading } = useCollection(appsRef)
 
   const applications = useMemo(() => {
     if (!allApps || !user?.uid) return []
@@ -83,6 +98,9 @@ export default function MyJobsPage() {
         })
       }
       toast({ title: "Project Status Updated", description: `The status is now set to ${status}.` })
+      
+      // Refresh local state
+      setAllJobs(prev => prev.map(j => j.id === job.id ? { ...j, status } : j))
     })
     .catch(async (error) => {
       errorEmitter.emit("permission-error", new FirestorePermissionError({
@@ -130,7 +148,7 @@ export default function MyJobsPage() {
 
         {isClient && (
           <TabsContent value="postings" className="space-y-8">
-            {postedLoading ? (
+            {loading ? (
               <div className="flex justify-center py-32"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-10" /></div>
             ) : postedJobs?.length ? (
               <div className="grid gap-8">
@@ -152,7 +170,7 @@ export default function MyJobsPage() {
 
         {isFreelancer && (
           <TabsContent value="applications" className="space-y-8">
-            {appsLoading ? (
+            {loading ? (
               <div className="flex justify-center py-32"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-10" /></div>
             ) : applications?.length ? (
               <div className="grid gap-8">
@@ -220,18 +238,28 @@ function JobManagementCard({ job, onUpdateStatus }: { job: any, onUpdateStatus: 
             </div>
             <div className="md:text-right shrink-0">
               <p className="text-4xl font-black text-primary flex items-center gap-1 md:justify-end">
-                <span className="text-2xl font-bold opacity-50">₦</span>{job.budget?.toLocaleString() || '0'}
+                {job.budget && job.budget > 0 ? (
+                  <>
+                    <span className="text-2xl font-bold opacity-50">₦</span>{job.budget.toLocaleString()}
+                  </>
+                ) : (
+                  "Negotiable"
+                )}
               </p>
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">Project Budget</p>
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">
+                {job.budget && job.budget > 0 ? "Project Budget" : "Budget: Negotiable"}
+              </p>
             </div>
           </div>
         </div>
         <div className="px-10 py-8 bg-muted/20 border-t flex flex-wrap items-center justify-between gap-6">
-          <Link href={`/jobs/${job.id}`}>
-            <Button variant="ghost" className="font-black text-xs uppercase tracking-widest text-primary gap-3 hover:bg-primary/5 rounded-xl h-12">
-              Review Listing <ArrowUpRight className="h-4 w-4" />
-            </Button>
-          </Link>
+          <div className="flex gap-4">
+            <Link href={`/jobs/${job.id}`}>
+              <Button variant="ghost" className="font-black text-xs uppercase tracking-widest text-primary gap-3 hover:bg-primary/5 rounded-xl h-12">
+                Review Listing <ArrowUpRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
           <div className="flex gap-4">
             {job.status === 'in-progress' && (
               <Button variant="outline" className="font-black text-xs uppercase tracking-widest border-muted-foreground/20 rounded-xl px-8 h-12 hover:bg-primary/5" onClick={() => onUpdateStatus(job, 'completed')}>

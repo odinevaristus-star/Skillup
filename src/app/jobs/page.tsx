@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Navbar } from "@/components/navbar"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -17,8 +18,8 @@ import {
   Landmark
 } from "lucide-react"
 import Link from "next/link"
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
-import { collection } from "firebase/firestore"
+import { useFirestore } from "@/firebase"
+import { collection, getDocs } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
 import { SearchableSelect } from "@/components/ui/searchable-select"
@@ -26,18 +27,30 @@ import { SearchableSelect } from "@/components/ui/searchable-select"
 export default function JobSearchPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeCategory, setActiveCategory] = useState("all")
+  const [jobs, setJobs] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const db = useFirestore()
 
-  const jobsRef = useMemoFirebase(() => {
-    if (!db) return null
-    return collection(db, "jobs")
+  useEffect(() => {
+    async function fetchJobs() {
+      if (!db) return
+      setLoading(true)
+      try {
+        const jobsRef = collection(db, 'jobs')
+        const snapshot = await getDocs(jobsRef)
+        const fetchedJobs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+        setJobs(fetchedJobs)
+      } catch (error) {
+        console.error("Error fetching jobs:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchJobs()
   }, [db])
 
-  const { data: rawJobs, loading } = useCollection(jobsRef)
-
   const filteredJobs = useMemo(() => {
-    if (!rawJobs) return []
-    return rawJobs
+    return jobs
       .filter((job: any) => {
         const matchesSearch = 
           job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -51,7 +64,7 @@ export default function JobSearchPage() {
         const dateB = b.createdAt?.seconds || 0
         return dateB - dateA
       })
-  }, [rawJobs, searchTerm, activeCategory])
+  }, [jobs, searchTerm, activeCategory])
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/20">
@@ -147,9 +160,17 @@ export default function JobSearchPage() {
                           <div className="md:w-56 flex flex-col items-start md:items-end justify-between gap-6 md:border-l md:pl-10 pt-8 md:pt-0">
                             <div className="md:text-right">
                               <p className="text-4xl font-black text-primary flex items-center gap-1 md:justify-end">
-                                <span className="text-2xl font-bold opacity-70">₦</span>{job.budget?.toLocaleString() || 0}
+                                {job.budget && job.budget > 0 ? (
+                                  <>
+                                    <span className="text-2xl font-bold opacity-70">₦</span>{job.budget.toLocaleString()}
+                                  </>
+                                ) : (
+                                  "Negotiable"
+                                )}
                               </p>
-                              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1">Est. Budget</p>
+                              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1">
+                                {job.budget && job.budget > 0 ? "Est. Budget" : "Budget: Negotiable"}
+                              </p>
                             </div>
                             <Button variant="outline" className="w-full md:w-auto font-black text-sm uppercase tracking-widest h-14 rounded-2xl border-muted-foreground/20 hover:border-primary group-hover:bg-primary/5 transition-all gap-3 px-8">
                               Apply Now <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />

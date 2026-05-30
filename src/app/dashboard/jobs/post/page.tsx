@@ -35,9 +35,11 @@ export default function PostJobPage() {
 
     setIsLoading(true)
     
+    const budgetValue = formData.budget ? parseFloat(formData.budget) : 0;
+    
     const jobData = {
       ...formData,
-      budget: parseFloat(formData.budget),
+      budget: budgetValue,
       clientId: user.uid,
       clientName: user.displayName || "Client",
       clientFirstName: user.displayName?.split(' ')[0] || "User",
@@ -141,12 +143,11 @@ export default function PostJobPage() {
               </CardHeader>
               <CardContent className="p-8 pt-0 space-y-6">
                 <div className="grid gap-2.5">
-                  <Label htmlFor="budget" className="text-white/80 font-bold">Estimated Budget (₦)</Label>
+                  <Label htmlFor="budget" className="text-white/80 font-bold">Estimated Budget (₦) - Optional</Label>
                   <Input 
                     id="budget" 
                     type="number" 
-                    placeholder="5000" 
-                    required 
+                    placeholder="Negotiable" 
                     className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-14 rounded-2xl px-6 font-bold text-lg"
                     value={formData.budget}
                     onChange={(e) => setFormData({...formData, budget: e.target.value})}

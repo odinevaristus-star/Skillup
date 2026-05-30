@@ -61,7 +61,7 @@ export default function JobDetailPage() {
 
   useEffect(() => {
     if (job && !bidAmount) {
-      setBidAmount(job.budget.toString())
+      setBidAmount(job.budget && job.budget > 0 ? job.budget.toString() : "")
     }
   }, [job])
 
@@ -70,7 +70,7 @@ export default function JobDetailPage() {
     if (!user || !db || !jobId || !job) return
 
     setIsApplying(true)
-    const finalBid = parseFloat(bidAmount) || job.budget
+    const finalBid = parseFloat(bidAmount) || job.budget || 0
     const applicationData = {
       jobId,
       jobTitle: job.title,
@@ -155,7 +155,10 @@ export default function JobDetailPage() {
                 <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mt-8 text-muted-foreground text-sm font-bold uppercase tracking-widest">
                   <span className="flex items-center gap-2"><Calendar className="h-4 w-4 text-primary" /> {job.createdAt ? formatDistanceToNow(new Date(job.createdAt.seconds * 1000), { addSuffix: true }) : 'Recent'}</span>
                   <span className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /> {job.location || 'Remote'}</span>
-                  <span className="flex items-center gap-2 text-primary"><Landmark className="h-4 w-4" /> ₦{job.budget.toLocaleString()}</span>
+                  <span className="flex items-center gap-2 text-primary">
+                    <Landmark className="h-4 w-4" /> 
+                    {job.budget && job.budget > 0 ? `₦${job.budget.toLocaleString()}` : "₦ Negotiable"}
+                  </span>
                 </div>
               </CardHeader>
               <CardContent className="p-10 space-y-10">
@@ -214,7 +217,7 @@ export default function JobDetailPage() {
                       <Input 
                         id="bid" 
                         type="number" 
-                        placeholder={job.budget.toString()} 
+                        placeholder={job.budget && job.budget > 0 ? job.budget.toString() : "Enter your bid"} 
                         className="bg-primary-foreground/10 border-white/20 text-white placeholder:text-white/40 h-14 rounded-xl px-6 font-bold text-lg"
                         value={bidAmount}
                         onChange={(e) => setBidAmount(e.target.value)}

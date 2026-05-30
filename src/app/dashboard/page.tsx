@@ -34,6 +34,7 @@ import Link from "next/link"
 export default function Dashboard() {
   const [userData, setUserData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
   const [stats, setStats] = useState({
     activeJobs: 0,
     expertsHired: 0,
@@ -44,6 +45,7 @@ export default function Dashboard() {
   const [recentActivity, setRecentActivity] = useState<any[]>([])
 
   useEffect(() => {
+    setMounted(true)
     const auth = getAuth()
     const db = getFirestore()
     
@@ -79,7 +81,6 @@ export default function Dashboard() {
           const hiredSnap = await getDocs(hiredQuery)
 
           // Pending Proposals (Applications for this client's jobs)
-          // We'll get job IDs first
           const jobIds = openJobsSnap.docs.map(d => d.id)
           let pendingCount = 0
           if (jobIds.length > 0) {
@@ -134,7 +135,7 @@ export default function Dashboard() {
     return () => unsubscribe()
   }, [])
 
-  if (loading) {
+  if (loading || !mounted) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />

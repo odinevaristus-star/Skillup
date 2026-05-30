@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
@@ -46,6 +46,13 @@ export default function JobDetailPage() {
 
   const { data: job, loading } = useDoc(jobRef)
 
+  // Fetch current user's profile to get the real name
+  const currentUserRef = useMemoFirebase(() => {
+    if (!db || !user?.uid) return null
+    return doc(db, "users", user.uid)
+  }, [db, user?.uid])
+  const { data: currentUserProfile } = useDoc(currentUserRef)
+
   // Check if user already applied
   const existingAppsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || !jobId) return null
@@ -71,11 +78,12 @@ export default function JobDetailPage() {
 
     setIsApplying(true)
     const finalBid = parseFloat(bidAmount) || job.budget || 0
+    
     const applicationData = {
       jobId,
       jobTitle: job.title,
       freelancerId: user.uid,
-      freelancerName: user.displayName || "Freelancer",
+      freelancerName: currentUserProfile?.fullName || user.displayName || "Freelancer",
       coverLetter: coverLetter.trim() || "Applied via Quick Apply",
       bidAmount: finalBid,
       status: "pending",
@@ -87,7 +95,7 @@ export default function JobDetailPage() {
         addDoc(collection(db, "notifications"), {
           userId: job.clientId,
           title: "New Job Application",
-          message: `${user.displayName || 'A freelancer'} applied for your job: ${job.title}`,
+          message: `${currentUserProfile?.fullName || user.displayName || 'A freelancer'} applied for your job: ${job.title}`,
           link: `/dashboard/jobs/manage/${jobId}`,
           type: "job",
           read: false,

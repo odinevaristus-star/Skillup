@@ -8,7 +8,7 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Loader2, ArrowLeft, User, CheckCircle2, MessageSquare, DollarSign, Calendar, Briefcase } from "lucide-react"
+import { Loader2, ArrowLeft, User, MessageSquare, DollarSign, Calendar, Briefcase } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
@@ -75,7 +75,6 @@ export default function ManageJobApplicantsPage() {
 
         toast({ title: "Freelancer Hired!", description: `${app.freelancerName} is now assigned to this project.` })
         
-        // Use window.location.replace with a delay for clean redirection
         setTimeout(() => {
           window.location.replace("/dashboard/jobs");
         }, 500);
@@ -143,16 +142,11 @@ export default function ManageJobApplicantsPage() {
                     <div className="flex items-start justify-between">
                       <div>
                         <h3 className="text-2xl font-bold group-hover:text-primary transition-colors">{app.freelancerName}</h3>
-                        <div className="flex items-center gap-4 text-xs font-bold mt-2">
-                          <span className="flex items-center gap-1 text-green-600">
-                            <CheckCircle2 className="h-4 w-4" /> 98% Success Rate
-                          </span>
-                          <span className="text-muted-foreground bg-muted px-2 py-1 rounded">Top Rated</span>
-                        </div>
+                        <p className="text-xs font-bold text-muted-foreground mt-1 uppercase tracking-widest opacity-60">Verified Freelancer</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-3xl font-black text-primary">${app.bidAmount}</p>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Proposal Bid</p>
+                        <p className="text-3xl font-black text-primary">₦{app.bidAmount?.toLocaleString()}</p>
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Proposal Bid</p>
                       </div>
                     </div>
                     
@@ -200,7 +194,7 @@ export default function ManageJobApplicantsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="opacity-70 text-sm flex items-center gap-2 font-medium"><DollarSign className="h-4 w-4" /> Fixed Budget</span>
-                  <span className="font-bold text-lg">${job?.budget}</span>
+                  <span className="font-bold text-lg">₦{job?.budget ? job.budget.toLocaleString() : 'Negotiable'}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="opacity-70 text-sm flex items-center gap-2 font-medium"><Calendar className="h-4 w-4" /> Due Date</span>
@@ -213,22 +207,6 @@ export default function ManageJobApplicantsPage() {
                   <p className="font-bold">{job?.category}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-none shadow-sm rounded-[2rem] bg-card overflow-hidden">
-            <CardHeader className="p-8">
-              <CardTitle className="text-lg">Hiring Tips</CardTitle>
-            </CardHeader>
-            <CardContent className="px-8 pb-8 space-y-4">
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                We recommend interviewing at least 2 candidates before making a final decision. Use our internal messenger to discuss deliverables.
-              </p>
-              <ul className="text-xs font-bold text-primary space-y-2">
-                <li className="flex items-center gap-2">✓ Verified professional identity</li>
-                <li className="flex items-center gap-2">✓ Protected payment processing</li>
-                <li className="flex items-center gap-2">✓ Dispute resolution available</li>
-              </ul>
             </CardContent>
           </Card>
         </div>

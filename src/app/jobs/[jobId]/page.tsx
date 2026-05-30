@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
@@ -23,8 +23,8 @@ import {
   ShieldCheck,
   Zap
 } from "lucide-react"
-import { useUser, useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase"
-import { doc, collection, addDoc, serverTimestamp } from "firebase/firestore"
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase"
+import { doc, collection, addDoc, serverTimestamp, query, where } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { formatDistanceToNow } from "date-fns"
 
@@ -46,29 +46,48 @@ export default function JobDetailPage() {
 
   const { data: job, loading } = useDoc(jobRef)
 
+  // Check if user already applied
+  const existingAppsQuery = useMemoFirebase(() => {
+    if (!db || !user?.uid || !jobId) return null
+    return query(
+      collection(db, "applications"),
+      where("jobId", "==", jobId),
+      where("freelancerId", "==", user.uid)
+    )
+  }, [db, user?.uid, jobId])
+
+  const { data: existingApps, loading: appsLoading } = useCollection(existingAppsQuery)
+  const hasApplied = existingApps && existingApps.length > 0
+
+  useEffect(() => {
+    if (job && !bidAmount) {
+      setBidAmount(job.budget.toString())
+    }
+  }, [job])
+
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user || !db || !jobId || !job) return
 
     setIsApplying(true)
+    const finalBid = parseFloat(bidAmount) || job.budget
     const applicationData = {
       jobId,
       jobTitle: job.title,
       freelancerId: user.uid,
       freelancerName: user.displayName || "Freelancer",
-      coverLetter,
-      bidAmount: parseFloat(bidAmount),
+      coverLetter: coverLetter.trim() || "Applied via Quick Apply",
+      bidAmount: finalBid,
       status: "pending",
       createdAt: serverTimestamp()
     }
 
     addDoc(collection(db, "applications"), applicationData)
       .then(() => {
-        // Send notification to the client
         addDoc(collection(db, "notifications"), {
           userId: job.clientId,
           title: "New Job Application",
-          message: `${user.displayName} applied for your job: ${job.title}`,
+          message: `${user.displayName || 'A freelancer'} applied for your job: ${job.title}`,
           link: `/dashboard/jobs/manage/${jobId}`,
           type: "job",
           read: false,
@@ -77,7 +96,7 @@ export default function JobDetailPage() {
 
         toast({
           title: "Application Sent!",
-          description: "Good luck! The client will review your proposal."
+          description: "Your proposal has been submitted successfully."
         })
         setShowApplyForm(false)
       })
@@ -92,7 +111,7 @@ export default function JobDetailPage() {
       .finally(() => setIsApplying(false))
   }
 
-  if (loading) {
+  if (loading || appsLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-muted/20">
         <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
@@ -128,7 +147,9 @@ export default function JobDetailPage() {
                   <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full">
                     {job.category}
                   </Badge>
-                  <Badge variant="outline" className="border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full">Active Listing</Badge>
+                  <Badge variant="outline" className="border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full">
+                    {job.status === 'open' ? 'Active Listing' : 'Project Closed'}
+                  </Badge>
                 </div>
                 <CardTitle className="text-4xl md:text-5xl font-black tracking-tighter leading-tight">{job.title}</CardTitle>
                 <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mt-8 text-muted-foreground text-sm font-bold uppercase tracking-widest">
@@ -168,9 +189,13 @@ export default function JobDetailPage() {
           <aside className="space-y-8">
             <Card className="border-none shadow-2xl bg-primary text-primary-foreground rounded-[2.5rem] overflow-hidden sticky top-28">
               <CardHeader className="p-10 pb-4">
-                <CardTitle className="text-2xl font-black">Join Project</CardTitle>
+                <CardTitle className="text-2xl font-black">
+                  {hasApplied ? "Applied ✓" : "Join Project"}
+                </CardTitle>
                 <CardDescription className="text-primary-foreground/70 font-medium text-base">
-                  Submit your professional proposal to begin this collaboration.
+                  {hasApplied 
+                    ? "Your proposal is being reviewed by the client." 
+                    : "Submit your professional proposal to begin this collaboration."}
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-10 pt-6">
@@ -178,8 +203,9 @@ export default function JobDetailPage() {
                   <Button 
                     className="w-full bg-white text-primary hover:bg-white/90 h-16 text-xl font-black rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
                     onClick={() => setShowApplyForm(true)}
+                    disabled={hasApplied || job.status !== 'open'}
                   >
-                    Quick Apply
+                    {hasApplied ? "Application Submitted" : "Quick Apply"}
                   </Button>
                 ) : (
                   <form onSubmit={handleApply} className="space-y-6">
@@ -190,19 +216,17 @@ export default function JobDetailPage() {
                         type="number" 
                         placeholder={job.budget.toString()} 
                         className="bg-primary-foreground/10 border-white/20 text-white placeholder:text-white/40 h-14 rounded-xl px-6 font-bold text-lg"
-                        required
                         value={bidAmount}
                         onChange={(e) => setBidAmount(e.target.value)}
                       />
                     </div>
                     <div className="grid gap-3">
-                      <Label htmlFor="letter" className="text-white font-bold text-sm uppercase tracking-widest">Cover Letter</Label>
+                      <Label htmlFor="letter" className="text-white font-bold text-sm uppercase tracking-widest">Cover Letter (Optional)</Label>
                       <Textarea 
                         id="letter" 
-                        placeholder="Detail your relevant experience..." 
+                        placeholder="Detail your relevant experience (optional)..." 
                         className="bg-primary-foreground/10 border-white/20 text-white placeholder:text-white/40 rounded-xl p-6 resize-none"
                         rows={5}
-                        required
                         value={coverLetter}
                         onChange={(e) => setCoverLetter(e.target.value)}
                       />
@@ -247,12 +271,12 @@ export default function JobDetailPage() {
                 </div>
                 <div className="pt-6 border-t space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px]">Client Rank</span>
-                    <span className="font-black text-sm">Top 5%</span>
+                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px]">Security Status</span>
+                    <span className="font-black text-sm">Protected</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px]">Payment Score</span>
-                    <span className="font-black text-sm">100% Secure</span>
+                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px]">Payment Method</span>
+                    <span className="font-black text-sm">Escrow Ready</span>
                   </div>
                 </div>
               </CardContent>

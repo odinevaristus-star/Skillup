@@ -153,11 +153,10 @@ export default function PostJobPage() {
                   />
                 </div>
                 <div className="grid gap-2.5">
-                  <Label htmlFor="deadline" className="text-white/80 font-bold">Expected Deadline</Label>
+                  <Label htmlFor="deadline" className="text-white/80 font-bold">Expected Deadline (Optional)</Label>
                   <Input 
                     id="deadline" 
                     type="date" 
-                    required 
                     className="bg-white/10 border-white/20 text-white h-14 rounded-2xl px-6"
                     value={formData.deadline}
                     onChange={(e) => setFormData({...formData, deadline: e.target.value})}

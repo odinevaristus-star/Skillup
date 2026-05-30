@@ -269,16 +269,6 @@ export default function JobDetailPage() {
                     </p>
                   </div>
                 </div>
-                <div className="pt-6 border-t space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px]">Security Status</span>
-                    <span className="font-black text-sm">Protected</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px]">Payment Method</span>
-                    <span className="font-black text-sm">Escrow Ready</span>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </aside>

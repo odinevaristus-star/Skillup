@@ -27,7 +27,8 @@ import {
   MessageSquare, 
   Bell,
   Clock,
-  LayoutDashboard
+  LayoutDashboard,
+  UserCircle
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -56,21 +57,20 @@ export default function Dashboard() {
       }
 
       try {
-        // 1. Fetch User Profile
+        // 1. Fetch User Profile using direct getDoc
         const docRef = doc(db, 'users', user.uid)
         const snap = await getDoc(docRef)
         
         if (snap.exists()) {
           const profile = snap.data()
+          console.log('Firestore data:', profile)
           setUserData(profile)
           
-          // 2. Fetch Role-Specific Stats
+          // 2. Fetch Real Stats
           if (profile.role === 'client') {
-            // Count open jobs
             const openJobsQuery = query(collection(db, 'jobs'), where('clientId', '==', user.uid), where('status', '==', 'open'))
             const openJobsSnap = await getDocs(openJobsQuery)
             
-            // Count hired/active contracts
             const hiredQuery = query(collection(db, 'jobs'), where('clientId', '==', user.uid), where('status', 'in', ['in-progress', 'completed']))
             const hiredSnap = await getDocs(hiredQuery)
             
@@ -79,11 +79,9 @@ export default function Dashboard() {
               hiredCount: hiredSnap.size
             })
           } else {
-            // Count proposals (applications)
             const appsQuery = query(collection(db, 'applications'), where('freelancerId', '==', user.uid))
             const appsSnap = await getDocs(appsQuery)
             
-            // Count active work
             const workQuery = query(collection(db, 'jobs'), where('freelancerId', '==', user.uid), where('status', '==', 'in-progress'))
             const workSnap = await getDocs(workQuery)
             
@@ -104,6 +102,7 @@ export default function Dashboard() {
           setRecentActivity(activitySnap.docs.map(d => ({ id: d.id, ...d.data() })))
 
         } else {
+          // Fallback if doc doesn't exist yet
           setUserData({ firstName: user.email?.split('@')[0] || 'User', role: 'PENDING' })
         }
       } catch (e) {
@@ -126,7 +125,7 @@ export default function Dashboard() {
   }
 
   const isFreelancer = userData?.role === 'freelancer'
-  const displayName = userData?.firstName || 'User'
+  const displayName = userData?.firstName || userData?.first_name || 'User'
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
@@ -140,12 +139,9 @@ export default function Dashboard() {
             <Badge className="bg-primary/10 text-primary border-none font-black text-[10px] uppercase tracking-widest px-4 py-1.5 rounded-full">
               {userData?.role || 'Campus Member'}
             </Badge>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-              <Clock className="h-4 w-4" /> Last login: Today
-            </span>
           </div>
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">
-            Welcome back, <span className="text-primary">{displayName}!</span>
+            Hello, <span className="text-primary">{displayName}!</span>
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl font-medium max-w-2xl leading-relaxed">
             Manage your campus projects and collaborations from your central command center.
@@ -189,14 +185,14 @@ export default function Dashboard() {
             <StatsCard icon={Star} label="Avg Rating" value={userData?.rating ? userData.rating.toFixed(1) : "N/A"} sub="User Feedback" color="text-yellow-500" />
             <StatsCard icon={Briefcase} label="Active Projects" value={stats.activeContracts} sub="Current Contracts" color="text-blue-500" />
             <StatsCard icon={FileText} label="Proposals" value={stats.totalProposals} sub="Submitted Bids" color="text-purple-500" />
-            <StatsCard icon={CheckCircle2} label="Job Success" value={userData?.completedJobs > 0 ? "98%" : "0%"} sub="Verified Performance" color="text-green-500" />
+            <StatsCard icon={CheckCircle2} label="Job Success" value={userData?.completedJobs > 0 ? "98%" : "0%"} sub="Completed Tasks" color="text-green-500" />
           </>
         ) : (
           <>
             <StatsCard icon={Briefcase} label="Open Jobs" value={stats.activeJobs} sub="Active Listings" color="text-blue-500" />
             <StatsCard icon={Users} label="Experts Hired" value={stats.hiredCount} sub="Lifetime Network" color="text-purple-500" />
-            <StatsCard icon={CheckCircle2} label="Verified" value="100%" sub="Identity Status" color="text-green-500" />
-            <StatsCard icon={Bell} label="Alerts" value={recentActivity.length} sub="Recent Activity" color="text-orange-500" />
+            <StatsCard icon={FileText} label="Review Needed" value={stats.totalProposals || 0} sub="Pending Proposals" color="text-orange-500" />
+            <StatsCard icon={CheckCircle2} label="Verified" value="Yes" sub="Profile Status" color="text-green-500" />
           </>
         )}
       </div>
@@ -234,8 +230,17 @@ export default function Dashboard() {
           <Card className="border-none shadow-sm rounded-[2rem] overflow-hidden bg-card">
             <CardContent className="p-8 space-y-6">
               <div className="flex flex-col gap-4">
-                <QuickLink icon={Users} label="Manage Contacts" href="/dashboard/messages" />
-                <QuickLink icon={MessageSquare} label="Support Center" href="#" />
+                {isFreelancer ? (
+                  <>
+                    <QuickLink icon={Search} label="Find Work" href="/jobs" />
+                    <QuickLink icon={UserCircle} label="Edit Profile" href="/dashboard/profile" />
+                  </>
+                ) : (
+                  <>
+                    <QuickLink icon={PlusCircle} label="Post a Job" href="/dashboard/jobs/post" />
+                    <QuickLink icon={Users} label="Browse Freelancers" href="/freelancers" />
+                  </>
+                )}
               </div>
               <div className="pt-6 border-t">
                 <div className="p-6 bg-primary/5 rounded-2xl space-y-2">

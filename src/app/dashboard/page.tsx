@@ -3,7 +3,17 @@
 
 import { useEffect, useState } from 'react'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
-import { getFirestore, doc, getDoc, collection, query, where, limit, orderBy, getDocs } from 'firebase/firestore'
+import { 
+  getFirestore, 
+  doc, 
+  getDoc, 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  orderBy, 
+  limit 
+} from 'firebase/firestore'
 import { 
   Loader2, 
   Briefcase, 
@@ -14,12 +24,12 @@ import {
   PlusCircle, 
   Search, 
   FileText, 
-  Landmark, 
   MessageSquare, 
   Bell,
-  Clock
+  Clock,
+  LayoutDashboard
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
@@ -31,8 +41,9 @@ export default function Dashboard() {
     activeJobs: 0,
     totalProposals: 0,
     activeContracts: 0,
-    unreadMessages: 0
+    hiredCount: 0
   })
+  const [recentActivity, setRecentActivity] = useState<any[]>([])
 
   useEffect(() => {
     const auth = getAuth()
@@ -45,29 +56,55 @@ export default function Dashboard() {
       }
 
       try {
+        // 1. Fetch User Profile
         const docRef = doc(db, 'users', user.uid)
         const snap = await getDoc(docRef)
         
         if (snap.exists()) {
-          const profileData = snap.data()
-          setUserData(profileData)
+          const profile = snap.data()
+          setUserData(profile)
           
-          // Fetch context-specific stats
-          if (profileData.role === 'client') {
-            const jobsQuery = query(collection(db, 'jobs'), where('clientId', '==', user.uid))
-            const jobsSnap = await getDocs(jobsQuery)
-            setStats(prev => ({ ...prev, activeJobs: jobsSnap.size }))
+          // 2. Fetch Role-Specific Stats
+          if (profile.role === 'client') {
+            // Count open jobs
+            const openJobsQuery = query(collection(db, 'jobs'), where('clientId', '==', user.uid), where('status', '==', 'open'))
+            const openJobsSnap = await getDocs(openJobsQuery)
+            
+            // Count hired/active contracts
+            const hiredQuery = query(collection(db, 'jobs'), where('clientId', '==', user.uid), where('status', 'in', ['in-progress', 'completed']))
+            const hiredSnap = await getDocs(hiredQuery)
+            
+            setStats({
+              activeJobs: openJobsSnap.size,
+              hiredCount: hiredSnap.size
+            })
           } else {
+            // Count proposals (applications)
             const appsQuery = query(collection(db, 'applications'), where('freelancerId', '==', user.uid))
             const appsSnap = await getDocs(appsQuery)
-            setStats(prev => ({ ...prev, totalProposals: appsSnap.size }))
+            
+            // Count active work
+            const workQuery = query(collection(db, 'jobs'), where('freelancerId', '==', user.uid), where('status', '==', 'in-progress'))
+            const workSnap = await getDocs(workQuery)
+            
+            setStats({
+              totalProposals: appsSnap.size,
+              activeContracts: workSnap.size
+            })
           }
+
+          // 3. Fetch Recent Activity (Notifications)
+          const activityQuery = query(
+            collection(db, 'notifications'), 
+            where('userId', '==', user.uid), 
+            orderBy('createdAt', 'desc'), 
+            limit(3)
+          )
+          const activitySnap = await getDocs(activityQuery)
+          setRecentActivity(activitySnap.docs.map(d => ({ id: d.id, ...d.data() })))
+
         } else {
-          // Fallback if document is missing
-          setUserData({ 
-            firstName: user.email?.split('@')[0] || 'User', 
-            role: 'PENDING' 
-          })
+          setUserData({ firstName: user.email?.split('@')[0] || 'User', role: 'PENDING' })
         }
       } catch (e) {
         console.error('Error fetching dashboard data:', e)
@@ -96,7 +133,7 @@ export default function Dashboard() {
       {/* Hero Welcome Section */}
       <div className="bg-card p-10 md:p-14 rounded-[3rem] border border-muted/50 shadow-sm overflow-hidden relative group">
         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-          <LayoutDashboard className="h-40 w-40 -mr-10 -mt-10" />
+          <LayoutDashboardIcon className="h-40 w-40 -mr-10 -mt-10" />
         </div>
         <div className="relative z-10 space-y-6">
           <div className="flex items-center gap-3">
@@ -111,9 +148,7 @@ export default function Dashboard() {
             Welcome back, <span className="text-primary">{displayName}!</span>
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl font-medium max-w-2xl leading-relaxed">
-            {isFreelancer 
-              ? "You have 3 active contracts and 2 new project invites waiting for your review."
-              : "Your recent job posting for 'Logo Design' has received 5 new high-quality proposals."}
+            Manage your campus projects and collaborations from your central command center.
           </p>
           <div className="flex flex-wrap gap-4 pt-4">
             {isFreelancer ? (
@@ -151,17 +186,17 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {isFreelancer ? (
           <>
-            <StatsCard icon={Star} label="Avg Rating" value={userData?.rating?.toFixed(1) || "4.9"} sub="Top 5% Expert" color="text-yellow-500" />
-            <StatsCard icon={Briefcase} label="Active Work" value="3" sub="2 nearing deadline" color="text-blue-500" />
-            <StatsCard icon={FileText} label="Proposals" value={stats.totalProposals} sub="8 pending review" color="text-purple-500" />
-            <StatsCard icon={CheckCircle2} label="Job Success" value="98%" sub="Highly Reliable" color="text-green-500" />
+            <StatsCard icon={Star} label="Avg Rating" value={userData?.rating ? userData.rating.toFixed(1) : "N/A"} sub="User Feedback" color="text-yellow-500" />
+            <StatsCard icon={Briefcase} label="Active Projects" value={stats.activeContracts} sub="Current Contracts" color="text-blue-500" />
+            <StatsCard icon={FileText} label="Proposals" value={stats.totalProposals} sub="Submitted Bids" color="text-purple-500" />
+            <StatsCard icon={CheckCircle2} label="Job Success" value={userData?.completedJobs > 0 ? "98%" : "0%"} sub="Verified Performance" color="text-green-500" />
           </>
         ) : (
           <>
-            <StatsCard icon={Briefcase} label="Active Jobs" value={stats.activeJobs} sub="2 open listings" color="text-blue-500" />
-            <StatsCard icon={Landmark} label="Total Spent" value="₦45,000" sub="All-time billing" color="text-green-500" />
-            <StatsCard icon={Users} label="Experts Hired" value="12" sub="Verified network" color="text-purple-500" />
-            <StatsCard icon={FileText} label="New Proposals" value="5" sub="Review needed" color="text-orange-500" />
+            <StatsCard icon={Briefcase} label="Open Jobs" value={stats.activeJobs} sub="Active Listings" color="text-blue-500" />
+            <StatsCard icon={Users} label="Experts Hired" value={stats.hiredCount} sub="Lifetime Network" color="text-purple-500" />
+            <StatsCard icon={CheckCircle2} label="Verified" value="100%" sub="Identity Status" color="text-green-500" />
+            <StatsCard icon={Bell} label="Alerts" value={recentActivity.length} sub="Recent Activity" color="text-orange-500" />
           </>
         )}
       </div>
@@ -171,29 +206,26 @@ export default function Dashboard() {
         <div className="lg:col-span-2 space-y-8">
           <div className="flex items-center justify-between px-2">
             <h2 className="text-2xl font-black tracking-tight">Recent Activity</h2>
-            <Button variant="link" className="text-primary font-black text-xs uppercase tracking-widest">View History</Button>
+            <Link href="/dashboard/notifications">
+              <Button variant="link" className="text-primary font-black text-xs uppercase tracking-widest">View All</Button>
+            </Link>
           </div>
           
           <div className="grid gap-4">
-            <ActivityItem 
-              icon={MessageSquare} 
-              title="New message from Sarah" 
-              time="12 minutes ago" 
-              desc="Regarding the website redesign project milestones..."
-              isNew
-            />
-            <ActivityItem 
-              icon={Briefcase} 
-              title="Proposal Accepted" 
-              time="2 hours ago" 
-              desc="The client for 'Mobile App Prototype' has accepted your bid."
-            />
-            <ActivityItem 
-              icon={Bell} 
-              title="Payment Processed" 
-              time="Yesterday" 
-              desc="₦12,000 has been released to your digital wallet."
-            />
+            {recentActivity.length > 0 ? recentActivity.map((activity) => (
+              <ActivityItem 
+                key={activity.id}
+                icon={activity.type === 'message' ? MessageSquare : Briefcase} 
+                title={activity.title} 
+                time={activity.createdAt ? new Date(activity.createdAt.seconds * 1000).toLocaleString() : 'Recent'} 
+                desc={activity.message}
+                isNew={!activity.read}
+              />
+            )) : (
+              <div className="text-center py-20 bg-card rounded-3xl border-2 border-dashed border-muted/50">
+                <p className="text-muted-foreground font-medium">No recent activity yet.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -203,14 +235,13 @@ export default function Dashboard() {
             <CardContent className="p-8 space-y-6">
               <div className="flex flex-col gap-4">
                 <QuickLink icon={Users} label="Manage Contacts" href="/dashboard/messages" />
-                <QuickLink icon={Landmark} label="Earnings & Billing" href="/dashboard" />
-                <QuickLink icon={MessageSquare} label="Support Center" href="/dashboard" />
+                <QuickLink icon={MessageSquare} label="Support Center" href="#" />
               </div>
               <div className="pt-6 border-t">
                 <div className="p-6 bg-primary/5 rounded-2xl space-y-2">
                   <p className="text-[10px] font-black text-primary uppercase tracking-widest">Campus Tip</p>
                   <p className="text-sm font-medium leading-relaxed">
-                    Always use the internal messaging system to maintain payment protection for all contracts.
+                    Keep your professional profile updated with new skills to appear in more relevant job searches.
                   </p>
                 </div>
               </div>
@@ -273,7 +304,7 @@ function QuickLink({ icon: Icon, label, href }: any) {
   )
 }
 
-function LayoutDashboard({ className }: { className?: string }) {
+function LayoutDashboardIcon({ className }: { className?: string }) {
   return (
     <svg 
       className={className} 

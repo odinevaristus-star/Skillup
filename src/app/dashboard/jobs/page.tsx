@@ -20,7 +20,7 @@ import {
   Landmark
 } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
@@ -93,16 +93,20 @@ export default function MyJobsPage() {
     })
   }
 
-  const isFreelancer = profile?.role === 'freelancer'
+  const role = profile?.role || 'client'
+  const isFreelancer = role === 'freelancer'
+  const isClient = role === 'client'
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div className="space-y-2">
           <h1 className="text-4xl md:text-5xl font-black tracking-tighter">My Projects</h1>
-          <p className="text-muted-foreground text-lg font-medium">Track your active contracts, postings, and pending proposals.</p>
+          <p className="text-muted-foreground text-lg font-medium">
+            {isClient ? "Manage your job postings and active contracts." : "Track your submitted proposals and active work."}
+          </p>
         </div>
-        {!isFreelancer && (
+        {isClient && (
           <Link href="/dashboard/jobs/post">
             <Button className="font-black text-sm uppercase tracking-widest rounded-2xl h-16 px-10 gap-3 shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
               <PlusCircle className="h-6 w-6" /> Post New Gig
@@ -114,51 +118,59 @@ export default function MyJobsPage() {
       <Tabs defaultValue={isFreelancer ? "applications" : "postings"} className="w-full">
         <div className="flex items-center justify-between mb-10 overflow-x-auto pb-2">
           <TabsList className="bg-muted/50 p-1.5 rounded-2xl h-auto">
-            <TabsTrigger value="postings" className="rounded-xl px-8 py-3.5 font-black text-xs uppercase tracking-widest data-[state=active]:shadow-xl transition-all">My Postings</TabsTrigger>
-            <TabsTrigger value="applications" className="rounded-xl px-8 py-3.5 font-black text-xs uppercase tracking-widest data-[state=active]:shadow-xl transition-all">My Proposals</TabsTrigger>
+            {isClient && (
+              <TabsTrigger value="postings" className="rounded-xl px-8 py-3.5 font-black text-xs uppercase tracking-widest data-[state=active]:shadow-xl transition-all">My Postings</TabsTrigger>
+            )}
+            {isFreelancer && (
+              <TabsTrigger value="applications" className="rounded-xl px-8 py-3.5 font-black text-xs uppercase tracking-widest data-[state=active]:shadow-xl transition-all">My Proposals</TabsTrigger>
+            )}
             <TabsTrigger value="contracts" className="rounded-xl px-8 py-3.5 font-black text-xs uppercase tracking-widest data-[state=active]:shadow-xl transition-all">Active Work</TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="postings" className="space-y-8">
-          {postedLoading ? (
-            <div className="flex justify-center py-32"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-10" /></div>
-          ) : postedJobs?.length ? (
-            <div className="grid gap-8">
-              {postedJobs.map((job: any) => (
-                <JobManagementCard key={job.id} job={job} onUpdateStatus={handleUpdateJobStatus} />
-              ))}
-            </div>
-          ) : (
-            <EmptyState 
-              icon={Briefcase} 
-              title="No active postings" 
-              description="Ready to hire talent? Start by describing your project and publishing a job post." 
-              actionUrl="/dashboard/jobs/post" 
-              actionText="Create New Post" 
-            />
-          )}
-        </TabsContent>
+        {isClient && (
+          <TabsContent value="postings" className="space-y-8">
+            {postedLoading ? (
+              <div className="flex justify-center py-32"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-10" /></div>
+            ) : postedJobs?.length ? (
+              <div className="grid gap-8">
+                {postedJobs.map((job: any) => (
+                  <JobManagementCard key={job.id} job={job} onUpdateStatus={handleUpdateJobStatus} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState 
+                icon={Briefcase} 
+                title="No active postings" 
+                description="Ready to hire talent? Start by describing your project and publishing a job post." 
+                actionUrl="/dashboard/jobs/post" 
+                actionText="Create New Post" 
+              />
+            )}
+          </TabsContent>
+        )}
 
-        <TabsContent value="applications" className="space-y-8">
-          {appsLoading ? (
-            <div className="flex justify-center py-32"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-10" /></div>
-          ) : applications?.length ? (
-            <div className="grid gap-8">
-              {applications.map((app: any) => (
-                <ApplicationTrackCard key={app.id} application={app} />
-              ))}
-            </div>
-          ) : (
-            <EmptyState 
-              icon={FileText} 
-              title="No active proposals" 
-              description="Start earning by finding the right project for your unique skills on campus." 
-              actionUrl="/jobs" 
-              actionText="Browse Job Board" 
-            />
-          )}
-        </TabsContent>
+        {isFreelancer && (
+          <TabsContent value="applications" className="space-y-8">
+            {appsLoading ? (
+              <div className="flex justify-center py-32"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-10" /></div>
+            ) : applications?.length ? (
+              <div className="grid gap-8">
+                {applications.map((app: any) => (
+                  <ApplicationTrackCard key={app.id} application={app} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState 
+                icon={FileText} 
+                title="No active proposals" 
+                description="Start earning by finding the right project for your unique skills on campus." 
+                actionUrl="/jobs" 
+                actionText="Browse Job Board" 
+              />
+            )}
+          </TabsContent>
+        )}
 
         <TabsContent value="contracts" className="space-y-8">
           <div className="text-center py-40 bg-card rounded-[3rem] border-2 border-dashed border-muted shadow-inner">

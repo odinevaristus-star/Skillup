@@ -7,7 +7,9 @@ import {
   doc, 
   getDoc, 
   collection, 
-  getDocs 
+  getDocs,
+  updateDoc,
+  serverTimestamp 
 } from 'firebase/firestore'
 import { 
   Loader2, 
@@ -19,17 +21,22 @@ import {
   Search, 
   FileText, 
   MessageSquare,
-  LayoutDashboard
+  LayoutDashboard,
+  RefreshCw
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import { useToast } from "@/hooks/use-toast"
 
 export default function Dashboard() {
   const [userData, setUserData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [switching, setSwitching] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const { toast } = useToast()
+  
   const [stats, setStats] = useState({
     activeJobs: 0,
     expertsHired: 0,
@@ -57,21 +64,29 @@ export default function Dashboard() {
         let profile: any = null
         if (snap.exists()) {
           profile = { id: snap.id, ...snap.data() }
+          // Handle legacy users without roles array
+          if (!profile.roles) profile.roles = ['client', 'freelancer']
+          if (!profile.activeRole) profile.activeRole = profile.role || 'freelancer'
           setUserData(profile)
         } else {
-          profile = { id: user.uid, firstName: user.email?.split('@')[0] || 'User', role: 'client' }
+          profile = { 
+            id: user.uid, 
+            firstName: user.email?.split('@')[0] || 'User', 
+            roles: ['client', 'freelancer'],
+            activeRole: 'client' 
+          }
           setUserData(profile)
         }
 
-        // Fetch all jobs and applications to perform client-side filtering/counting
-        // This avoids requirements for complex composite indexes which might be missing.
+        const activeRole = profile.activeRole
+
         const jobsSnap = await getDocs(collection(db, 'jobs'))
         const allJobs = jobsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
 
         const appsSnap = await getDocs(collection(db, 'applications'))
         const allApps = appsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
 
-        if (profile?.role === 'client') {
+        if (activeRole === 'client') {
           const myJobs = allJobs.filter((j: any) => j.clientId === user.uid)
           const openJobs = myJobs.filter((j: any) => j.status === 'open')
           const hiredJobs = myJobs.filter((j: any) => ['in-progress', 'completed'].includes(j.status))
@@ -79,24 +94,26 @@ export default function Dashboard() {
           const openJobIds = openJobs.map(j => j.id)
           const pendingCount = allApps.filter((a: any) => openJobIds.includes(a.jobId) && a.status === 'pending').length
           
-          setStats(prev => ({
-            ...prev,
+          setStats({
             activeJobs: openJobs.length,
             expertsHired: hiredJobs.length,
-            pendingProposals: pendingCount
-          }))
+            pendingProposals: pendingCount,
+            activeProjects: 0,
+            myProposals: 0
+          })
         } else {
           const myApps = allApps.filter((a: any) => a.freelancerId === user.uid)
           const workCount = allJobs.filter((j: any) => j.freelancerId === user.uid && j.status === 'in-progress').length
           
-          setStats(prev => ({
-            ...prev,
+          setStats({
+            activeJobs: 0,
+            expertsHired: 0,
+            pendingProposals: 0,
             myProposals: myApps.length,
             activeProjects: workCount
-          }))
+          })
         }
 
-        // Fetch all notifications for client-side filtering/sorting
         const notifsSnap = await getDocs(collection(db, 'notifications'))
         const myNotifs = notifsSnap.docs
           .map(d => ({ id: d.id, ...d.data() }))
@@ -120,6 +137,32 @@ export default function Dashboard() {
     return () => unsubscribe()
   }, [])
 
+  const handleSwitchRole = async () => {
+    if (!userData || switching) return
+    setSwitching(true)
+    const db = getFirestore()
+    const newRole = userData.activeRole === 'client' ? 'freelancer' : 'client'
+    
+    try {
+      await updateDoc(doc(db, 'users', userData.id), {
+        activeRole: newRole,
+        updatedAt: serverTimestamp()
+      })
+      toast({
+        title: `Switched to ${newRole === 'client' ? 'Client' : 'Freelancer'} Mode`,
+        description: `Your workspace has been updated.`
+      })
+      window.location.reload()
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Switch failed",
+        description: "Could not change role at this time."
+      })
+      setSwitching(false)
+    }
+  }
+
   if (loading || !mounted) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -129,7 +172,8 @@ export default function Dashboard() {
     )
   }
 
-  const isFreelancer = userData?.role === 'freelancer'
+  const activeRole = userData?.activeRole || 'freelancer'
+  const isFreelancer = activeRole === 'freelancer'
   const firstName = userData?.firstName || 'User'
 
   return (
@@ -139,10 +183,20 @@ export default function Dashboard() {
           <LayoutDashboard className="h-40 w-40 -mr-10 -mt-10" />
         </div>
         <div className="relative z-10 space-y-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-3">
             <Badge className="bg-primary/10 text-primary border-none font-black text-[10px] uppercase tracking-widest px-4 py-1.5 rounded-full">
-              {userData?.role?.toUpperCase() || 'MEMBER'}
+              {activeRole.toUpperCase()} MODE
             </Badge>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleSwitchRole} 
+              disabled={switching}
+              className="rounded-full font-bold text-[10px] uppercase tracking-widest h-10 px-6 gap-2 border-primary/20 hover:bg-primary hover:text-white transition-all"
+            >
+              {switching ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              Switch to {isFreelancer ? 'Client' : 'Freelancer'}
+            </Button>
           </div>
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">
             Hello, <span className="text-primary">{firstName}!</span>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -16,11 +15,13 @@ import {
   Users,
   FileText,
   Settings,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth, useUser, useFirestore, useMemoFirebase, useCollection, useDoc } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { collection, query, where, doc } from 'firebase/firestore';
-import { useMemo } from 'react';
+import { collection, query, where, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { useMemo, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 export function DashboardSidebar() {
   const pathname = usePathname();
@@ -28,6 +29,8 @@ export function DashboardSidebar() {
   const auth = useAuth();
   const { user } = useUser();
   const db = useFirestore();
+  const { toast } = useToast();
+  const [switching, setSwitching] = useState(false);
 
   const userDocRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null;
@@ -35,10 +38,10 @@ export function DashboardSidebar() {
   }, [db, user?.uid]);
 
   const { data: profile } = useDoc(userDocRef);
-  const isFreelancer = profile?.role === 'freelancer';
-  const isClient = profile?.role === 'client';
+  const activeRole = profile?.activeRole || profile?.role || 'freelancer';
+  const isFreelancer = activeRole === 'freelancer';
+  const isClient = activeRole === 'client';
 
-  // Simplified: remove complex where to ensure list permission
   const messagesQuery = useMemoFirebase(() => {
     if (!db || !user?.uid) return null;
     return query(collection(db, 'messages'), where('receiverId', '==', user.uid));
@@ -62,6 +65,27 @@ export function DashboardSidebar() {
   const handleLogout = async () => {
     await signOut(auth);
     window.location.replace('/');
+  };
+
+  const handleSwitchRole = async () => {
+    if (!profile || switching) return;
+    setSwitching(true);
+    const newRole = activeRole === 'client' ? 'freelancer' : 'client';
+    
+    try {
+      await updateDoc(doc(db, 'users', profile.id), {
+        activeRole: newRole,
+        updatedAt: serverTimestamp()
+      });
+      toast({
+        title: `Mode: ${newRole === 'client' ? 'Client' : 'Freelancer'}`,
+        description: "Dashboard updated."
+      });
+      window.location.reload();
+    } catch (e) {
+      toast({ variant: "destructive", title: "Switch failed" });
+      setSwitching(false);
+    }
   };
 
   const navItems = [
@@ -124,6 +148,15 @@ export function DashboardSidebar() {
       </div>
 
       <div className="p-6 border-t space-y-4">
+        <button
+          onClick={handleSwitchRole}
+          disabled={switching}
+          className="w-full flex items-center justify-center gap-3 bg-muted text-foreground py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary hover:text-white transition-all"
+        >
+          {switching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          Switch to {isFreelancer ? 'Client' : 'Freelancer'}
+        </button>
+
         {isClient && (
           <Link href="/dashboard/jobs/post">
             <button className="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">

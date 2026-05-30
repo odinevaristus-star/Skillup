@@ -1,7 +1,6 @@
-
 "use client"
 
-import { useUser, useFirestore } from "@/firebase"
+import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { collection, doc, updateDoc, serverTimestamp, addDoc, getDocs } from "firebase/firestore"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -31,8 +30,15 @@ export default function MyJobsPage() {
   
   const [allJobs, setAllJobs] = useState<any[]>([])
   const [allApps, setAllApps] = useState<any[]>([])
-  const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!db || !user?.uid) return null;
+    return doc(db, 'users', user.uid);
+  }, [db, user?.uid]);
+
+  const { data: profile } = useDoc(userDocRef);
+  const activeRole = profile?.activeRole || profile?.role || 'client';
 
   useEffect(() => {
     async function fetchData() {
@@ -41,19 +47,14 @@ export default function MyJobsPage() {
       try {
         const jobsRef = collection(db, 'jobs')
         const appsRef = collection(db, 'applications')
-        const profileRef = doc(db, 'users', user.uid)
         
-        const [jobsSnap, appsSnap, profileSnap] = await Promise.all([
+        const [jobsSnap, appsSnap] = await Promise.all([
           getDocs(jobsRef),
-          getDocs(appsRef),
-          getDocs(profileRef)
+          getDocs(appsRef)
         ])
         
         setAllJobs(jobsSnap.docs.map(d => ({ id: d.id, ...d.data() })))
         setAllApps(appsSnap.docs.map(d => ({ id: d.id, ...d.data() })))
-        if (profileSnap.exists()) {
-          setProfile(profileSnap.data())
-        }
       } catch (error) {
         console.error("Error fetching data:", error)
       } finally {
@@ -98,8 +99,6 @@ export default function MyJobsPage() {
         })
       }
       toast({ title: "Project Status Updated", description: `The status is now set to ${status}.` })
-      
-      // Refresh local state
       setAllJobs(prev => prev.map(j => j.id === job.id ? { ...j, status } : j))
     })
     .catch(async (error) => {
@@ -111,9 +110,8 @@ export default function MyJobsPage() {
     })
   }
 
-  const role = profile?.role || 'client'
-  const isFreelancer = role === 'freelancer'
-  const isClient = role === 'client'
+  const isFreelancer = activeRole === 'freelancer'
+  const isClient = activeRole === 'client'
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700">

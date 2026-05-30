@@ -1,6 +1,5 @@
-
 {
-  "comment": "Synchronizing collection list permissions to ensure simplified queries are allowed for messages and notifications.",
+  "comment": "Added roles array and activeRole field to UserProfile to support account role switching.",
   "entities": {
     "UserProfile": {
       "title": "User Profile",
@@ -13,20 +12,20 @@
         "email": { "type": "string" },
         "title": { "type": "string" },
         "bio": { "type": "string" },
-        "department": { "type": "string", "description": "Academic department or course of study" },
-        "priceRange": { "type": "string", "description": "Price range for services in Naira" },
+        "department": { "type": "string" },
+        "priceRange": { "type": "string" },
         "skills": { "type": "array", "items": { "type": "string" } },
-        "role": { "type": "string", "enum": ["client", "freelancer"] },
+        "roles": { "type": "array", "items": { "type": "string" }, "description": "List of roles enabled for this user" },
+        "activeRole": { "type": "string", "enum": ["client", "freelancer"], "description": "The currently active mode for the user" },
         "skillType": { "type": "string", "enum": ["Digital", "Artisan"] },
         "avatarUrl": { "type": "string" },
-        "hourlyRate": { "type": "number" },
         "rating": { "type": "number" },
         "completedJobs": { "type": "number" },
         "isAvailable": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["fullName", "role", "email"]
+      "required": ["fullName", "activeRole", "email"]
     },
     "Job": {
       "title": "Job",
@@ -45,7 +44,7 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "deadline": { "type": "string" }
       },
-      "required": ["title", "clientId", "status", "budget"]
+      "required": ["title", "clientId", "status"]
     },
     "JobApplication": {
       "title": "Job Application",

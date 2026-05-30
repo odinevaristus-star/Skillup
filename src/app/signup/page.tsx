@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -38,19 +37,17 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      // Step 1: Authenticate
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Step 2: Save Profile Immediately
       const userData = {
         uid: result.user.uid,
         email: email,
         firstName: firstName,
         lastName: lastName,
         fullName: `${firstName} ${lastName}`,
-        role: selectedRole,
+        roles: ['client', 'freelancer'],
+        activeRole: selectedRole,
         skills: selectedRole === 'freelancer' ? [primarySkill] : [],
-        skill: selectedRole === 'freelancer' ? primarySkill : '',
         title: selectedRole === 'freelancer' ? primarySkill || 'Professional Freelancer' : 'Project Client',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -59,11 +56,7 @@ export default function SignupPage() {
         rating: null
       };
 
-      console.log("Creating user profile for: " + userData.fullName);
       await setDoc(doc(db, "users", result.user.uid), userData);
-      
-      // Step 3: Redirect to dashboard
-      // The global AuthRedirectHandler will also help, but forced redirect ensures UI consistency
       window.location.replace("/dashboard");
 
     } catch (error: any) {

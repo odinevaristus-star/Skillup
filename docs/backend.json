@@ -1,5 +1,6 @@
+
 {
-  "comment": "Added roles array and activeRole field to UserProfile to support account role switching.",
+  "comment": "Updated Firestore rules to allow public read access for the users collection, supporting unauthenticated browsing of freelancer profiles. Writes still require authentication.",
   "entities": {
     "UserProfile": {
       "title": "User Profile",

@@ -1,6 +1,6 @@
+
 'use client';
 
-import { useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { 
   Star, 
   MessageSquare, 
-  Briefcase, 
   CheckCircle2, 
   Loader2, 
   ArrowLeft,
@@ -18,8 +17,7 @@ import {
   Landmark,
   ShieldCheck,
   Clock,
-  Share2,
-  Zap
+  Share2
 } from "lucide-react"
 import { useFirestore, useDoc, useMemoFirebase, useUser } from "@/firebase"
 import { doc } from "firebase/firestore"
@@ -38,18 +36,23 @@ export default function FreelancerProfilePage() {
 
   const { data: profile, loading: profileLoading } = useDoc(userRef)
 
-  useEffect(() => {
-    if (!authLoading && !currentUser) {
-      router.replace('/login');
-    }
-  }, [currentUser, authLoading, router]);
-
   const handleMessage = () => {
-    if (!currentUser) return
+    if (!currentUser) {
+      router.push(`/login?redirect=/freelancers/${userId}`)
+      return
+    }
     router.push(`/dashboard/messages?userId=${userId}`)
   }
 
-  if (authLoading || profileLoading) {
+  const handleBooking = () => {
+    if (!currentUser) {
+      router.push(`/login?redirect=/freelancers/${userId}`)
+      return
+    }
+    // Booking logic would go here
+  }
+
+  if (profileLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-muted/20">
         <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
@@ -57,11 +60,9 @@ export default function FreelancerProfilePage() {
     )
   }
 
-  if (!currentUser) return null;
-
   if (!profile) {
     return (
-      <div className="min-h-screen bg-muted/20 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-muted/20 flex flex-col items-center justify-center p-4">
         <Card className="max-w-md w-full text-center p-12 border-none shadow-2xl rounded-[3rem]">
           <h2 className="text-3xl font-bold mb-4 tracking-tight">Profile not found</h2>
           <Button onClick={() => router.push("/freelancers")} className="w-full h-14 rounded-2xl font-bold text-lg">
@@ -129,7 +130,10 @@ export default function FreelancerProfilePage() {
                 >
                   <MessageSquare className="h-6 w-6" /> Message
                 </Button>
-                <Button className="flex-1 md:flex-none h-16 px-14 font-bold text-lg rounded-[1.25rem] shadow-2xl shadow-primary/30">
+                <Button 
+                  onClick={handleBooking}
+                  className="flex-1 md:flex-none h-16 px-14 font-bold text-lg rounded-[1.25rem] shadow-2xl shadow-primary/30"
+                >
                   Book Session
                 </Button>
               </div>

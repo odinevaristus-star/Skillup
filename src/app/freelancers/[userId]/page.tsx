@@ -187,7 +187,7 @@ export default function FreelancerProfilePage() {
               <CardHeader className="bg-primary text-primary-foreground p-10">
                 <p className="text-sm font-bold uppercase tracking-[0.3em] opacity-70">Price Range</p>
                 <CardTitle className="text-4xl font-black flex items-center gap-2">
-                  <Landmark className="h-8 w-8" /> ₦{profile.priceRange || 'Contact'}
+                  <Landmark className="h-8 w-8" /> {profile.priceRange ? `₦${profile.priceRange}` : "₦ Negotiable"}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-10 space-y-6">

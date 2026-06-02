@@ -187,7 +187,9 @@ export default function FreelancerSearch() {
 
                     <div className="px-8 py-6 bg-muted/20 border-t flex items-center justify-between">
                       <div className="flex flex-col">
-                        <p className="text-xl font-black text-foreground">₦{fl.priceRange || "Negotiable"}</p>
+                        <p className="text-xl font-black text-foreground">
+                          {fl.priceRange ? `₦${fl.priceRange}` : "₦ Negotiable"}
+                        </p>
                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Price Range</p>
                       </div>
                       <div className="flex gap-2">

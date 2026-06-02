@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -31,10 +30,10 @@ export function Navbar() {
   }, [db, user?.uid]);
 
   const { data: profile } = useDoc(userDocRef);
-  const isFreelancer = profile?.role === 'freelancer';
-  const isClient = profile?.role === 'client';
+  const activeRole = profile?.activeRole || profile?.role || 'freelancer';
+  const isFreelancer = activeRole === 'freelancer';
+  const isClient = activeRole === 'client';
 
-  // Simplified: fetch all by userId and filter client-side to avoid permission/index issues
   const notificationsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid) return null;
     return query(collection(db, 'notifications'), where('userId', '==', user.uid));
@@ -163,7 +162,10 @@ export function Navbar() {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-12 w-12 rounded-2xl border-2 border-muted overflow-hidden hover:border-primary transition-all p-0">
+                <Button 
+                  variant="ghost" 
+                  className="relative h-12 w-12 rounded-2xl border-2 border-muted overflow-hidden hover:border-primary transition-all p-0 flex items-center justify-center"
+                >
                   <Avatar className="h-full w-full rounded-none">
                     <AvatarImage src={user.photoURL || profile?.avatarUrl || ""} alt={displayName} />
                     <AvatarFallback className="bg-primary/10 text-primary font-black text-xs">
@@ -172,10 +174,10 @@ export function Navbar() {
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-72 rounded-[2rem] p-4 shadow-2xl" align="end" forceMount>
+              <DropdownMenuContent className="w-72 rounded-[2rem] p-4 shadow-2xl" align="end">
                 <div className="flex flex-col space-y-2 p-4 border-b mb-2">
                   <p className="text-lg font-black leading-none tracking-tight truncate">{displayName}</p>
-                  <p className="text-[10px] font-black leading-none text-muted-foreground uppercase tracking-widest">{profile?.role || 'User'}</p>
+                  <p className="text-[10px] font-black leading-none text-muted-foreground uppercase tracking-widest">{activeRole}</p>
                 </div>
                 <DropdownMenuItem asChild className="rounded-2xl p-4 cursor-pointer hover:bg-primary/5 transition-all">
                   <Link href="/dashboard" className="flex items-center">

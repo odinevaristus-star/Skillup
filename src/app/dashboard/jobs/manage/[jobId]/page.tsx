@@ -56,13 +56,10 @@ export default function ManageJobApplicantsPage() {
       status: 'accepted'
     }
 
-    // Update job to in-progress
     updateDoc(doc(db, "jobs", jobId as string), jobUpdate)
       .then(() => {
-        // Update application to accepted
         updateDoc(doc(db, "applications", app.id), appUpdate)
         
-        // Notify freelancer
         addDoc(collection(db, "notifications"), {
           userId: app.freelancerId,
           title: "Offer Accepted!",
@@ -193,7 +190,7 @@ export default function ManageJobApplicantsPage() {
             <CardContent className="p-8 pt-0 space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="opacity-70 text-sm flex items-center gap-2 font-medium"><DollarSign className="h-4 w-4" /> Fixed Budget</span>
+                  <span className="opacity-70 text-sm flex items-center gap-2 font-medium"><Landmark className="h-4 w-4" /> Fixed Budget</span>
                   <span className="font-bold text-lg">₦{job?.budget ? job.budget.toLocaleString() : 'Negotiable'}</span>
                 </div>
                 <div className="flex items-center justify-between">

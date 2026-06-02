@@ -33,7 +33,6 @@ export default function FreelancerSearch() {
   const [specificSkill, setSpecificSkill] = useState("")
   const db = useFirestore()
 
-  // Simplified query: Fetch all users and filter for professionals on the client side
   const usersQuery = useMemoFirebase(() => {
     if (!db) return null
     return collection(db, "users")
@@ -45,7 +44,6 @@ export default function FreelancerSearch() {
     if (!allUsers) return []
 
     return allUsers.filter(fl => {
-      // Show any user who has added at least one skill to their profile
       const hasSkills = fl.skills && Array.isArray(fl.skills) && fl.skills.length > 0
       if (!hasSkills) return false
 

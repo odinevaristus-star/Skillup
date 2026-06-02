@@ -46,14 +46,12 @@ export default function JobDetailPage() {
 
   const { data: job, loading } = useDoc(jobRef)
 
-  // Fetch current user's profile to get the real name
   const currentUserRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
     return doc(db, "users", user.uid)
   }, [db, user?.uid])
   const { data: currentUserProfile } = useDoc(currentUserRef)
 
-  // Check if user already applied
   const existingAppsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || !jobId) return null
     return query(

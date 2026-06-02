@@ -23,7 +23,7 @@ import {
 import Image from "next/image"
 import Link from "next/link"
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
-import { collection, query, where } from "firebase/firestore"
+import { collection } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 import { SearchableSelect } from "@/components/ui/searchable-select"
 
@@ -33,24 +33,28 @@ export default function FreelancerSearch() {
   const [specificSkill, setSpecificSkill] = useState("")
   const db = useFirestore()
 
-  const freelancersQuery = useMemoFirebase(() => {
+  // Simplified query: Fetch all users and filter for professionals on the client side
+  const usersQuery = useMemoFirebase(() => {
     if (!db) return null
-    return query(collection(db, "users"), where("role", "==", "freelancer"))
+    return collection(db, "users")
   }, [db])
 
-  const { data: freelancers, loading } = useCollection(freelancersQuery)
+  const { data: allUsers, loading } = useCollection(usersQuery)
 
   const filteredFreelancers = useMemo(() => {
-    if (!freelancers) return []
+    if (!allUsers) return []
 
-    return freelancers.filter(fl => {
-      // Only show freelancers who have completed their profile (have at least one skill)
-      if (!fl.skills || fl.skills.length === 0) return false
+    return allUsers.filter(fl => {
+      // Show any user who has added at least one skill to their profile
+      const hasSkills = fl.skills && Array.isArray(fl.skills) && fl.skills.length > 0
+      if (!hasSkills) return false
 
+      const searchLower = searchTerm.toLowerCase()
       const matchesSearch = 
-        fl.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        fl.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        fl.skills?.some((s: string) => s.toLowerCase().includes(searchTerm.toLowerCase()))
+        !searchTerm ||
+        fl.fullName?.toLowerCase().includes(searchLower) ||
+        fl.title?.toLowerCase().includes(searchLower) || 
+        fl.skills?.some((s: string) => s.toLowerCase().includes(searchLower))
       
       const matchesType = 
         categoryType === "all" || 
@@ -62,18 +66,18 @@ export default function FreelancerSearch() {
 
       return matchesSearch && matchesType && matchesSkill
     })
-  }, [freelancers, searchTerm, categoryType, specificSkill])
+  }, [allUsers, searchTerm, categoryType, specificSkill])
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/20">
       <Navbar />
       
-      <div className="bg-primary text-primary-foreground py-20 relative overflow-hidden">
+      <div className="bg-primary py-20 text-primary-foreground relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/market/1600/900')] opacity-5 bg-cover bg-center" />
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight">Hire Verified Experts</h1>
-            <p className="text-xl text-primary-foreground/80 mb-10 max-w-2xl mx-auto leading-relaxed">
+            <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tighter leading-none">Hire Verified Experts</h1>
+            <p className="text-xl text-primary-foreground/80 mb-10 max-w-2xl mx-auto leading-relaxed font-medium">
               From high-end digital solutions to essential local services. Find the right person for the job.
             </p>
             <div className="relative max-w-2xl mx-auto">
@@ -113,28 +117,28 @@ export default function FreelancerSearch() {
                 />
               </div>
             </div>
-            <p className="text-sm font-medium text-muted-foreground">
-              Showing <span className="text-foreground font-bold">{filteredFreelancers.length}</span> verified professionals
+            <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest font-black">
+              <span className="text-foreground">{filteredFreelancers.length}</span> Professionals Available
             </p>
           </div>
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-40 gap-6">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <p className="text-muted-foreground font-bold text-lg">Loading expert network...</p>
+              <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
+              <p className="text-muted-foreground font-black uppercase tracking-widest text-xs">Scanning talent network...</p>
             </div>
           ) : filteredFreelancers.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredFreelancers.map((fl: any) => (
-                <Card key={fl.uid} className="group hover:shadow-2xl transition-all duration-500 border-none shadow-sm overflow-hidden bg-card rounded-[2rem]">
+                <Card key={fl.id || fl.uid} className="group hover:shadow-2xl transition-all duration-500 border-none shadow-sm overflow-hidden bg-card rounded-[2.5rem] border border-muted/30">
                   <CardContent className="p-0">
                     <div className="p-8">
                       <div className="flex gap-6">
                         <div className="relative shrink-0">
                           <div className="w-20 h-20 rounded-2xl bg-muted overflow-hidden border-2 border-background shadow-md">
                             <Image 
-                              src={fl.avatarUrl || `https://picsum.photos/seed/${fl.uid}/96/96`} 
-                              alt={fl.fullName} 
+                              src={fl.avatarUrl || `https://picsum.photos/seed/${fl.id || fl.uid}/96/96`} 
+                              alt={fl.fullName || "User"} 
                               width={96} 
                               height={96}
                               className="object-cover h-full w-full transition-transform group-hover:scale-110"
@@ -146,10 +150,10 @@ export default function FreelancerSearch() {
                           )} />
                         </div>
                         <div className="flex-1 min-w-0 space-y-1">
-                          <h3 className="font-bold text-xl group-hover:text-primary transition-colors truncate">{fl.fullName}</h3>
+                          <h3 className="font-black text-xl group-hover:text-primary transition-colors truncate tracking-tight">{fl.fullName}</h3>
                           <div className="flex flex-wrap gap-2 pt-1">
-                            <Badge variant="outline" className="text-[10px] uppercase font-black tracking-widest px-2 py-0.5 border-primary/20 text-primary">
-                              {fl.skillType || 'Professional'}
+                            <Badge variant="outline" className="text-[10px] uppercase font-black tracking-widest px-2 py-0.5 border-primary/20 text-primary rounded-full">
+                              {fl.skillType || 'Expert'}
                             </Badge>
                           </div>
                           <p className="text-sm font-bold text-muted-foreground flex items-center gap-1.5 mt-1">
@@ -157,40 +161,43 @@ export default function FreelancerSearch() {
                           </p>
                           <div className="flex items-center gap-2 pt-1">
                             <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                            <span className="text-sm font-bold">{fl.rating ? fl.rating.toFixed(1) : "N/A"}</span>
-                            <span className="text-xs text-muted-foreground">({fl.completedJobs || 0} jobs)</span>
+                            <span className="text-sm font-black">{fl.rating ? fl.rating.toFixed(1) : "N/A"}</span>
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">({fl.completedJobs || 0} reviews)</span>
                           </div>
                         </div>
                       </div>
                       
                       <div className="mt-6">
-                        <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed h-10">
-                          {fl.bio || "No biography provided yet."}
+                        <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed h-10 font-medium italic">
+                          "{fl.bio || "Available for campus projects and collaborations."}"
                         </p>
                       </div>
 
                       <div className="mt-6 flex flex-wrap gap-2">
                         {fl.skills?.slice(0, 3).map((skill: string) => (
-                          <Badge key={skill} variant="secondary" className="bg-muted/50 text-muted-foreground border-none text-[10px] uppercase font-bold tracking-widest px-3 py-1">
+                          <Badge key={skill} variant="secondary" className="bg-muted/50 text-muted-foreground border-none text-[9px] uppercase font-black tracking-widest px-3 py-1 rounded-xl">
                             {skill}
                           </Badge>
                         ))}
+                        {(fl.skills?.length || 0) > 3 && (
+                          <Badge variant="ghost" className="text-[9px] font-black uppercase tracking-widest">+{(fl.skills?.length || 0) - 3} more</Badge>
+                        )}
                       </div>
                     </div>
 
-                    <div className="px-8 py-5 bg-muted/20 border-t flex items-center justify-between">
+                    <div className="px-8 py-6 bg-muted/20 border-t flex items-center justify-between">
                       <div className="flex flex-col">
-                        <p className="text-lg font-black text-foreground">{fl.priceRange || "₦500 - ₦5,000"}</p>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Est. Range</p>
+                        <p className="text-xl font-black text-foreground">₦{fl.priceRange || "Negotiable"}</p>
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Price Range</p>
                       </div>
                       <div className="flex gap-2">
-                        <Link href={`/freelancers/${fl.uid}`}>
-                          <Button variant="ghost" size="icon" className="rounded-xl h-11 w-11 border border-transparent hover:border-primary/20">
+                        <Link href={`/freelancers/${fl.id || fl.uid}`}>
+                          <Button variant="ghost" size="icon" className="rounded-xl h-12 w-12 hover:bg-primary/5 transition-all">
                             <Eye className="h-5 w-5" />
                           </Button>
                         </Link>
-                        <Link href={`/dashboard/messages?userId=${fl.uid}`}>
-                          <Button size="icon" className="rounded-xl h-11 w-11 shadow-lg shadow-primary/20">
+                        <Link href={`/dashboard/messages?userId=${fl.id || fl.uid}`}>
+                          <Button size="icon" className="rounded-xl h-12 w-12 shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
                             <MessageSquare className="h-5 w-5" />
                           </Button>
                         </Link>
@@ -201,17 +208,17 @@ export default function FreelancerSearch() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-48 bg-card rounded-[3rem] border-2 border-dashed border-muted shadow-sm max-w-2xl mx-auto w-full">
-              <div className="w-32 h-32 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-8">
+            <div className="text-center py-48 bg-card rounded-[4rem] border-2 border-dashed border-muted shadow-inner max-w-2xl mx-auto w-full px-8">
+              <div className="w-32 h-32 bg-muted/50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10">
                 <Search className="h-16 w-16 text-muted-foreground opacity-10" />
               </div>
-              <h3 className="text-3xl font-bold mb-4 tracking-tight">No freelancers found</h3>
-              <p className="text-muted-foreground max-w-sm mx-auto text-lg leading-relaxed mb-8">
-                We couldn't find anyone matching your current search criteria.
+              <h3 className="text-4xl font-black tracking-tighter mb-4">No experts found</h3>
+              <p className="text-muted-foreground max-w-sm mx-auto text-lg leading-relaxed font-medium mb-10">
+                We couldn't find anyone matching those specific filters. Try expanding your search or clearing filters.
               </p>
               <Button 
                 variant="outline" 
-                className="rounded-xl font-bold h-12 px-8"
+                className="rounded-2xl font-black text-xs uppercase tracking-widest h-14 px-10 border-muted-foreground/20 hover:bg-primary/5"
                 onClick={() => {
                   setSearchTerm("")
                   setCategoryType("all")

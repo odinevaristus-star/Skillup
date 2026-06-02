@@ -143,7 +143,7 @@ export default function PostJobPage() {
               </CardHeader>
               <CardContent className="p-8 pt-0 space-y-6">
                 <div className="grid gap-2.5">
-                  <Label htmlFor="budget" className="text-white/80 font-bold">Estimated Budget (₦) - Optional</Label>
+                  <Label htmlFor="budget" className="text-white/80 font-bold">Estimated Budget (NGN) - Optional</Label>
                   <Input 
                     id="budget" 
                     type="number" 

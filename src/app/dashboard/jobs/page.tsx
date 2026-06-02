@@ -239,7 +239,7 @@ function JobManagementCard({ job, onUpdateStatus }: { job: any, onUpdateStatus: 
               <p className="text-4xl font-black text-primary flex items-center gap-1 md:justify-end">
                 {job.budget && job.budget > 0 ? (
                   <>
-                    <span className="text-2xl font-bold opacity-50">₦</span>{job.budget.toLocaleString()}
+                    <span className="text-2xl font-bold opacity-50">NGN </span>{job.budget.toLocaleString()}
                   </>
                 ) : (
                   "Negotiable"
@@ -303,7 +303,7 @@ function ApplicationTrackCard({ application }: { application: any }) {
           <div className="flex items-center gap-12 shrink-0">
             <div className="text-right">
               <p className="text-4xl font-black text-primary flex items-center gap-1 md:justify-end">
-                <span className="text-2xl font-bold opacity-50">₦</span>{application.bidAmount?.toLocaleString() || '0'}
+                <span className="text-2xl font-bold opacity-50">NGN </span>{application.bidAmount?.toLocaleString() || '0'}
               </p>
               <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1">Your Proposed Bid</p>
             </div>

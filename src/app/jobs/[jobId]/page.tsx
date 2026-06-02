@@ -163,7 +163,7 @@ export default function JobDetailPage() {
                   <span className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /> {job.location || 'Remote'}</span>
                   <span className="flex items-center gap-2 text-primary">
                     <Landmark className="h-4 w-4" /> 
-                    {job.budget && job.budget > 0 ? `₦${job.budget.toLocaleString()}` : "₦ Negotiable"}
+                    {job.budget && job.budget > 0 ? `NGN ${job.budget.toLocaleString()}` : "Negotiable"}
                   </span>
                 </div>
               </CardHeader>
@@ -219,7 +219,7 @@ export default function JobDetailPage() {
                 ) : (
                   <form onSubmit={handleApply} className="space-y-6">
                     <div className="grid gap-3">
-                      <Label htmlFor="bid" className="text-white font-bold text-sm uppercase tracking-widest">Your Bid (₦)</Label>
+                      <Label htmlFor="bid" className="text-white font-bold text-sm uppercase tracking-widest">Your Bid (NGN)</Label>
                       <Input 
                         id="bid" 
                         type="number" 

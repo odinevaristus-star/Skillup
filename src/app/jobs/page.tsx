@@ -162,7 +162,7 @@ export default function JobSearchPage() {
                               <p className="text-4xl font-black text-primary flex items-center gap-1 md:justify-end">
                                 {job.budget && job.budget > 0 ? (
                                   <>
-                                    <span className="text-2xl font-bold opacity-70">₦</span>{job.budget.toLocaleString()}
+                                    <span className="text-2xl font-bold opacity-70">NGN </span>{job.budget.toLocaleString()}
                                   </>
                                 ) : (
                                   "Negotiable"

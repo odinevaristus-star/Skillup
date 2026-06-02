@@ -184,14 +184,14 @@ export default function ProfileManagement() {
                     </div>
                     <div className="grid gap-2.5">
                       <Label htmlFor="priceRange" className="font-bold text-primary flex items-center gap-2">
-                        <Landmark className="h-4 w-4" /> Price Range (₦)
+                        <Landmark className="h-4 w-4" /> Price Range (NGN)
                       </Label>
                       <Input 
                         id="priceRange" 
                         className="h-12 rounded-xl font-bold"
                         value={priceRange} 
                         onChange={(e) => setPriceRange(e.target.value)}
-                        placeholder="e.g. ₦500 - ₦5,000"
+                        placeholder="e.g. NGN 500 - NGN 5,000"
                       />
                     </div>
                   </div>

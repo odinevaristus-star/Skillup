@@ -186,7 +186,7 @@ export default function FreelancerSearch() {
                     <div className="px-8 py-6 bg-muted/20 border-t flex items-center justify-between">
                       <div className="flex flex-col">
                         <p className="text-xl font-black text-foreground">
-                          {fl.priceRange ? `NGN ${fl.priceRange}` : "Negotiable"}
+                          {fl.priceRange && fl.priceRange.toLowerCase() !== 'negotiable' ? `NGN ${fl.priceRange}` : "Negotiable"}
                         </p>
                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Price Range</p>
                       </div>

@@ -142,7 +142,9 @@ export default function ManageJobApplicantsPage() {
                         <p className="text-xs font-bold text-muted-foreground mt-1 uppercase tracking-widest opacity-60">Verified Freelancer</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-3xl font-black text-primary">NGN {app.bidAmount?.toLocaleString()}</p>
+                        <p className="text-3xl font-black text-primary">
+                          {app.bidAmount ? `NGN ${app.bidAmount.toLocaleString()}` : "Negotiable"}
+                        </p>
                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Proposal Bid</p>
                       </div>
                     </div>
@@ -191,7 +193,7 @@ export default function ManageJobApplicantsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="opacity-70 text-sm flex items-center gap-2 font-medium"><Landmark className="h-4 w-4" /> Fixed Budget</span>
-                  <span className="font-bold text-lg">{job?.budget ? `NGN ${job.budget.toLocaleString()}` : 'Negotiable'}</span>
+                  <span className="font-bold text-lg">{job?.budget && job.budget > 0 ? `NGN ${job.budget.toLocaleString()}` : 'Negotiable'}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="opacity-70 text-sm flex items-center gap-2 font-medium"><Calendar className="h-4 w-4" /> Due Date</span>

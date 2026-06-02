@@ -5,11 +5,13 @@ import { useState, useEffect } from 'react';
 import { Query, onSnapshot, DocumentData, QuerySnapshot } from 'firebase/firestore';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
+import { useAuth } from '../provider';
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const auth = useAuth();
 
   useEffect(() => {
     if (!query) {
@@ -30,21 +32,33 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         setLoading(false);
         setError(null);
       },
-      async (serverError) => {
-        // Since we can't easily get the path from a complex query in a generic way
-        // we use a simplified approach for error reporting.
-        const permissionError = new FirestorePermissionError({
-          path: 'collection_query',
-          operation: 'list',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        setError(permissionError);
+      async (serverError: any) => {
+        // Handle common Firestore errors gracefully
+        const isPermissionError = serverError?.code === 'permission-denied';
+        
+        // If it's a permission error, we emit a specialized error for the global listener
+        if (isPermissionError) {
+          const permissionError = new FirestorePermissionError({
+            path: 'collection_query', // General path since Query object doesn't expose path easily
+            operation: 'list',
+          });
+          
+          // Only emit global error if the user is authenticated (prevents guest flashes)
+          if (auth.currentUser) {
+            errorEmitter.emit('permission-error', permissionError);
+          }
+          
+          setError(permissionError);
+        } else {
+          setError(serverError);
+        }
+        
         setLoading(false);
       }
     );
 
     return () => unsubscribe();
-  }, [query]);
+  }, [query, auth.currentUser?.uid]);
 
   return { data, loading, error };
 }

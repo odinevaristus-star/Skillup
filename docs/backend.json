@@ -1,6 +1,6 @@
 
 {
-  "comment": "Updated Firestore rules to allow public read access for the users collection, supporting unauthenticated browsing of freelancer profiles. Writes still require authentication.",
+  "comment": "FORCE RULES UPDATE: Allowing public read access to the 'users' collection for unauthenticated freelancer browsing. Ensuring all other collections remain authenticated. Simplified queries to avoid composite index requirements.",
   "entities": {
     "UserProfile": {
       "title": "User Profile",
@@ -97,23 +97,23 @@
   "firestore": {
     "/users/{userId}": {
       "schema": "UserProfile",
-      "description": "Stores professional profile for each user."
+      "description": "Public professional profiles. Anyone can read, only owners can write."
     },
     "/jobs/{jobId}": {
       "schema": "Job",
-      "description": "Stores details for each job posting."
+      "description": "Job postings. Authenticated users can read and write."
     },
     "/applications/{applicationId}": {
       "schema": "JobApplication",
-      "description": "Stores job applications."
+      "description": "Job applications. Authenticated users can read and write."
     },
     "/messages/{messageId}": {
       "schema": "Message",
-      "description": "Stores peer-to-peer messages."
+      "description": "Peer-to-peer messages. Participants can read and write."
     },
     "/notifications/{notificationId}": {
       "schema": "Notification",
-      "description": "Stores user notifications."
+      "description": "User notifications. Owners can read and write."
     }
   }
 }

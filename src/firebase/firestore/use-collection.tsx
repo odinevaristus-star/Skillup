@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -27,8 +28,11 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         } as T));
         setData(items);
         setLoading(false);
+        setError(null);
       },
       async (serverError) => {
+        // Since we can't easily get the path from a complex query in a generic way
+        // we use a simplified approach for error reporting.
         const permissionError = new FirestorePermissionError({
           path: 'collection_query',
           operation: 'list',

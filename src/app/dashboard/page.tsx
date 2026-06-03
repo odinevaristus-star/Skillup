@@ -64,8 +64,8 @@ export default function Dashboard() {
         let profile: any = null
         if (snap.exists()) {
           profile = { id: snap.id, ...snap.data() }
-          // Handle legacy users without roles array
-          if (!profile.roles) profile.roles = ['client', 'freelancer']
+          // Handle legacy users without roles array for local UI state
+          if (!profile.roles || !Array.isArray(profile.roles)) profile.roles = ['client', 'freelancer']
           if (!profile.activeRole) profile.activeRole = profile.role || 'freelancer'
           setUserData(profile)
         } else {
@@ -144,20 +144,33 @@ export default function Dashboard() {
     const newRole = userData.activeRole === 'client' ? 'freelancer' : 'client'
     
     try {
-      await updateDoc(doc(db, 'users', userData.id), {
+      const updates: any = {
         activeRole: newRole,
         updatedAt: serverTimestamp()
-      })
+      }
+
+      // Automatically add roles array if it's missing or invalid in the database
+      if (!userData.roles || !Array.isArray(userData.roles)) {
+        updates.roles = ['client', 'freelancer']
+      }
+
+      await updateDoc(doc(db, 'users', userData.id), updates)
+      
       toast({
         title: `Switched to ${newRole === 'client' ? 'Client' : 'Freelancer'} Mode`,
         description: `Your workspace has been updated.`
       })
-      window.location.reload()
-    } catch (e) {
+      
+      // Delay briefly to allow the toast to be seen before reload
+      setTimeout(() => {
+        window.location.reload()
+      }, 500)
+    } catch (e: any) {
+      console.error("AutoSwitch failed:", e)
       toast({
         variant: "destructive",
         title: "Switch failed",
-        description: "Could not change role at this time."
+        description: e.message || "Could not change role at this time."
       })
       setSwitching(false)
     }

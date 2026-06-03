@@ -15,7 +15,8 @@ import {
   Users,
   FileText,
   Settings,
-  RefreshCw
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 import { useAuth, useUser, useFirestore, useMemoFirebase, useCollection, useDoc } from '@/firebase';
 import { signOut } from 'firebase/auth';
@@ -73,17 +74,33 @@ export function DashboardSidebar() {
     const newRole = activeRole === 'client' ? 'freelancer' : 'client';
     
     try {
-      await updateDoc(doc(db, 'users', profile.id), {
+      const updates: any = {
         activeRole: newRole,
         updatedAt: serverTimestamp()
-      });
+      };
+
+      // Handle legacy accounts missing the roles array
+      if (!profile.roles || !Array.isArray(profile.roles)) {
+        updates.roles = ['client', 'freelancer'];
+      }
+
+      await updateDoc(doc(db, 'users', profile.id), updates);
+      
       toast({
-        title: `Mode: ${newRole === 'client' ? 'Client' : 'Freelancer'}`,
-        description: "Dashboard updated."
+        title: `Switched to ${newRole === 'client' ? 'Client' : 'Freelancer'} Mode`,
+        description: "Your workspace has been updated."
       });
-      window.location.reload();
-    } catch (e) {
-      toast({ variant: "destructive", title: "Switch failed" });
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (e: any) {
+      console.error("AutoSwitch error:", e);
+      toast({ 
+        variant: "destructive", 
+        title: "Switch failed",
+        description: e.message || "Could not change role."
+      });
       setSwitching(false);
     }
   };

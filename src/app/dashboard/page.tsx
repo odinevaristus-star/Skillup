@@ -1,6 +1,8 @@
+
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { 
   getFirestore, 
@@ -36,6 +38,7 @@ export default function Dashboard() {
   const [switching, setSwitching] = useState(false)
   const [mounted, setMounted] = useState(false)
   const { toast } = useToast()
+  const router = useRouter()
   
   const [stats, setStats] = useState({
     activeJobs: 0,
@@ -53,7 +56,7 @@ export default function Dashboard() {
     
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        window.location.href = '/login'
+        router.replace('/login')
         return
       }
 
@@ -64,7 +67,6 @@ export default function Dashboard() {
         let profile: any = null
         if (snap.exists()) {
           profile = { id: snap.id, ...snap.data() }
-          // Handle legacy users without roles array for local UI state
           if (!profile.roles || !Array.isArray(profile.roles)) profile.roles = ['client', 'freelancer']
           if (!profile.activeRole) profile.activeRole = profile.role || 'freelancer'
           setUserData(profile)
@@ -73,7 +75,8 @@ export default function Dashboard() {
             id: user.uid, 
             firstName: user.email?.split('@')[0] || 'User', 
             roles: ['client', 'freelancer'],
-            activeRole: 'client' 
+            activeRole: 'client',
+            skills: []
           }
           setUserData(profile)
         }
@@ -135,7 +138,7 @@ export default function Dashboard() {
     })
 
     return () => unsubscribe()
-  }, [])
+  }, [router])
 
   const handleSwitchRole = async () => {
     if (!userData || switching) return
@@ -157,16 +160,19 @@ export default function Dashboard() {
         description: `Your workspace has been updated.`
       })
       
-      // Delay briefly to allow the toast to be seen before reload
       setTimeout(() => {
-        window.location.reload()
+        if (newRole === 'freelancer' && (!userData.skills || userData.skills.length === 0)) {
+          router.push('/dashboard/profile?complete=true')
+        } else {
+          window.location.reload()
+        }
       }, 500)
     } catch (e: any) {
       console.error("AutoSwitch failed:", e)
       toast({
         variant: "destructive",
         title: "Switch failed",
-        description: e.message || "Could not change role at this time."
+        description: "Could not change role at this time."
       })
       setSwitching(false)
     }
@@ -183,7 +189,7 @@ export default function Dashboard() {
 
   const activeRole = userData?.activeRole || 'freelancer'
   const isFreelancer = activeRole === 'freelancer'
-  const firstName = userData?.firstName || 'User'
+  const firstName = userData?.firstName || userData?.fullName?.split(' ')[0] || 'User'
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">

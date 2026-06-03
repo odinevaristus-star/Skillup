@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -88,14 +89,18 @@ export function DashboardSidebar() {
       });
       
       setTimeout(() => {
-        window.location.reload();
+        if (newRole === 'freelancer' && (!profile?.skills || profile?.skills.length === 0)) {
+          router.push('/dashboard/profile?complete=true');
+        } else {
+          window.location.reload();
+        }
       }, 500);
     } catch (e: any) {
       console.error("AutoSwitch error:", e);
       toast({ 
         variant: "destructive", 
         title: "Switch failed",
-        description: e.message || "Could not change role."
+        description: "Could not change role at this time."
       });
       setSwitching(false);
     }

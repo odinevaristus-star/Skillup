@@ -12,13 +12,18 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
-import { Camera, X, Plus, Save, Loader2, Landmark } from "lucide-react"
+import { Camera, X, Plus, Save, Loader2, Landmark, Info } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useSearchParams, useRouter } from "next/navigation"
+import { SearchableSelect } from "@/components/ui/searchable-select"
 
 export default function ProfileManagement() {
   const { user, loading: authLoading } = useUser()
   const db = useFirestore()
   const { toast } = useToast()
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const isPrompted = searchParams.get("complete") === "true"
 
   const userDocRef = useMemo(() => {
     if (!db || !user?.uid) return null
@@ -48,6 +53,16 @@ export default function ProfileManagement() {
       setSkills(profile.skills || [])
     }
   }, [profile])
+
+  useEffect(() => {
+    if (isPrompted) {
+      toast({
+        title: "Almost there!",
+        description: "Complete your freelancer profile to start finding work.",
+        duration: 6000
+      })
+    }
+  }, [isPrompted, toast])
 
   const addSkill = (e: React.FormEvent) => {
     e.preventDefault()
@@ -83,9 +98,7 @@ export default function ProfileManagement() {
           title: "Profile updated",
           description: "Your professional details have been saved successfully."
         })
-        setTimeout(() => {
-          window.location.replace("/dashboard");
-        }, 300);
+        router.push("/dashboard")
       })
       .catch(async (serverError) => {
         setIsSaving(false)
@@ -126,6 +139,20 @@ export default function ProfileManagement() {
           />
         </div>
       </div>
+
+      {isPrompted && (
+        <Card className="bg-primary/5 border-primary/20 rounded-3xl overflow-hidden shadow-sm">
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="bg-primary/10 p-3 rounded-2xl">
+              <Info className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <p className="font-bold text-primary">Profile Incomplete</p>
+              <p className="text-sm text-muted-foreground">Please add at least one primary skill and a bio to be visible to clients.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2 space-y-10">
@@ -191,7 +218,7 @@ export default function ProfileManagement() {
                         className="h-12 rounded-xl font-bold"
                         value={priceRange} 
                         onChange={(e) => setPriceRange(e.target.value)}
-                        placeholder="e.g. NGN 500 - NGN 5,000"
+                        placeholder="e.g. 500 - 5,000"
                       />
                     </div>
                   </div>
@@ -234,17 +261,33 @@ export default function ProfileManagement() {
                 ))}
                 {skills.length === 0 && <p className="text-sm text-muted-foreground italic font-medium">No skills showcased yet.</p>}
               </div>
-              <form onSubmit={addSkill} className="flex gap-4">
-                <Input 
-                  placeholder="Press Enter to add e.g. React, Carpentry, Python..." 
-                  className="h-12 rounded-xl flex-1"
-                  value={newSkill}
-                  onChange={(e) => setNewSkill(e.target.value)}
+              
+              <div className="space-y-4">
+                <Label className="font-bold text-xs uppercase tracking-widest text-muted-foreground">Quick Add Skills</Label>
+                <SearchableSelect 
+                  value=""
+                  onValueChange={(val) => {
+                    if (val && !skills.includes(val)) setSkills([...skills, val])
+                  }}
+                  placeholder="Select a common skill..."
+                  className="h-12 bg-muted/20"
                 />
-                <Button type="submit" variant="outline" size="icon" className="h-12 w-12 rounded-xl border-muted-foreground/20">
-                  <Plus className="h-6 w-6" />
-                </Button>
-              </form>
+                
+                <div className="relative flex gap-4 mt-4">
+                  <Input 
+                    placeholder="Or type a custom skill..." 
+                    className="h-12 rounded-xl flex-1"
+                    value={newSkill}
+                    onChange={(e) => setNewSkill(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') addSkill(e)
+                    }}
+                  />
+                  <Button onClick={addSkill} type="button" variant="outline" size="icon" className="h-12 w-12 rounded-xl border-muted-foreground/20">
+                    <Plus className="h-6 w-6" />
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useAuth, useUser, useFirestore, useMemoFirebase, useCollection, useDoc } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { collection, query, where, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useMemo, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -69,22 +69,18 @@ export function DashboardSidebar() {
   };
 
   const handleSwitchRole = async () => {
-    if (!profile || switching) return;
+    if (!user?.uid || switching) return;
     setSwitching(true);
     const newRole = activeRole === 'client' ? 'freelancer' : 'client';
     
     try {
       const updates: any = {
         activeRole: newRole,
+        roles: ['client', 'freelancer'],
         updatedAt: serverTimestamp()
       };
 
-      // Handle legacy accounts missing the roles array
-      if (!profile.roles || !Array.isArray(profile.roles)) {
-        updates.roles = ['client', 'freelancer'];
-      }
-
-      await updateDoc(doc(db, 'users', profile.id), updates);
+      await setDoc(doc(db, 'users', user.uid), updates, { merge: true });
       
       toast({
         title: `Switched to ${newRole === 'client' ? 'Client' : 'Freelancer'} Mode`,

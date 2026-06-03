@@ -8,7 +8,7 @@ import {
   getDoc, 
   collection, 
   getDocs,
-  updateDoc,
+  setDoc,
   serverTimestamp 
 } from 'firebase/firestore'
 import { 
@@ -146,15 +146,11 @@ export default function Dashboard() {
     try {
       const updates: any = {
         activeRole: newRole,
+        roles: ['client', 'freelancer'],
         updatedAt: serverTimestamp()
       }
 
-      // Automatically add roles array if it's missing or invalid in the database
-      if (!userData.roles || !Array.isArray(userData.roles)) {
-        updates.roles = ['client', 'freelancer']
-      }
-
-      await updateDoc(doc(db, 'users', userData.id), updates)
+      await setDoc(doc(db, 'users', userData.id), updates, { merge: true })
       
       toast({
         title: `Switched to ${newRole === 'client' ? 'Client' : 'Freelancer'} Mode`,

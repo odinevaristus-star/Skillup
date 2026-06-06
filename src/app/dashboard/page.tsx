@@ -24,11 +24,22 @@ import {
   FileText, 
   MessageSquare,
   LayoutDashboard,
-  RefreshCw
+  RefreshCw,
+  Zap
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
 
@@ -40,6 +51,12 @@ export default function Dashboard() {
   const { toast } = useToast()
   const router = useRouter()
   
+  // Modal State
+  const [showSwitchModal, setShowSwitchModal] = useState(false)
+  const [setupSkill, setSetupSkill] = useState("")
+  const [setupPriceRange, setSetupPriceRange] = useState("")
+  const [isSubmittingSetup, setIsSubmittingSetup] = useState(false)
+
   const [stats, setStats] = useState({
     activeJobs: 0,
     expertsHired: 0,
@@ -142,10 +159,17 @@ export default function Dashboard() {
 
   const handleSwitchRole = async () => {
     if (!userData || switching) return
-    setSwitching(true)
     const db = getFirestore()
     const newRole = userData.activeRole === 'client' ? 'freelancer' : 'client'
     
+    // Step 1: When switching to Freelancer, check for skill field
+    if (newRole === 'freelancer' && (!userData.skill || userData.skill.trim() === "")) {
+      setShowSwitchModal(true)
+      return
+    }
+
+    // Step 2: Switch normally if they have a skill or are switching to client
+    setSwitching(true)
     try {
       const updates: any = {
         activeRole: newRole,
@@ -161,11 +185,7 @@ export default function Dashboard() {
       })
       
       setTimeout(() => {
-        if (newRole === 'freelancer' && (!userData.skills || userData.skills.length === 0)) {
-          router.push('/dashboard/profile?complete=true')
-        } else {
-          window.location.reload()
-        }
+        window.location.reload()
       }, 500)
     } catch (e: any) {
       console.error("AutoSwitch failed:", e)
@@ -175,6 +195,47 @@ export default function Dashboard() {
         description: "Could not change role at this time."
       })
       setSwitching(false)
+    }
+  }
+
+  const handleSetupSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!setupSkill.trim() || isSubmittingSetup) return
+
+    setIsSubmittingSetup(true)
+    const db = getFirestore()
+    const auth = getAuth()
+    const user = auth.currentUser
+
+    if (!user) return
+
+    try {
+      await setDoc(doc(db, 'users', user.uid), {
+        skill: setupSkill,
+        priceRange: setupPriceRange,
+        activeRole: 'freelancer',
+        roles: ['client', 'freelancer'],
+        updatedAt: serverTimestamp()
+      }, { merge: true })
+
+      setShowSwitchModal(false)
+      toast({
+        title: "Welcome!",
+        description: "You are now in Freelancer Mode"
+      })
+
+      setTimeout(() => {
+        window.location.reload()
+      }, 500)
+    } catch (e: any) {
+      console.error("Setup failed:", e)
+      toast({
+        variant: "destructive",
+        title: "Setup failed",
+        description: "Setup failed. Please try again."
+      })
+    } finally {
+      setIsSubmittingSetup(false)
     }
   }
 
@@ -190,6 +251,8 @@ export default function Dashboard() {
   const activeRole = userData?.activeRole || 'freelancer'
   const isFreelancer = activeRole === 'freelancer'
   const firstName = userData?.firstName || userData?.fullName?.split(' ')[0] || 'User'
+  const fullName = userData?.fullName || `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() || "User"
+  const email = userData?.email || getAuth().currentUser?.email || ""
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
@@ -286,6 +349,64 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Switch Setup Modal */}
+      <Dialog open={showSwitchModal} onOpenChange={setShowSwitchModal}>
+        <DialogContent className="rounded-[2.5rem] p-8 max-w-lg border-none shadow-2xl">
+          <DialogHeader className="space-y-4">
+            <DialogTitle className="text-3xl font-black tracking-tight flex items-center gap-3">
+              <Zap className="h-8 w-8 text-primary" /> Set Up Your Freelancer Profile
+            </DialogTitle>
+            <DialogDescription className="text-base font-medium leading-relaxed">
+              Complete these few details to start offering your services on campus.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSetupSubmit} className="space-y-6 py-4">
+            <div className="grid gap-4">
+              <div className="grid gap-2.5">
+                <Label className="font-bold text-xs uppercase tracking-widest opacity-60">Professional Name</Label>
+                <Input value={fullName} readOnly className="h-12 bg-muted/50 border-none rounded-xl cursor-not-allowed" />
+              </div>
+              <div className="grid gap-2.5">
+                <Label className="font-bold text-xs uppercase tracking-widest opacity-60">Contact Email</Label>
+                <Input value={email} readOnly className="h-12 bg-muted/50 border-none rounded-xl cursor-not-allowed" />
+              </div>
+              <div className="grid gap-2.5">
+                <Label htmlFor="setup-skill" className="font-bold text-xs uppercase tracking-widest">What can you do?</Label>
+                <Input 
+                  id="setup-skill"
+                  placeholder="e.g. Graphic Designer, Plumber, Tutor" 
+                  value={setupSkill}
+                  onChange={(e) => setSetupSkill(e.target.value)}
+                  required
+                  className="h-14 rounded-xl border-2 border-muted focus-visible:ring-primary px-6 font-medium"
+                />
+              </div>
+              <div className="grid gap-2.5">
+                <Label htmlFor="setup-price" className="font-bold text-xs uppercase tracking-widest">Price range e.g. NGN 2,000 - 5,000</Label>
+                <Input 
+                  id="setup-price"
+                  placeholder="NGN 1,000 - 3,000" 
+                  value={setupPriceRange}
+                  onChange={(e) => setSetupPriceRange(e.target.value)}
+                  className="h-14 rounded-xl border-2 border-muted focus-visible:ring-primary px-6 font-medium"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="pt-6">
+              <Button 
+                type="submit" 
+                disabled={isSubmittingSetup}
+                className="w-full h-16 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                {isSubmittingSetup ? <Loader2 className="h-5 w-5 animate-spin" /> : "Start Freelancing"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

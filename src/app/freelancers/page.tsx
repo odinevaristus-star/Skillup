@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -13,12 +12,9 @@ import {
   Star, 
   Filter, 
   Loader2, 
-  CheckCircle2, 
   Briefcase, 
   MessageSquare, 
-  Eye,
-  MapPin,
-  Clock
+  Eye
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -44,15 +40,19 @@ export default function FreelancerSearch() {
     if (!allUsers) return []
 
     return allUsers.filter(fl => {
+      // Show users who have listed a skill
       const hasSkills = fl.skills && Array.isArray(fl.skills) && fl.skills.length > 0
-      if (!hasSkills) return false
+      const hasSingleSkill = !!fl.skill
+      
+      if (!hasSkills && !hasSingleSkill) return false
 
       const searchLower = searchTerm.toLowerCase()
       const matchesSearch = 
         !searchTerm ||
         fl.fullName?.toLowerCase().includes(searchLower) ||
         fl.title?.toLowerCase().includes(searchLower) || 
-        fl.skills?.some((s: string) => s.toLowerCase().includes(searchLower))
+        fl.skills?.some((s: string) => s.toLowerCase().includes(searchLower)) ||
+        fl.skill?.toLowerCase().includes(searchLower)
       
       const matchesType = 
         categoryType === "all" || 
@@ -60,7 +60,8 @@ export default function FreelancerSearch() {
 
       const matchesSkill = 
         !specificSkill || 
-        fl.skills?.some((s: string) => s.toLowerCase() === specificSkill.toLowerCase())
+        fl.skills?.some((s: string) => s.toLowerCase() === specificSkill.toLowerCase()) ||
+        fl.skill?.toLowerCase() === specificSkill.toLowerCase()
 
       return matchesSearch && matchesType && matchesSkill
     })
@@ -74,9 +75,9 @@ export default function FreelancerSearch() {
         <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/market/1600/900')] opacity-5 bg-cover bg-center" />
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tighter leading-none">Hire Verified Experts</h1>
+            <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tighter leading-none">Find Skilled Students Near You</h1>
             <p className="text-xl text-primary-foreground/80 mb-10 max-w-2xl mx-auto leading-relaxed font-medium">
-              From high-end digital solutions to essential local services. Find the right person for the job.
+              Browse campus freelancers offering artisan and digital services. Hire fast, pay fair.
             </p>
             <div className="relative max-w-2xl mx-auto">
               <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground h-6 w-6" />
@@ -155,7 +156,7 @@ export default function FreelancerSearch() {
                             </Badge>
                           </div>
                           <p className="text-sm font-bold text-muted-foreground flex items-center gap-1.5 mt-1">
-                            <Briefcase className="h-4 w-4 text-primary" /> {fl.title || "Professional"}
+                            <Briefcase className="h-4 w-4 text-primary" /> {fl.title || fl.skill || "Professional"}
                           </p>
                           <div className="flex items-center gap-2 pt-1">
                             <Star className="h-4 w-4 text-yellow-500 fill-current" />
@@ -172,14 +173,22 @@ export default function FreelancerSearch() {
                       </div>
 
                       <div className="mt-6 flex flex-wrap gap-2">
-                        {fl.skills?.slice(0, 3).map((skill: string) => (
-                          <Badge key={skill} variant="secondary" className="bg-muted/50 text-muted-foreground border-none text-[9px] uppercase font-black tracking-widest px-3 py-1 rounded-xl">
-                            {skill}
+                        {fl.skills ? (
+                          <>
+                            {fl.skills.slice(0, 3).map((skill: string) => (
+                              <Badge key={skill} variant="secondary" className="bg-muted/50 text-muted-foreground border-none text-[9px] uppercase font-black tracking-widest px-3 py-1 rounded-xl">
+                                {skill}
+                              </Badge>
+                            ))}
+                            {fl.skills.length > 3 && (
+                              <Badge variant="ghost" className="text-[9px] font-black uppercase tracking-widest">+{fl.skills.length - 3} more</Badge>
+                            )}
+                          </>
+                        ) : fl.skill ? (
+                          <Badge variant="secondary" className="bg-muted/50 text-muted-foreground border-none text-[9px] uppercase font-black tracking-widest px-3 py-1 rounded-xl">
+                            {fl.skill}
                           </Badge>
-                        ))}
-                        {(fl.skills?.length || 0) > 3 && (
-                          <Badge variant="ghost" className="text-[9px] font-black uppercase tracking-widest">+{(fl.skills?.length || 0) - 3} more</Badge>
-                        )}
+                        ) : null}
                       </div>
                     </div>
 

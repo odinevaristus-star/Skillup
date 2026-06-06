@@ -1,25 +1,21 @@
 'use client';
 
 import Link from "next/link"
-import Image from "next/image"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@/firebase"
 import { Button } from "@/components/ui/button"
 import { Navbar } from "@/components/navbar"
 import { Card, CardContent } from "@/components/ui/card"
-import { PlaceHolderImages } from "@/lib/placeholder-images"
 import { 
   Users, 
   Briefcase, 
-  MessageSquare,
-  ArrowRight
+  MessageSquare
 } from "lucide-react"
 
 export default function LandingPage() {
   const { user, loading } = useUser();
   const router = useRouter();
-  const heroImage = PlaceHolderImages.find(img => img.id === 'hero-freelancer');
 
   useEffect(() => {
     if (!loading && user) {
@@ -34,44 +30,26 @@ export default function LandingPage() {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-background pt-20 pb-10 lg:pt-32 lg:pb-16">
+      <section className="relative overflow-hidden bg-background pt-24 pb-20 lg:pt-32 lg:pb-28">
         <div className="container mx-auto px-4 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="flex flex-col gap-6 max-w-2xl">
-              <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-foreground leading-[1.1]">
-                Hire the best <span className="text-primary">campus talent</span> in minutes.
-              </h1>
-              <p className="text-xl text-muted-foreground leading-relaxed">
-                Connect with skilled students for any job. From essential artisan trades to digital projects, SkillUp is your portal to campus services.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                <Link href="/signup">
-                  <Button size="lg" className="w-full sm:w-auto text-lg px-8 py-6 rounded-xl font-bold shadow-xl shadow-primary/20 transition-all hover:scale-[1.02]">
-                    Get Started
-                  </Button>
-                </Link>
-                <Link href="/freelancers">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-8 py-6 rounded-xl font-bold hover:bg-muted/50 transition-all">
-                    Browse Freelancers
-                  </Button>
-                </Link>
-              </div>
-            </div>
-            
-            <div className="relative group lg:block">
-              <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-2xl blur opacity-25 transition duration-1000 group-hover:opacity-40"></div>
-              <div className="relative overflow-hidden rounded-2xl border bg-card aspect-[4/3] shadow-2xl">
-                {heroImage && (
-                  <Image
-                    src={heroImage.imageUrl}
-                    alt={heroImage.description}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    priority
-                    data-ai-hint={heroImage.imageHint}
-                  />
-                )}
-              </div>
+          <div className="max-w-4xl mx-auto text-center flex flex-col items-center gap-8">
+            <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-foreground leading-[1.1]">
+              Hire the best <span className="text-primary">campus talent</span> in minutes.
+            </h1>
+            <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl">
+              Connect with skilled students for any job. From essential artisan trades to digital projects, SkillUp is your portal to campus services.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 mt-4">
+              <Link href="/signup">
+                <Button size="lg" className="w-full sm:w-auto text-lg px-10 py-7 rounded-xl font-bold shadow-xl shadow-primary/20 transition-all hover:scale-[1.02]">
+                  Get Started
+                </Button>
+              </Link>
+              <Link href="/freelancers">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-10 py-7 rounded-xl font-bold hover:bg-muted/50 transition-all">
+                  Browse Freelancers
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

@@ -67,6 +67,20 @@ export default function FreelancerSearch() {
     })
   }, [allUsers, searchTerm, categoryType, specificSkill])
 
+  const formatPriceRange = (price: any) => {
+    if (!price) return "Negotiable"
+    const trimmed = price.toString().trim()
+    if (trimmed.toLowerCase() === 'negotiable') return "Negotiable"
+    
+    // If it's just a number, format it as NGN 10,000
+    if (/^\d+$/.test(trimmed)) {
+      return `NGN ${parseInt(trimmed).toLocaleString()}`
+    }
+    
+    // Otherwise show as-is
+    return trimmed
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-muted/20">
       <Navbar />
@@ -195,7 +209,7 @@ export default function FreelancerSearch() {
                     <div className="px-8 py-6 bg-muted/20 border-t flex items-center justify-between">
                       <div className="flex flex-col">
                         <p className="text-xl font-black text-foreground">
-                          {fl.priceRange && fl.priceRange.toLowerCase() !== 'negotiable' ? `NGN ${fl.priceRange}` : "Negotiable"}
+                          {formatPriceRange(fl.priceRange)}
                         </p>
                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Price Range</p>
                       </div>

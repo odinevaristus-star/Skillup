@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useParams, useRouter } from "next/navigation"
@@ -50,6 +49,20 @@ export default function FreelancerProfilePage() {
       return
     }
     // Booking logic would go here
+  }
+
+  const formatPriceRange = (price: any) => {
+    if (!price) return "Negotiable"
+    const trimmed = price.toString().trim()
+    if (trimmed.toLowerCase() === 'negotiable') return "Negotiable"
+    
+    // If it's just a number, format it as NGN 10,000
+    if (/^\d+$/.test(trimmed)) {
+      return `NGN ${parseInt(trimmed).toLocaleString()}`
+    }
+    
+    // Otherwise show as-is
+    return trimmed
   }
 
   if (profileLoading) {
@@ -187,7 +200,7 @@ export default function FreelancerProfilePage() {
               <CardHeader className="bg-primary text-primary-foreground p-10">
                 <p className="text-sm font-bold uppercase tracking-[0.3em] opacity-70">Price Range</p>
                 <CardTitle className="text-4xl font-black flex items-center gap-2">
-                  <Landmark className="h-8 w-8" /> {profile.priceRange && profile.priceRange.toLowerCase() !== 'negotiable' ? `NGN ${profile.priceRange}` : "Negotiable"}
+                  <Landmark className="h-8 w-8" /> {formatPriceRange(profile.priceRange)}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-10 space-y-6">

@@ -8,15 +8,35 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card"
 import { Navbar } from "@/components/navbar"
-import { Github, Chrome } from "lucide-react"
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, GithubAuthProvider } from "firebase/auth"
+import { Github, Chrome, Loader2 } from "lucide-react"
+import { 
+  signInWithEmailAndPassword, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  GithubAuthProvider,
+  sendPasswordResetEmail 
+} from "firebase/auth"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/firebase"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  
+  // Password Reset States
+  const [showResetModal, setShowResetModal] = useState(false)
+  const [resetEmail, setResetEmail] = useState("")
+  const [isResetting, setIsResetting] = useState(false)
+
   const { toast } = useToast()
   const auth = useAuth()
 
@@ -25,7 +45,6 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      // Redirection is handled automatically by the global AuthRedirectHandler
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -40,13 +59,40 @@ export default function LoginPage() {
     const provider = providerName === 'google' ? new GoogleAuthProvider() : new GithubAuthProvider()
     try {
       await signInWithPopup(auth, provider)
-      // Redirection is handled automatically by the global AuthRedirectHandler
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Social login failed",
         description: error.message
       })
+    }
+  }
+
+  const handleOpenResetModal = () => {
+    setResetEmail(email)
+    setShowResetModal(true)
+  }
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!resetEmail) return
+
+    setIsResetting(true)
+    try {
+      await sendPasswordResetEmail(auth, resetEmail)
+      toast({
+        title: "Password reset email sent!",
+        description: "Please check your inbox for instructions to reset your password.",
+      })
+      setShowResetModal(false)
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Reset failed",
+        description: "Could not send reset email. Please check the email address and try again.",
+      })
+    } finally {
+      setIsResetting(false)
     }
   }
 
@@ -76,7 +122,13 @@ export default function LoginPage() {
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Password</Label>
-                    <Link href="#" className="text-xs text-primary hover:underline">Forgot password?</Link>
+                    <button 
+                      type="button"
+                      onClick={handleOpenResetModal}
+                      className="text-xs text-primary hover:underline font-medium"
+                    >
+                      Forgot password?
+                    </button>
                   </div>
                   <Input 
                     id="password" 
@@ -120,6 +172,49 @@ export default function LoginPage() {
           </CardFooter>
         </Card>
       </div>
+
+      {/* Password Reset Modal */}
+      <Dialog open={showResetModal} onOpenChange={setShowResetModal}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Reset Your Password</DialogTitle>
+            <DialogDescription>
+              Enter your email address and we'll send you a link to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handlePasswordReset} className="space-y-4 pt-4">
+            <div className="grid gap-2">
+              <Label htmlFor="reset-email">Email Address</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                placeholder="name@example.com"
+                required
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+              />
+            </div>
+            <DialogFooter className="sm:justify-end gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setShowResetModal(false)}
+                className="font-semibold"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={isResetting}
+                className="font-semibold"
+              >
+                {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Send Reset Link
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

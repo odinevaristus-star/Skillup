@@ -294,7 +294,7 @@ export default function Dashboard() {
           <>
             <StatsCard icon={Briefcase} label="Active Projects" value={stats.activeProjects} sub="Current Contracts" color="text-blue-500" />
             <StatsCard icon={FileText} label="Proposals" value={stats.myProposals} sub="Submitted Bids" color="text-purple-500" />
-            <StatsCard icon={CheckCircle2} label="Completed Jobs" value={stats.completedJobs} sub="Finished Tasks" color="text-green-500" />
+            <StatsCard icon={CheckCircle2} label="Completed Jobs" value={stats.completedJobs} sub="Completed Jobs" color="text-green-500" />
           </>
         ) : (
           <>

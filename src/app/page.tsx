@@ -34,7 +34,7 @@ export default function LandingPage() {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-background py-20 lg:py-32">
+      <section className="relative overflow-hidden bg-background pt-20 pb-10 lg:pt-32 lg:pb-16">
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="flex flex-col gap-6 max-w-2xl">
@@ -142,7 +142,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="flex flex-col md:flex-row justify-between items-center text-[10px] font-black uppercase tracking-widest text-muted-foreground border-t pt-10">
-            <p>© 2024 SkillUp Inc. All rights reserved.</p>
+            <p>© 2026 SkillUp Inc. All rights reserved.</p>
             <div className="flex gap-6 mt-4 md:mt-0">
               <Link href="#" className="hover:text-primary">Twitter</Link>
               <Link href="#" className="hover:text-primary">Instagram</Link>

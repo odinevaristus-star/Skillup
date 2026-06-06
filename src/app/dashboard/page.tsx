@@ -62,7 +62,8 @@ export default function Dashboard() {
     expertsHired: 0,
     pendingProposals: 0,
     activeProjects: 0,
-    myProposals: 0
+    myProposals: 0,
+    completedJobs: 0
   })
   const [recentActivity, setRecentActivity] = useState<any[]>([])
 
@@ -119,18 +120,21 @@ export default function Dashboard() {
             expertsHired: hiredJobs.length,
             pendingProposals: pendingCount,
             activeProjects: 0,
-            myProposals: 0
+            myProposals: 0,
+            completedJobs: 0
           })
         } else {
           const myApps = allApps.filter((a: any) => a.freelancerId === user.uid)
           const workCount = allJobs.filter((j: any) => j.freelancerId === user.uid && j.status === 'in-progress').length
+          const completedCount = allJobs.filter((j: any) => j.freelancerId === user.uid && j.status === 'completed').length
           
           setStats({
             activeJobs: 0,
             expertsHired: 0,
             pendingProposals: 0,
             myProposals: myApps.length,
-            activeProjects: workCount
+            activeProjects: workCount,
+            completedJobs: completedCount
           })
         }
 
@@ -290,7 +294,7 @@ export default function Dashboard() {
           <>
             <StatsCard icon={Briefcase} label="Active Projects" value={stats.activeProjects} sub="Current Contracts" color="text-blue-500" />
             <StatsCard icon={FileText} label="Proposals" value={stats.myProposals} sub="Submitted Bids" color="text-purple-500" />
-            <StatsCard icon={CheckCircle2} label="Job Success" value={userData?.completedJobs > 0 ? "100%" : "0%"} sub="Completed Tasks" color="text-green-500" />
+            <StatsCard icon={CheckCircle2} label="Completed Jobs" value={stats.completedJobs} sub="Finished Tasks" color="text-green-500" />
           </>
         ) : (
           <>

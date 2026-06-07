@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -9,10 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
 import { Navbar } from '@/components/navbar';
-import { Briefcase, User, Loader2, Check } from 'lucide-react';
+import { Briefcase, User, Loader2, Check, Chrome } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SignupPage() {
   const [selectedRole, setSelectedRole] = useState<'client' | 'freelancer' | null>(null);
@@ -25,12 +26,17 @@ export default function SignupPage() {
   
   const auth = useAuth();
   const db = useFirestore();
+  const { toast } = useToast();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!selectedRole) {
-      alert("Please select Client or Freelancer");
+      toast({
+        variant: "destructive",
+        title: "Role required",
+        description: "Please select Client or Freelancer"
+      });
       return;
     }
 
@@ -60,8 +66,40 @@ export default function SignupPage() {
       window.location.replace("/dashboard");
 
     } catch (error: any) {
-      alert(error.message);
+      toast({
+        variant: "destructive",
+        title: "Signup failed",
+        description: error.message
+      });
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Save user to Firestore if new user or update existing
+      await setDoc(doc(db, 'users', user.uid), {
+        firstName: user.displayName?.split(' ')[0] || '',
+        lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+        fullName: user.displayName || '',
+        email: user.email,
+        activeRole: 'client',
+        roles: ['client', 'freelancer'],
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      
+      window.location.replace('/dashboard');
+    } catch (error) {
+      console.error('Google login error:', error);
+      toast({ 
+        variant: "destructive",
+        title: 'Google login failed',
+        description: 'Please try again.' 
+      });
     }
   };
 
@@ -120,7 +158,7 @@ export default function SignupPage() {
               </button>
             </div>
 
-            {selectedRole && (
+            {selectedRole ? (
               <form onSubmit={handleSignup} className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="grid gap-2.5">
@@ -155,6 +193,20 @@ export default function SignupPage() {
                   {isLoading ? 'Creating account...' : 'Start My Journey'}
                 </Button>
               </form>
+            ) : (
+              <div className="space-y-6">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground font-bold">Or quick join with</span>
+                  </div>
+                </div>
+                <Button variant="outline" className="h-14 w-full rounded-2xl font-bold" onClick={handleGoogleLogin}>
+                  <Chrome className="mr-2 h-5 w-5 text-primary" /> Continue with Google
+                </Button>
+              </div>
             )}
           </CardContent>
           <CardFooter className="flex flex-wrap items-center justify-center gap-2 p-8 border-t bg-muted/10">

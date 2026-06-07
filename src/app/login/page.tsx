@@ -8,16 +8,16 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card"
 import { Navbar } from "@/components/navbar"
-import { Github, Chrome, Loader2 } from "lucide-react"
+import { Chrome, Loader2 } from "lucide-react"
 import { 
   signInWithEmailAndPassword, 
   GoogleAuthProvider, 
   signInWithPopup, 
-  GithubAuthProvider,
   sendPasswordResetEmail 
 } from "firebase/auth"
+import { doc, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
-import { useAuth } from "@/firebase"
+import { useAuth, useFirestore } from "@/firebase"
 import {
   Dialog,
   DialogContent,
@@ -39,6 +39,7 @@ export default function LoginPage() {
 
   const { toast } = useToast()
   const auth = useAuth()
+  const db = useFirestore()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,18 +56,33 @@ export default function LoginPage() {
     }
   }
 
-  const handleSocialLogin = async (providerName: 'google' | 'github') => {
-    const provider = providerName === 'google' ? new GoogleAuthProvider() : new GithubAuthProvider()
+  const handleGoogleLogin = async () => {
     try {
-      await signInWithPopup(auth, provider)
-    } catch (error: any) {
-      toast({
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Save user to Firestore if new user or update existing
+      await setDoc(doc(db, 'users', user.uid), {
+        firstName: user.displayName?.split(' ')[0] || '',
+        lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+        fullName: user.displayName || '',
+        email: user.email,
+        activeRole: 'client',
+        roles: ['client', 'freelancer'],
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      
+      window.location.replace('/dashboard');
+    } catch (error) {
+      console.error('Google login error:', error);
+      toast({ 
         variant: "destructive",
-        title: "Social login failed",
-        description: error.message
-      })
+        title: 'Google login failed',
+        description: 'Please try again.' 
+      });
     }
-  }
+  };
 
   const handleOpenResetModal = () => {
     setResetEmail(email)
@@ -157,11 +173,8 @@ export default function LoginPage() {
                 <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Button variant="outline" className="h-11" onClick={() => handleSocialLogin('github')}>
-                <Github className="mr-2 h-4 w-4" /> Github
-              </Button>
-              <Button variant="outline" className="h-11" onClick={() => handleSocialLogin('google')}>
+            <div className="grid gap-4">
+              <Button variant="outline" className="h-11 w-full" onClick={handleGoogleLogin}>
                 <Chrome className="mr-2 h-4 w-4" /> Google
               </Button>
             </div>

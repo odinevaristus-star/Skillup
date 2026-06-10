@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
   Dialog,
   DialogContent,
@@ -54,6 +55,7 @@ export default function Dashboard() {
   // Modal State
   const [showSwitchModal, setShowSwitchModal] = useState(false)
   const [setupSkill, setSetupSkill] = useState("")
+  const [setupGender, setSetupGender] = useState("")
   const [setupPriceRange, setSetupPriceRange] = useState("")
   const [isSubmittingSetup, setIsSubmittingSetup] = useState(false)
 
@@ -88,6 +90,7 @@ export default function Dashboard() {
           if (!profile.roles || !Array.isArray(profile.roles)) profile.roles = ['client', 'freelancer']
           if (!profile.activeRole) profile.activeRole = profile.role || 'freelancer'
           setUserData(profile)
+          if (profile.gender) setSetupGender(profile.gender)
         } else {
           profile = { 
             id: user.uid, 
@@ -166,13 +169,11 @@ export default function Dashboard() {
     const db = getFirestore()
     const newRole = userData.activeRole === 'client' ? 'freelancer' : 'client'
     
-    // Step 1: When switching to Freelancer, check for skill field
-    if (newRole === 'freelancer' && (!userData.skill || userData.skill.trim() === "")) {
+    if (newRole === 'freelancer' && (!userData.skill || userData.skill.trim() === "" || !userData.gender)) {
       setShowSwitchModal(true)
       return
     }
 
-    // Step 2: Switch normally if they have a skill or are switching to client
     setSwitching(true)
     try {
       const updates: any = {
@@ -204,7 +205,7 @@ export default function Dashboard() {
 
   const handleSetupSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!setupSkill.trim() || isSubmittingSetup) return
+    if (!setupSkill.trim() || !setupGender || isSubmittingSetup) return
 
     setIsSubmittingSetup(true)
     const db = getFirestore()
@@ -216,6 +217,7 @@ export default function Dashboard() {
     try {
       await setDoc(doc(db, 'users', user.uid), {
         skill: setupSkill,
+        gender: setupGender,
         priceRange: setupPriceRange,
         activeRole: 'freelancer',
         roles: ['client', 'freelancer'],
@@ -354,7 +356,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Switch Setup Modal */}
       <Dialog open={showSwitchModal} onOpenChange={setShowSwitchModal}>
         <DialogContent className="rounded-[2.5rem] p-8 max-w-lg border-none shadow-2xl">
           <DialogHeader className="space-y-4">
@@ -372,10 +373,21 @@ export default function Dashboard() {
                 <Label className="font-bold text-xs uppercase tracking-widest opacity-60">Professional Name</Label>
                 <Input value={fullName} readOnly className="h-12 bg-muted/50 border-none rounded-xl cursor-not-allowed" />
               </div>
-              <div className="grid gap-2.5">
-                <Label className="font-bold text-xs uppercase tracking-widest opacity-60">Contact Email</Label>
-                <Input value={email} readOnly className="h-12 bg-muted/50 border-none rounded-xl cursor-not-allowed" />
+              
+              <div className="grid gap-4">
+                <Label className="font-bold text-xs uppercase tracking-widest">Select Gender</Label>
+                <RadioGroup value={setupGender} onValueChange={setSetupGender} className="flex gap-4">
+                  <div className="flex items-center space-x-2 bg-muted/30 px-6 py-3 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors">
+                    <RadioGroupItem value="male" id="setup-male" />
+                    <Label htmlFor="setup-male" className="cursor-pointer font-bold">Male</Label>
+                  </div>
+                  <div className="flex items-center space-x-2 bg-muted/30 px-6 py-3 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors">
+                    <RadioGroupItem value="female" id="setup-female" />
+                    <Label htmlFor="setup-female" className="cursor-pointer font-bold">Female</Label>
+                  </div>
+                </RadioGroup>
               </div>
+
               <div className="grid gap-2.5">
                 <Label htmlFor="setup-skill" className="font-bold text-xs uppercase tracking-widest">What can you do?</Label>
                 <Input 

@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -17,6 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { useMemo } from 'react';
+import { cn } from '@/lib/utils';
 
 export function Navbar() {
   const { theme, toggleTheme } = useTheme();
@@ -74,8 +76,22 @@ export function Navbar() {
       if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
       return parts[0][0].toUpperCase();
     }
-    return "?";
+    return "";
   };
+
+  const getFallbackIcon = () => {
+    if (profile?.gender === 'female') return <User className="h-6 w-6 text-pink-500" />
+    if (profile?.gender === 'male') return <User className="h-6 w-6 text-blue-500" />
+    const initials = getInitials();
+    if (initials) return <span className="text-xs font-black">{initials}</span>;
+    return <User className="h-5 w-5" />
+  }
+
+  const getFallbackBg = () => {
+    if (profile?.gender === 'female') return "bg-pink-100"
+    if (profile?.gender === 'male') return "bg-blue-100"
+    return "bg-primary/10"
+  }
 
   const displayName = profile?.fullName || profile?.firstName || user?.displayName || "User";
 
@@ -168,8 +184,8 @@ export function Navbar() {
                 >
                   <Avatar className="h-full w-full rounded-none">
                     <AvatarImage src={user.photoURL || profile?.avatarUrl || ""} alt={displayName} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-black text-xs">
-                      {getInitials()}
+                    <AvatarFallback className={cn("text-primary flex items-center justify-center h-full w-full", getFallbackBg())}>
+                      {getFallbackIcon()}
                     </AvatarFallback>
                   </Avatar>
                 </Button>

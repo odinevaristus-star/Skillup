@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -14,6 +15,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { useToast } from '@/hooks/use-toast';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 export default function SignupPage() {
   const [selectedRole, setSelectedRole] = useState<'client' | 'freelancer' | null>(null);
@@ -22,6 +24,7 @@ export default function SignupPage() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [gender, setGender] = useState<string>('');
   const [primarySkill, setPrimarySkill] = useState('');
   
   const auth = useAuth();
@@ -40,6 +43,15 @@ export default function SignupPage() {
       return;
     }
 
+    if (!gender) {
+      toast({
+        variant: "destructive",
+        title: "Gender required",
+        description: "Please select your gender"
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -51,6 +63,7 @@ export default function SignupPage() {
         firstName: firstName,
         lastName: lastName,
         fullName: `${firstName} ${lastName}`,
+        gender: gender,
         roles: ['client', 'freelancer'],
         activeRole: selectedRole,
         skills: selectedRole === 'freelancer' ? [primarySkill] : [],
@@ -81,7 +94,6 @@ export default function SignupPage() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       
-      // Save user to Firestore if new user or update existing
       await setDoc(doc(db, 'users', user.uid), {
         firstName: user.displayName?.split(' ')[0] || '',
         lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
@@ -170,6 +182,21 @@ export default function SignupPage() {
                     <Input id="lastName" placeholder="Doe" required className="h-12 rounded-xl" value={lastName} onChange={(e) => setLastName(e.target.value)} />
                   </div>
                 </div>
+                
+                <div className="grid gap-4">
+                  <Label className="font-bold">Select Gender</Label>
+                  <RadioGroup value={gender} onValueChange={setGender} className="flex gap-4">
+                    <div className="flex items-center space-x-2 bg-muted/30 px-6 py-3 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors">
+                      <RadioGroupItem value="male" id="signup-male" />
+                      <Label htmlFor="signup-male" className="cursor-pointer font-bold">Male</Label>
+                    </div>
+                    <div className="flex items-center space-x-2 bg-muted/30 px-6 py-3 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors">
+                      <RadioGroupItem value="female" id="signup-female" />
+                      <Label htmlFor="signup-female" className="cursor-pointer font-bold">Female</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
                 <div className="grid gap-2.5">
                   <Label htmlFor="email" className="font-bold">Email address</Label>
                   <Input id="email" type="email" placeholder="john@example.com" required className="h-12 rounded-xl" value={email} onChange={(e) => setEmail(e.target.value)} />

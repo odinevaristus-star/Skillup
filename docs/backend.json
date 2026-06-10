@@ -11,6 +11,7 @@
         "lastName": { "type": "string" },
         "fullName": { "type": "string" },
         "email": { "type": "string" },
+        "gender": { "type": "string", "enum": ["male", "female"] },
         "title": { "type": "string" },
         "bio": { "type": "string" },
         "department": { "type": "string" },
@@ -92,7 +93,7 @@
     }
   },
   "auth": {
-    "providers": ["password", "google", "github"]
+    "providers": ["password", "google"]
   },
   "firestore": {
     "/users/{userId}": {

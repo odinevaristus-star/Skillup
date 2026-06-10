@@ -1,10 +1,9 @@
+
 "use client"
 
-import { useState, useEffect, useMemo, useRef } from "react"
-import { useUser, useFirestore, useDoc, errorEmitter, FirestorePermissionError, useStorage } from "@/firebase"
+import { useState, useEffect, useMemo } from "react"
+import { useUser, useFirestore, useDoc, errorEmitter, FirestorePermissionError } from "@/firebase"
 import { doc, setDoc } from "firebase/firestore"
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
-import { updateProfile } from "firebase/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,20 +12,20 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
-import { Camera, X, Plus, Save, Loader2, Landmark, Info } from "lucide-react"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { X, Plus, Save, Loader2, Landmark, Info, User } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useSearchParams, useRouter } from "next/navigation"
 import { SearchableSelect } from "@/components/ui/searchable-select"
+import { cn } from "@/lib/utils"
 
 export default function ProfileManagement() {
   const { user, loading: authLoading } = useUser()
   const db = useFirestore()
-  const storage = useStorage()
   const { toast } = useToast()
   const searchParams = useSearchParams()
   const router = useRouter()
   const isPrompted = searchParams.get("complete") === "true"
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const userDocRef = useMemo(() => {
     if (!db || !user?.uid) return null
@@ -38,19 +37,20 @@ export default function ProfileManagement() {
   const [fullName, setFullName] = useState("")
   const [title, setTitle] = useState("")
   const [bio, setBio] = useState("")
+  const [gender, setGender] = useState("")
   const [department, setDepartment] = useState("")
   const [priceRange, setPriceRange] = useState("")
   const [isAvailable, setIsAvailable] = useState(true)
   const [skills, setSkills] = useState<string[]>([])
   const [newSkill, setNewSkill] = useState("")
   const [isSaving, setIsSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     if (profile) {
-      setFullName(profile.fullName || profile.full_name || "")
+      setFullName(profile.fullName || "")
       setTitle(profile.title || "")
       setBio(profile.bio || "")
+      setGender(profile.gender || "")
       setDepartment(profile.department || "")
       setPriceRange(profile.priceRange || "")
       setIsAvailable(profile.isAvailable !== undefined ? profile.isAvailable : true)
@@ -81,43 +81,6 @@ export default function ProfileManagement() {
     setSkills(skills.filter(s => s !== skillToRemove))
   }
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !user || !db || !storage) return
-
-    setUploading(true)
-    const storageRef = ref(storage, `profile-photos/${user.uid}/avatar.jpg`)
-
-    try {
-      await uploadBytes(storageRef, file)
-      const downloadURL = await getDownloadURL(storageRef)
-      
-      // Update Auth Profile
-      await updateProfile(user, { photoURL: downloadURL })
-      
-      // Update Firestore with both photoURL (requested) and avatarUrl (app standard)
-      await setDoc(doc(db, "users", user.uid), {
-        avatarUrl: downloadURL,
-        photoURL: downloadURL,
-        updatedAt: new Date().toISOString()
-      }, { merge: true })
-
-      toast({
-        title: "Profile photo updated!",
-        description: "Your new avatar has been saved successfully."
-      })
-    } catch (error) {
-      console.error("Upload error:", error)
-      toast({
-        variant: "destructive",
-        title: "Photo upload failed",
-        description: "Please try again."
-      })
-    } finally {
-      setUploading(false)
-    }
-  }
-
   const handleSave = () => {
     if (!user?.uid || !db) return
     setIsSaving(true)
@@ -126,6 +89,7 @@ export default function ProfileManagement() {
       fullName,
       title,
       bio,
+      gender,
       department,
       priceRange,
       isAvailable,
@@ -164,6 +128,18 @@ export default function ProfileManagement() {
     )
   }
 
+  const getFallbackIcon = () => {
+    if (gender === 'female') return <User className="h-10 w-10 text-pink-500" />
+    if (gender === 'male') return <User className="h-10 w-10 text-blue-500" />
+    return <User className="h-10 w-10 text-primary" />
+  }
+
+  const getFallbackBg = () => {
+    if (gender === 'female') return "bg-pink-100"
+    if (gender === 'male') return "bg-blue-100"
+    return "bg-primary/10"
+  }
+
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -181,20 +157,6 @@ export default function ProfileManagement() {
         </div>
       </div>
 
-      {isPrompted && (
-        <Card className="bg-primary/5 border-primary/20 rounded-3xl overflow-hidden shadow-sm">
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="bg-primary/10 p-3 rounded-2xl">
-              <Info className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="font-bold text-primary">Profile Incomplete</p>
-              <p className="text-sm text-muted-foreground">Please add at least one primary skill and a bio to be visible to clients.</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <div className="grid lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2 space-y-10">
           <Card className="border-none shadow-sm rounded-3xl bg-card overflow-hidden">
@@ -206,31 +168,11 @@ export default function ProfileManagement() {
               <div className="flex flex-col md:flex-row gap-10 items-start">
                 <div className="relative group shrink-0">
                   <Avatar className="w-32 h-32 md:w-40 md:h-40 border-4 border-muted shadow-2xl rounded-3xl overflow-hidden relative">
-                    <AvatarImage src={user?.photoURL || profile?.avatarUrl || `https://picsum.photos/seed/${user?.uid}/256/256`} />
-                    <AvatarFallback className="text-4xl font-bold bg-primary/10 text-primary">
-                      {fullName?.substring(0, 2).toUpperCase() || "US"}
+                    <AvatarImage src={user?.photoURL || profile?.avatarUrl || ""} />
+                    <AvatarFallback className={cn("text-4xl font-bold flex items-center justify-center", getFallbackBg())}>
+                      {getFallbackIcon()}
                     </AvatarFallback>
-                    {uploading && (
-                      <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                      </div>
-                    )}
                   </Avatar>
-                  <button 
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="absolute -bottom-2 -right-2 p-3 bg-primary text-primary-foreground rounded-2xl shadow-xl hover:scale-110 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Camera className="h-5 w-5" />
-                  </button>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    accept="image/*"
-                    onChange={handleFileChange}
-                  />
                 </div>
                 <div className="flex-1 space-y-6 w-full">
                   <div className="grid md:grid-cols-2 gap-6">
@@ -254,6 +196,21 @@ export default function ProfileManagement() {
                       />
                     </div>
                   </div>
+
+                  <div className="grid gap-4">
+                    <Label className="font-bold">Gender</Label>
+                    <RadioGroup value={gender} onValueChange={setGender} className="flex gap-4">
+                      <div className="flex items-center space-x-2 bg-muted/30 px-6 py-3 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors">
+                        <RadioGroupItem value="male" id="male" />
+                        <Label htmlFor="male" className="cursor-pointer font-bold">Male</Label>
+                      </div>
+                      <div className="flex items-center space-x-2 bg-muted/30 px-6 py-3 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors">
+                        <RadioGroupItem value="female" id="female" />
+                        <Label htmlFor="female" className="cursor-pointer font-bold">Female</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="grid gap-2.5">
                       <Label htmlFor="department" className="font-bold">Department / Course of Study</Label>

@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -14,7 +15,8 @@ import {
   Loader2, 
   Briefcase, 
   MessageSquare, 
-  Eye
+  Eye,
+  User
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -40,7 +42,6 @@ export default function FreelancerSearch() {
     if (!allUsers) return []
 
     return allUsers.filter(fl => {
-      // Show users who have listed a skill
       const hasSkills = fl.skills && Array.isArray(fl.skills) && fl.skills.length > 0
       const hasSingleSkill = !!fl.skill
       
@@ -72,13 +73,23 @@ export default function FreelancerSearch() {
     const trimmed = price.toString().trim()
     if (trimmed.toLowerCase() === 'negotiable') return "Negotiable"
     
-    // If it's just a number, format it as NGN 10,000
     if (/^\d+$/.test(trimmed)) {
       return `NGN ${parseInt(trimmed).toLocaleString()}`
     }
     
-    // Otherwise show as-is
     return trimmed
+  }
+
+  const getFallbackIcon = (fl: any) => {
+    if (fl.gender === 'female') return <User className="h-8 w-8 text-pink-500" />
+    if (fl.gender === 'male') return <User className="h-8 w-8 text-blue-500" />
+    return <User className="h-8 w-8 text-primary" />
+  }
+
+  const getFallbackBg = (fl: any) => {
+    if (fl.gender === 'female') return "bg-pink-100"
+    if (fl.gender === 'male') return "bg-blue-100"
+    return "bg-muted"
   }
 
   return (
@@ -148,14 +159,16 @@ export default function FreelancerSearch() {
                     <div className="p-8">
                       <div className="flex gap-6">
                         <div className="relative shrink-0">
-                          <div className="w-20 h-20 rounded-2xl bg-muted overflow-hidden border-2 border-background shadow-md">
-                            <Image 
-                              src={fl.avatarUrl || `https://picsum.photos/seed/${fl.id || fl.uid}/96/96`} 
-                              alt={fl.fullName || "User"} 
-                              width={96} 
-                              height={96}
-                              className="object-cover h-full w-full transition-transform group-hover:scale-110"
-                            />
+                          <div className={cn("w-20 h-20 rounded-2xl overflow-hidden border-2 border-background shadow-md flex items-center justify-center", getFallbackBg(fl))}>
+                            {fl.avatarUrl ? (
+                              <Image 
+                                src={fl.avatarUrl} 
+                                alt={fl.fullName || "User"} 
+                                width={96} 
+                                height={96}
+                                className="object-cover h-full w-full transition-transform group-hover:scale-110"
+                              />
+                            ) : getFallbackIcon(fl)}
                           </div>
                           <div className={cn(
                             "absolute -bottom-1 -right-1 w-5 h-5 border-4 border-card rounded-full shadow-lg",

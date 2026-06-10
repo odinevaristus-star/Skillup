@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useParams, useRouter } from "next/navigation"
@@ -16,7 +17,8 @@ import {
   Landmark,
   ShieldCheck,
   Clock,
-  Share2
+  Share2,
+  User
 } from "lucide-react"
 import { useFirestore, useDoc, useMemoFirebase, useUser } from "@/firebase"
 import { doc } from "firebase/firestore"
@@ -56,13 +58,23 @@ export default function FreelancerProfilePage() {
     const trimmed = price.toString().trim()
     if (trimmed.toLowerCase() === 'negotiable') return "Negotiable"
     
-    // If it's just a number, format it as NGN 10,000
     if (/^\d+$/.test(trimmed)) {
       return `NGN ${parseInt(trimmed).toLocaleString()}`
     }
     
-    // Otherwise show as-is
     return trimmed
+  }
+
+  const getFallbackIcon = () => {
+    if (profile?.gender === 'female') return <User className="h-16 w-16 text-pink-500" />
+    if (profile?.gender === 'male') return <User className="h-16 w-16 text-blue-500" />
+    return <User className="h-16 w-16 text-primary" />
+  }
+
+  const getFallbackBg = () => {
+    if (profile?.gender === 'female') return "bg-pink-100"
+    if (profile?.gender === 'male') return "bg-blue-100"
+    return "bg-primary/10"
   }
 
   if (profileLoading) {
@@ -104,9 +116,9 @@ export default function FreelancerProfilePage() {
           <div className="flex flex-col md:flex-row gap-12 items-start">
             <div className="relative shrink-0">
               <Avatar className="w-40 h-40 md:w-56 md:h-56 border-8 border-background shadow-2xl rounded-[3rem] overflow-hidden">
-                <AvatarImage src={profile.avatarUrl || `https://picsum.photos/seed/${userId}/256/256`} />
-                <AvatarFallback className="text-5xl font-bold bg-primary/10 text-primary">
-                  {(profile.fullName || "User").substring(0, 2).toUpperCase()}
+                <AvatarImage src={profile.avatarUrl || ""} />
+                <AvatarFallback className={cn("flex items-center justify-center h-full w-full", getFallbackBg())}>
+                  {getFallbackIcon()}
                 </AvatarFallback>
               </Avatar>
               <div className={cn(

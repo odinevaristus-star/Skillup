@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { X, Plus, Save, Loader2, Landmark, Info, User } from "lucide-react"
+import { X, Plus, Save, Loader2, Landmark, User, MapPin } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useSearchParams, useRouter } from "next/navigation"
 import { SearchableSelect } from "@/components/ui/searchable-select"
@@ -39,6 +39,7 @@ export default function ProfileManagement() {
   const [bio, setBio] = useState("")
   const [gender, setGender] = useState("")
   const [department, setDepartment] = useState("")
+  const [location, setLocation] = useState("")
   const [priceRange, setPriceRange] = useState("")
   const [isAvailable, setIsAvailable] = useState(true)
   const [skills, setSkills] = useState<string[]>([])
@@ -52,6 +53,7 @@ export default function ProfileManagement() {
       setBio(profile.bio || "")
       setGender(profile.gender || "")
       setDepartment(profile.department || "")
+      setLocation(profile.location || "")
       setPriceRange(profile.priceRange || "")
       setIsAvailable(profile.isAvailable !== undefined ? profile.isAvailable : true)
       setSkills(profile.skills || [])
@@ -91,6 +93,7 @@ export default function ProfileManagement() {
       bio,
       gender,
       department,
+      location,
       priceRange,
       isAvailable,
       skills,
@@ -214,16 +217,27 @@ export default function ProfileManagement() {
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="grid gap-2.5">
                       <Label htmlFor="department" className="font-bold">Department / Course of Study</Label>
-                      <div className="relative">
-                        <Input 
-                          id="department" 
-                          className="h-12 rounded-xl"
-                          value={department} 
-                          onChange={(e) => setDepartment(e.target.value)}
-                          placeholder="e.g. Computer Science"
-                        />
-                      </div>
+                      <Input 
+                        id="department" 
+                        className="h-12 rounded-xl"
+                        value={department} 
+                        onChange={(e) => setDepartment(e.target.value)}
+                        placeholder="e.g. Computer Science"
+                      />
                     </div>
+                    <div className="grid gap-2.5">
+                      <Label htmlFor="location" className="font-bold">Location</Label>
+                      <Input 
+                        id="location" 
+                        className="h-12 rounded-xl"
+                        value={location} 
+                        onChange={(e) => setLocation(e.target.value)}
+                        placeholder="e.g. Unizik, Awka"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-6">
                     <div className="grid gap-2.5">
                       <Label htmlFor="priceRange" className="font-bold text-primary flex items-center gap-2">
                         <Landmark className="h-4 w-4" /> Price Range (NGN)

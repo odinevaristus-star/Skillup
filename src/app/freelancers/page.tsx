@@ -11,12 +11,12 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Search, 
   Star, 
-  Filter, 
   Loader2, 
   Briefcase, 
   MessageSquare, 
   Eye,
-  User
+  User,
+  MapPin
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -53,7 +53,8 @@ export default function FreelancerSearch() {
         fl.fullName?.toLowerCase().includes(searchLower) ||
         fl.title?.toLowerCase().includes(searchLower) || 
         fl.skills?.some((s: string) => s.toLowerCase().includes(searchLower)) ||
-        fl.skill?.toLowerCase().includes(searchLower)
+        fl.skill?.toLowerCase().includes(searchLower) ||
+        fl.location?.toLowerCase().includes(searchLower)
       
       const matchesType = 
         categoryType === "all" || 
@@ -107,7 +108,7 @@ export default function FreelancerSearch() {
             <div className="relative max-w-2xl mx-auto">
               <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground h-6 w-6" />
               <Input 
-                placeholder="Search by name or skill (e.g. 'Plumber', 'UI Design')" 
+                placeholder="Search by name, skill, or location" 
                 className="pl-16 h-16 text-lg bg-white text-foreground rounded-2xl border-none shadow-2xl focus-visible:ring-offset-primary"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -185,6 +186,11 @@ export default function FreelancerSearch() {
                           <p className="text-sm font-bold text-muted-foreground flex items-center gap-1.5 mt-1">
                             <Briefcase className="h-4 w-4 text-primary" /> {fl.title || fl.skill || "Professional"}
                           </p>
+                          {fl.location && (
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 mt-1">
+                              <MapPin className="h-3.5 w-3.5 text-primary" /> {fl.location}
+                            </p>
+                          )}
                           <div className="flex items-center gap-2 pt-1">
                             <Star className="h-4 w-4 text-yellow-500 fill-current" />
                             <span className="text-sm font-black">{fl.rating ? fl.rating.toFixed(1) : "N/A"}</span>

@@ -15,6 +15,7 @@
         "title": { "type": "string" },
         "bio": { "type": "string" },
         "department": { "type": "string" },
+        "location": { "type": "string", "description": "The user's campus or city location" },
         "priceRange": { "type": "string" },
         "skills": { "type": "array", "items": { "type": "string" } },
         "roles": { "type": "array", "items": { "type": "string" }, "description": "List of roles enabled for this user" },

@@ -1,9 +1,10 @@
-
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
-import { useUser, useFirestore, useDoc, errorEmitter, FirestorePermissionError } from "@/firebase"
+import { useState, useEffect, useMemo, useRef } from "react"
+import { useUser, useFirestore, useDoc, errorEmitter, FirestorePermissionError, useStorage } from "@/firebase"
 import { doc, setDoc } from "firebase/firestore"
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
+import { updateProfile } from "firebase/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,10 +21,12 @@ import { SearchableSelect } from "@/components/ui/searchable-select"
 export default function ProfileManagement() {
   const { user, loading: authLoading } = useUser()
   const db = useFirestore()
+  const storage = useStorage()
   const { toast } = useToast()
   const searchParams = useSearchParams()
   const router = useRouter()
   const isPrompted = searchParams.get("complete") === "true"
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const userDocRef = useMemo(() => {
     if (!db || !user?.uid) return null
@@ -41,6 +44,7 @@ export default function ProfileManagement() {
   const [skills, setSkills] = useState<string[]>([])
   const [newSkill, setNewSkill] = useState("")
   const [isSaving, setIsSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     if (profile) {
@@ -75,6 +79,43 @@ export default function ProfileManagement() {
 
   const removeSkill = (skillToRemove: string) => {
     setSkills(skills.filter(s => s !== skillToRemove))
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user || !db || !storage) return
+
+    setUploading(true)
+    const storageRef = ref(storage, `profile-photos/${user.uid}/avatar.jpg`)
+
+    try {
+      await uploadBytes(storageRef, file)
+      const downloadURL = await getDownloadURL(storageRef)
+      
+      // Update Auth Profile
+      await updateProfile(user, { photoURL: downloadURL })
+      
+      // Update Firestore with both photoURL (requested) and avatarUrl (app standard)
+      await setDoc(doc(db, "users", user.uid), {
+        avatarUrl: downloadURL,
+        photoURL: downloadURL,
+        updatedAt: new Date().toISOString()
+      }, { merge: true })
+
+      toast({
+        title: "Profile photo updated!",
+        description: "Your new avatar has been saved successfully."
+      })
+    } catch (error) {
+      console.error("Upload error:", error)
+      toast({
+        variant: "destructive",
+        title: "Photo upload failed",
+        description: "Please try again."
+      })
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleSave = () => {
@@ -164,15 +205,32 @@ export default function ProfileManagement() {
             <CardContent className="p-8 pt-0 space-y-8">
               <div className="flex flex-col md:flex-row gap-10 items-start">
                 <div className="relative group shrink-0">
-                  <Avatar className="w-32 h-32 md:w-40 md:h-40 border-4 border-muted shadow-2xl rounded-3xl overflow-hidden">
-                    <AvatarImage src={user?.photoURL || `https://picsum.photos/seed/${user?.uid}/256/256`} />
+                  <Avatar className="w-32 h-32 md:w-40 md:h-40 border-4 border-muted shadow-2xl rounded-3xl overflow-hidden relative">
+                    <AvatarImage src={user?.photoURL || profile?.avatarUrl || `https://picsum.photos/seed/${user?.uid}/256/256`} />
                     <AvatarFallback className="text-4xl font-bold bg-primary/10 text-primary">
                       {fullName?.substring(0, 2).toUpperCase() || "US"}
                     </AvatarFallback>
+                    {uploading && (
+                      <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      </div>
+                    )}
                   </Avatar>
-                  <button className="absolute -bottom-2 -right-2 p-3 bg-primary text-primary-foreground rounded-2xl shadow-xl hover:scale-110 transition-transform">
+                  <button 
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="absolute -bottom-2 -right-2 p-3 bg-primary text-primary-foreground rounded-2xl shadow-xl hover:scale-110 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     <Camera className="h-5 w-5" />
                   </button>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
                 </div>
                 <div className="flex-1 space-y-6 w-full">
                   <div className="grid md:grid-cols-2 gap-6">

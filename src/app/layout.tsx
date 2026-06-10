@@ -9,11 +9,21 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: '#2563eb',
 };
 
 export const metadata: Metadata = {
   title: 'SkillUp - Campus Freelance Marketplace',
   description: 'Connect with skilled students for any job. From artisan trades to digital projects, SkillUp is your portal to campus services.',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'SkillUp',
+  },
+  icons: {
+    apple: 'https://picsum.photos/seed/skillup-icon/192/192',
+  },
   openGraph: {
     title: 'SkillUp - Campus Freelance Marketplace',
     description: 'Connect with skilled students for any job. From artisan trades to digital projects, SkillUp is your portal to campus services.',

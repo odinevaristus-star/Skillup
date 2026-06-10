@@ -1,6 +1,6 @@
 
 {
-  "comment": "FORCE RULES UPDATE: Allowing public read access to the 'users' collection for unauthenticated freelancer browsing. Ensuring all other collections remain authenticated. Simplified queries to avoid composite index requirements.",
+  "comment": "FORCE RULES UPDATE: Allowing public read access to the 'users' and 'reviews' collection for transparency. Ensuring 'reviews' are only writable by verified clients of the freelancer.",
   "entities": {
     "UserProfile": {
       "title": "User Profile",
@@ -91,6 +91,20 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "title", "message", "read", "createdAt"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "A rating and review left by a client for a freelancer.",
+      "type": "object",
+      "properties": {
+        "freelancerId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "rating": { "type": "number" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["freelancerId", "clientId", "rating", "text"]
     }
   },
   "auth": {
@@ -116,6 +130,10 @@
     "/notifications/{notificationId}": {
       "schema": "Notification",
       "description": "User notifications. Owners can read and write."
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Public reviews for freelancers."
     }
   }
 }

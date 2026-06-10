@@ -16,7 +16,8 @@ import {
   MessageSquare, 
   Eye,
   User,
-  MapPin
+  MapPin,
+  Sparkles
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -42,10 +43,12 @@ export default function FreelancerSearch() {
     if (!allUsers) return []
 
     return allUsers.filter(fl => {
+      // Must have activeRole as freelancer or at least one skill/role
+      const isFreelancerMode = fl.activeRole === 'freelancer'
       const hasSkills = fl.skills && Array.isArray(fl.skills) && fl.skills.length > 0
       const hasSingleSkill = !!fl.skill
       
-      if (!hasSkills && !hasSingleSkill) return false
+      if (!isFreelancerMode && !hasSkills && !hasSingleSkill) return false
 
       const searchLower = searchTerm.toLowerCase()
       const matchesSearch = 
@@ -191,10 +194,18 @@ export default function FreelancerSearch() {
                               <MapPin className="h-3.5 w-3.5 text-primary" /> {fl.location}
                             </p>
                           )}
-                          <div className="flex items-center gap-2 pt-1">
-                            <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                            <span className="text-sm font-black">{fl.rating ? fl.rating.toFixed(1) : "N/A"}</span>
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">({fl.completedJobs || 0} reviews)</span>
+                          <div className="flex items-center gap-2 pt-2">
+                            {fl.completedJobs > 0 ? (
+                              <>
+                                <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                                <span className="text-sm font-black">{fl.rating ? fl.rating.toFixed(1) : "N/A"}</span>
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">({fl.completedJobs} reviews)</span>
+                              </>
+                            ) : (
+                              <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full flex items-center gap-1.5">
+                                <Sparkles className="h-3 w-3" /> New Professional
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </div>

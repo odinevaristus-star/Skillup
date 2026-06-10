@@ -18,17 +18,37 @@ import {
   ShieldCheck,
   Clock,
   Share2,
-  User
+  User,
+  PlusCircle,
+  Quote
 } from "lucide-react"
-import { useFirestore, useDoc, useMemoFirebase, useUser } from "@/firebase"
-import { doc } from "firebase/firestore"
+import { useFirestore, useDoc, useMemoFirebase, useUser, useCollection } from "@/firebase"
+import { doc, collection, query, where, addDoc, serverTimestamp, updateDoc } from "firebase/firestore"
 import { cn } from "@/lib/utils"
+import { useState, useMemo } from "react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { useToast } from "@/hooks/use-toast"
 
 export default function FreelancerProfilePage() {
   const { userId } = useParams()
   const router = useRouter()
   const { user: currentUser, loading: authLoading } = useUser()
   const db = useFirestore()
+  const { toast } = useToast()
+
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewText, setReviewText] = useState("")
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false)
 
   const userRef = useMemoFirebase(() => {
     if (!db || !userId) return null
@@ -36,6 +56,26 @@ export default function FreelancerProfilePage() {
   }, [db, userId])
 
   const { data: profile, loading: profileLoading } = useDoc(userRef)
+
+  // Fetch reviews for this freelancer
+  const reviewsQuery = useMemoFirebase(() => {
+    if (!db || !userId) return null
+    return query(collection(db, "reviews"), where("freelancerId", "==", userId))
+  }, [db, userId])
+  const { data: reviews, loading: reviewsLoading } = useCollection(reviewsQuery)
+
+  // Check if current user has hired this freelancer (completed job)
+  const hiredQuery = useMemoFirebase(() => {
+    if (!db || !currentUser?.uid || !userId) return null
+    return query(
+      collection(db, "jobs"), 
+      where("clientId", "==", currentUser.uid),
+      where("freelancerId", "==", userId),
+      where("status", "==", "completed")
+    )
+  }, [db, currentUser?.uid, userId])
+  const { data: pastJobs } = useCollection(hiredQuery)
+  const canReview = pastJobs && pastJobs.length > 0 && currentUser?.uid !== userId
 
   const handleMessage = () => {
     if (!currentUser) {
@@ -51,6 +91,47 @@ export default function FreelancerProfilePage() {
       return
     }
     // Booking logic would go here
+  }
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!db || !currentUser || !userId || isSubmittingReview) return
+
+    setIsSubmittingReview(true)
+    const reviewData = {
+      freelancerId: userId,
+      clientId: currentUser.uid,
+      clientName: currentUser.displayName || "Anonymous Client",
+      rating: reviewRating,
+      text: reviewText,
+      createdAt: serverTimestamp()
+    }
+
+    try {
+      await addDoc(collection(db, "reviews"), reviewData)
+      
+      // Update freelancer's aggregate rating (simplified for prototype)
+      if (profile) {
+        const currentTotal = (profile.rating || 0) * (profile.completedJobs || 0)
+        const newCount = (profile.completedJobs || 0) + 1
+        const newRating = (currentTotal + reviewRating) / newCount
+        
+        await updateDoc(doc(db, "users", userId as string), {
+          rating: newRating,
+          completedJobs: newCount,
+          updatedAt: serverTimestamp()
+        })
+      }
+
+      toast({ title: "Review submitted!", description: "Thank you for your feedback." })
+      setShowReviewModal(false)
+      setReviewText("")
+      setReviewRating(5)
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Could not submit review." })
+    } finally {
+      setIsSubmittingReview(false)
+    }
   }
 
   const formatPriceRange = (price: any) => {
@@ -77,7 +158,7 @@ export default function FreelancerProfilePage() {
     return "bg-primary/10"
   }
 
-  if (profileLoading) {
+  if (profileLoading || reviewsLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-muted/20">
         <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
@@ -108,9 +189,16 @@ export default function FreelancerProfilePage() {
             <Button variant="ghost" onClick={() => router.back()} className="gap-2 hover:bg-primary/5 text-primary font-bold rounded-xl h-12">
               <ArrowLeft className="h-4 w-4" /> Back to Search
             </Button>
-            <Button variant="outline" size="icon" className="rounded-full h-12 w-12 border-muted-foreground/20 hover:border-primary transition-colors">
-              <Share2 className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center gap-4">
+              {canReview && (
+                <Button onClick={() => setShowReviewModal(true)} className="gap-2 font-bold rounded-xl h-12">
+                  <PlusCircle className="h-4 w-4" /> Leave a Review
+                </Button>
+              )}
+              <Button variant="outline" size="icon" className="rounded-full h-12 w-12 border-muted-foreground/20 hover:border-primary transition-colors">
+                <Share2 className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
 
           <div className="flex flex-col md:flex-row gap-12 items-start">
@@ -166,7 +254,10 @@ export default function FreelancerProfilePage() {
               <div className="flex flex-wrap items-center gap-x-10 gap-y-6">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-yellow-500/10 rounded-2xl"><Star className="h-6 w-6 text-yellow-500 fill-current" /></div>
-                  <div><p className="text-xl font-black">{profile.rating ? profile.rating.toFixed(1) : 'N/A'}</p><p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{profile.completedJobs || 0} reviews</p></div>
+                  <div>
+                    <p className="text-xl font-black">{profile.rating ? profile.rating.toFixed(1) : 'N/A'}</p>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{profile.completedJobs || 0} reviews</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-primary/10 rounded-2xl"><Clock className="h-6 w-6 text-primary" /></div>
@@ -205,6 +296,52 @@ export default function FreelancerProfilePage() {
                 ))}
               </div>
             </section>
+
+            <section className="space-y-8">
+              <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-black tracking-tight">Client Reviews</h2>
+                <Badge variant="secondary" className="rounded-full px-4 py-1">{reviews?.length || 0} Total</Badge>
+              </div>
+
+              <div className="grid gap-6">
+                {reviews && reviews.length > 0 ? reviews.map((rev: any) => (
+                  <Card key={rev.id} className="border-none shadow-sm rounded-[2rem] bg-card p-8 group hover:shadow-md transition-all">
+                    <div className="flex gap-6">
+                      <Avatar className="h-14 w-14 rounded-2xl border-2 border-muted shrink-0">
+                        <AvatarFallback className="bg-primary/5 text-primary font-black uppercase text-xs">
+                          {rev.clientName?.substring(0, 2) || "CL"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-bold text-lg">{rev.clientName}</h4>
+                            <div className="flex gap-0.5 mt-0.5">
+                              {[...Array(5)].map((_, i) => (
+                                <Star key={i} className={cn("h-3.5 w-3.5", i < rev.rating ? "text-yellow-500 fill-current" : "text-muted opacity-30")} />
+                              ))}
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                            {rev.createdAt ? new Date(rev.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <Quote className="absolute -left-2 -top-2 h-8 w-8 text-primary/5 -z-10" />
+                          <p className="text-muted-foreground font-medium italic leading-relaxed">"{rev.text}"</p>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                )) : (
+                  <div className="text-center py-24 bg-muted/20 rounded-[3rem] border-2 border-dashed border-muted">
+                    <Star className="h-12 w-12 text-muted-foreground opacity-10 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold">No reviews yet</h3>
+                    <p className="text-muted-foreground mt-1">This professional is ready for their first verified campus review.</p>
+                  </div>
+                )}
+              </div>
+            </section>
           </div>
 
           <aside className="space-y-8">
@@ -224,6 +361,64 @@ export default function FreelancerProfilePage() {
           </aside>
         </div>
       </main>
+
+      <Dialog open={showReviewModal} onOpenChange={setShowReviewModal}>
+        <DialogContent className="rounded-[2.5rem] p-8 max-w-lg border-none shadow-2xl">
+          <DialogHeader className="space-y-4">
+            <DialogTitle className="text-3xl font-black tracking-tight flex items-center gap-3">
+              <Star className="h-8 w-8 text-yellow-500 fill-current" /> Rate & Review
+            </DialogTitle>
+            <DialogDescription className="text-base font-medium leading-relaxed">
+              How was your experience working with {profile.fullName}? Your feedback helps the campus community.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmitReview} className="space-y-8 py-4">
+            <div className="space-y-4 text-center">
+              <Label className="font-bold text-xs uppercase tracking-widest opacity-60">Overall Rating</Label>
+              <div className="flex justify-center gap-3">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setReviewRating(star)}
+                    className="transition-transform active:scale-90"
+                  >
+                    <Star 
+                      className={cn(
+                        "h-10 w-10 transition-colors", 
+                        star <= reviewRating ? "text-yellow-500 fill-current" : "text-muted-foreground/20"
+                      )} 
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-2.5">
+              <Label htmlFor="reviewText" className="font-bold text-xs uppercase tracking-widest opacity-60">Your Review</Label>
+              <Textarea 
+                id="reviewText"
+                placeholder="Share details of your experience..." 
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                required
+                className="min-h-[150px] rounded-2xl border-none bg-muted/50 p-6 font-medium focus-visible:ring-primary"
+              />
+            </div>
+
+            <DialogFooter className="pt-4">
+              <Button 
+                type="submit" 
+                disabled={isSubmittingReview || !reviewText.trim()}
+                className="w-full h-16 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                {isSubmittingReview ? <Loader2 className="h-5 w-5 animate-spin" /> : "Submit Review"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

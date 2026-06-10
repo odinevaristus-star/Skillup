@@ -11,7 +11,9 @@ import {
   collection, 
   getDocs,
   setDoc,
-  serverTimestamp 
+  serverTimestamp,
+  query,
+  where
 } from 'firebase/firestore'
 import { 
   Loader2, 
@@ -25,7 +27,8 @@ import {
   MessageSquare,
   LayoutDashboard,
   RefreshCw,
-  Zap
+  Zap,
+  Star
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -65,7 +68,9 @@ export default function Dashboard() {
     pendingProposals: 0,
     activeProjects: 0,
     myProposals: 0,
-    completedJobs: 0
+    completedJobs: 0,
+    averageRating: 0,
+    reviewCount: 0
   })
   const [recentActivity, setRecentActivity] = useState<any[]>([])
 
@@ -124,20 +129,31 @@ export default function Dashboard() {
             pendingProposals: pendingCount,
             activeProjects: 0,
             myProposals: 0,
-            completedJobs: 0
+            completedJobs: 0,
+            averageRating: 0,
+            reviewCount: 0
           })
         } else {
           const myApps = allApps.filter((a: any) => a.freelancerId === user.uid)
           const workCount = allJobs.filter((j: any) => j.freelancerId === user.uid && j.status === 'in-progress').length
           const completedCount = allJobs.filter((j: any) => j.freelancerId === user.uid && j.status === 'completed').length
           
+          // Fetch ratings for freelancer
+          const reviewsSnap = await getDocs(query(collection(db, 'reviews'), where('freelancerId', '==', user.uid)))
+          const reviewsData = reviewsSnap.docs.map(d => d.data())
+          const reviewCount = reviewsData.length
+          const totalRating = reviewsData.reduce((acc: number, r: any) => acc + (r.rating || 0), 0)
+          const averageRating = reviewCount > 0 ? totalRating / reviewCount : 0
+
           setStats({
             activeJobs: 0,
             expertsHired: 0,
             pendingProposals: 0,
             myProposals: myApps.length,
             activeProjects: workCount,
-            completedJobs: completedCount
+            completedJobs: completedCount,
+            averageRating: averageRating,
+            reviewCount: reviewCount
           })
         }
 
@@ -291,12 +307,19 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {isFreelancer ? (
           <>
             <StatsCard icon={Briefcase} label="Active Projects" value={stats.activeProjects} sub="Current Contracts" color="text-blue-500" />
-            <StatsCard icon={FileText} label="Proposals" value={stats.myProposals} sub="Submitted Bids" color="text-purple-500" />
-            <StatsCard icon={CheckCircle2} label="Completed Jobs" value={stats.completedJobs} sub="Completed Jobs" color="text-green-500" />
+            <StatsCard icon={FileText} label="Submitted Bids" value={stats.myProposals} sub="Total Proposals" color="text-purple-500" />
+            <StatsCard icon={CheckCircle2} label="Completed Jobs" value={stats.completedJobs} sub="Finished Tasks" color="text-green-500" />
+            <StatsCard 
+              icon={Star} 
+              label="MY RATING" 
+              value={stats.reviewCount > 0 ? stats.averageRating.toFixed(1) : "N/A"} 
+              sub={stats.reviewCount > 0 ? `${stats.reviewCount} reviews` : "No reviews yet"} 
+              color="text-yellow-500" 
+            />
           </>
         ) : (
           <>

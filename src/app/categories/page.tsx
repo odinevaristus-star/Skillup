@@ -3,7 +3,6 @@
 import { Navbar } from "@/components/navbar"
 import { Card, CardContent } from "@/components/ui/card"
 import { 
-  Code, 
   Palette, 
   Video, 
   PenTool, 
@@ -84,18 +83,18 @@ export default function CategoriesPage() {
       <Navbar />
       
       <main className="flex-1">
-        <div className="bg-primary py-24 text-primary-foreground text-center px-4 relative overflow-hidden">
+        <div className="bg-primary py-12 md:py-24 text-primary-foreground text-center px-4 relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/bg/1600/900')] opacity-10 bg-cover bg-center"></div>
           <div className="container mx-auto max-w-4xl relative z-10">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 tracking-tight">Browse Services</h1>
-            <p className="text-primary-foreground/90 text-xl mb-12 max-w-2xl mx-auto leading-relaxed">
+            <h1 className="text-3xl md:text-6xl font-bold mb-4 md:mb-6 tracking-tight">Browse Services</h1>
+            <p className="text-primary-foreground/90 text-sm md:text-xl mb-8 md:mb-12 max-w-2xl mx-auto leading-relaxed">
               Find exactly what you need. From essential artisan trades to complex digital software development.
             </p>
             <div className="relative max-w-2xl mx-auto">
-              <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground h-6 w-6" />
+              <Search className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5 md:h-6 md:w-6" />
               <Input 
-                className="h-16 pl-16 pr-8 rounded-full text-foreground text-xl shadow-2xl border-none ring-offset-primary"
-                placeholder="What service are you looking for today?"
+                className="h-14 md:h-16 pl-12 md:pl-16 pr-6 md:pr-8 rounded-full text-foreground text-base md:text-xl shadow-2xl border-none ring-offset-primary"
+                placeholder="What service are you looking for?"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -103,33 +102,33 @@ export default function CategoriesPage() {
           </div>
         </div>
 
-        <div className="container mx-auto px-4 py-20">
-          <div className="space-y-32">
+        <div className="container mx-auto px-4 py-12 md:py-20">
+          <div className="space-y-20 md:space-y-32">
             {filteredCategories.map((group) => (
-              <section key={group.title} id={group.id} className="scroll-mt-24 space-y-12">
-                <div className="text-center md:text-left border-l-4 border-primary pl-6">
-                  <h2 className="text-4xl font-bold tracking-tight">{group.title}</h2>
-                  <p className="text-muted-foreground text-lg mt-3 max-w-3xl">{group.description}</p>
+              <section key={group.title} id={group.id} className="scroll-mt-24 space-y-8 md:space-y-12">
+                <div className="text-center md:text-left border-l-4 border-primary pl-4 md:pl-6">
+                  <h2 className="text-2xl md:text-4xl font-bold tracking-tight">{group.title}</h2>
+                  <p className="text-muted-foreground text-sm md:text-lg mt-2 md:mt-3 max-w-3xl">{group.description}</p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
                   {group.skills.map((skill) => (
                     <Link key={skill.name} href={`/freelancers?category=${skill.name}`}>
-                      <Card className="group h-full hover:shadow-2xl transition-all border-none shadow-md cursor-pointer overflow-hidden bg-card hover:-translate-y-1">
-                        <CardContent className="p-8">
+                      <Card className="group h-full hover:shadow-2xl transition-all border-none shadow-md cursor-pointer overflow-hidden bg-card hover:-translate-y-1 rounded-xl md:rounded-2xl">
+                        <CardContent className="p-6 md:p-8">
                           <div className="flex items-start justify-between">
-                            <div className={`p-4 rounded-2xl bg-muted group-hover:bg-primary/10 transition-colors ${skill.color}`}>
-                              <skill.icon className="h-7 w-7" />
+                            <div className={`p-3 md:p-4 rounded-xl md:rounded-2xl bg-muted group-hover:bg-primary/10 transition-colors ${skill.color}`}>
+                              <skill.icon className="h-6 w-6 md:h-7 md:w-7" />
                             </div>
-                            <span className="text-xs font-bold text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full">
+                            <span className="text-[10px] md:text-xs font-bold text-muted-foreground bg-muted/50 px-2 md:px-3 py-1 md:py-1.5 rounded-full">
                               {skill.count} experts
                             </span>
                           </div>
-                          <div className="mt-8">
-                            <h3 className="font-bold text-xl group-hover:text-primary transition-colors">{skill.name}</h3>
-                            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">Find the best {skill.name.toLowerCase()} experts for your project needs.</p>
+                          <div className="mt-6 md:mt-8">
+                            <h3 className="font-bold text-lg md:text-xl group-hover:text-primary transition-colors">{skill.name}</h3>
+                            <p className="text-xs md:text-sm text-muted-foreground mt-2 leading-relaxed">Find the best {skill.name.toLowerCase()} experts for your project.</p>
                           </div>
-                          <div className="mt-8 flex items-center text-sm font-bold text-primary opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0">
+                          <div className="mt-6 md:mt-8 flex items-center text-xs md:text-sm font-bold text-primary opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0">
                             Explore experts <ArrowRight className="h-4 w-4 ml-2" />
                           </div>
                         </CardContent>
@@ -141,16 +140,16 @@ export default function CategoriesPage() {
             ))}
 
             {filteredCategories.length === 0 && (
-              <div className="text-center py-32">
-                <div className="bg-muted w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Search className="h-10 w-10 text-muted-foreground" />
+              <div className="text-center py-20 md:py-32">
+                <div className="bg-muted w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Search className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground" />
                 </div>
-                <h3 className="text-3xl font-bold mb-2">No categories found</h3>
-                <p className="text-muted-foreground text-lg">We couldn't find anything matching "{search}"</p>
+                <h3 className="text-2xl md:text-3xl font-bold mb-2">No categories found</h3>
+                <p className="text-muted-foreground text-sm md:text-lg">We couldn't find anything matching "{search}"</p>
                 <Button 
                   variant="link"
                   onClick={() => setSearch("")} 
-                  className="mt-6 text-primary font-bold text-lg"
+                  className="mt-4 md:mt-6 text-primary font-bold text-base md:text-lg"
                 >
                   Clear search
                 </Button>
@@ -160,9 +159,9 @@ export default function CategoriesPage() {
         </div>
       </main>
 
-      <footer className="py-16 border-t bg-card">
+      <footer className="py-12 md:py-16 border-t bg-card">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-muted-foreground">© 2024 SkillUp Inc. Empowering the future of independent work.</p>
+          <p className="text-xs md:text-sm text-muted-foreground">© 2024 SkillUp Inc. Empowering the future of independent work.</p>
         </div>
       </footer>
     </div>

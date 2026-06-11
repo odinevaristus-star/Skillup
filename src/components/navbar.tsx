@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -80,11 +79,11 @@ export function Navbar() {
   };
 
   const getFallbackIcon = () => {
-    if (profile?.gender === 'female') return <User className="h-6 w-6 text-pink-500" />
-    if (profile?.gender === 'male') return <User className="h-6 w-6 text-blue-500" />
+    if (profile?.gender === 'female') return <User className="h-5 w-5 md:h-6 md:w-6 text-pink-500" />
+    if (profile?.gender === 'male') return <User className="h-5 w-5 md:h-6 md:w-6 text-blue-500" />
     const initials = getInitials();
-    if (initials) return <span className="text-xs font-black">{initials}</span>;
-    return <User className="h-5 w-5" />
+    if (initials) return <span className="text-[10px] md:text-xs font-black">{initials}</span>;
+    return <User className="h-4 w-4 md:h-5 md:w-5" />
   }
 
   const getFallbackBg = () => {
@@ -96,11 +95,11 @@ export function Navbar() {
   const displayName = profile?.fullName || profile?.firstName || user?.displayName || "User";
 
   return (
-    <nav className="sticky top-0 z-[100] w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 h-20 flex items-center shadow-sm">
-      <div className="container mx-auto flex items-center justify-between px-6">
-        <div className="flex items-center gap-10">
+    <nav className="sticky top-0 z-[100] w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 h-16 md:h-20 flex items-center shadow-sm">
+      <div className="container mx-auto flex items-center justify-between px-4 md:px-6">
+        <div className="flex items-center gap-6 md:gap-10">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="text-3xl font-black tracking-tighter text-primary">SkillUp</span>
+            <span className="text-xl md:text-3xl font-black tracking-tighter text-primary">SkillUp</span>
           </Link>
           <div className="hidden md:flex items-center gap-8">
             {user ? (
@@ -134,13 +133,13 @@ export function Navbar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-2xl h-12 w-12 hover:bg-muted transition-all">
-                {theme === 'light' && <Sun className="h-5 w-5" />}
-                {theme === 'dark' && <Moon className="h-5 w-5" />}
-                {theme === 'amoled' && <Zap className="h-5 w-5" />}
+              <Button variant="ghost" size="icon" className="rounded-2xl h-10 w-10 md:h-12 md:w-12 hover:bg-muted transition-all">
+                {theme === 'light' && <Sun className="h-4 w-4 md:h-5 md:w-5" />}
+                {theme === 'dark' && <Moon className="h-4 w-4 md:h-5 md:w-5" />}
+                {theme === 'amoled' && <Zap className="h-4 w-4 md:h-5 md:w-5" />}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="rounded-2xl">
@@ -153,20 +152,20 @@ export function Navbar() {
           {user && (
             <>
               <Link href="/dashboard/messages" className="relative">
-                <Button variant="ghost" size="icon" className="rounded-2xl h-12 w-12 hover:bg-muted transition-all">
-                  <MessageSquare className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="rounded-2xl h-10 w-10 md:h-12 md:w-12 hover:bg-muted transition-all">
+                  <MessageSquare className="h-4 w-4 md:h-5 md:w-5" />
                   {unreadMessagesCount > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-6 w-6 p-0 flex items-center justify-center bg-primary text-primary-foreground rounded-full text-[10px] font-black border-4 border-background shadow-lg">
+                    <Badge className="absolute -top-1 -right-1 h-5 w-5 md:h-6 md:w-6 p-0 flex items-center justify-center bg-primary text-primary-foreground rounded-full text-[8px] md:text-[10px] font-black border-2 md:border-4 border-background shadow-lg">
                       {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
                     </Badge>
                   )}
                 </Button>
               </Link>
               <Link href="/dashboard/notifications" className="relative">
-                <Button variant="ghost" size="icon" className="rounded-2xl h-12 w-12 hover:bg-muted transition-all">
-                  <Bell className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="rounded-2xl h-10 w-10 md:h-12 md:w-12 hover:bg-muted transition-all">
+                  <Bell className="h-4 w-4 md:h-5 md:w-5" />
                   {unreadNotificationsCount > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-6 w-6 p-0 flex items-center justify-center bg-destructive text-destructive-foreground rounded-full text-[10px] font-black border-4 border-background shadow-lg">
+                    <Badge className="absolute -top-1 -right-1 h-5 w-5 md:h-6 md:w-6 p-0 flex items-center justify-center bg-destructive text-destructive-foreground rounded-full text-[8px] md:text-[10px] font-black border-2 md:border-4 border-background shadow-lg">
                       {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                     </Badge>
                   )}
@@ -180,7 +179,7 @@ export function Navbar() {
               <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
-                  className="relative h-12 w-12 rounded-2xl border-2 border-muted overflow-hidden hover:border-primary transition-all p-0 flex items-center justify-center"
+                  className="relative h-10 w-10 md:h-12 md:w-12 rounded-2xl border-2 border-muted overflow-hidden hover:border-primary transition-all p-0 flex items-center justify-center"
                 >
                   <Avatar className="h-full w-full rounded-none">
                     <AvatarImage src={user.photoURL || profile?.avatarUrl || ""} alt={displayName} />
@@ -190,34 +189,34 @@ export function Navbar() {
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-72 rounded-[2rem] p-4 shadow-2xl" align="end">
-                <div className="flex flex-col space-y-2 p-4 border-b mb-2">
-                  <p className="text-lg font-black leading-none tracking-tight truncate">{displayName}</p>
-                  <p className="text-[10px] font-black leading-none text-muted-foreground uppercase tracking-widest">{activeRole}</p>
+              <DropdownMenuContent className="w-64 md:w-72 rounded-[1.5rem] md:rounded-[2rem] p-3 md:p-4 shadow-2xl" align="end">
+                <div className="flex flex-col space-y-1 md:space-y-2 p-3 md:p-4 border-b mb-1 md:mb-2">
+                  <p className="text-base md:text-lg font-black leading-none tracking-tight truncate">{displayName}</p>
+                  <p className="text-[8px] md:text-[10px] font-black leading-none text-muted-foreground uppercase tracking-widest">{activeRole}</p>
                 </div>
-                <DropdownMenuItem asChild className="rounded-2xl p-4 cursor-pointer hover:bg-primary/5 transition-all">
+                <DropdownMenuItem asChild className="rounded-xl md:rounded-2xl p-3 md:p-4 cursor-pointer hover:bg-primary/5 transition-all">
                   <Link href="/dashboard" className="flex items-center">
-                    <LayoutDashboard className="mr-4 h-5 w-5 text-primary" /> <span className="font-black text-xs uppercase tracking-widest">Dashboard</span>
+                    <LayoutDashboard className="mr-3 md:mr-4 h-4 w-4 md:h-5 md:w-5 text-primary" /> <span className="font-black text-[10px] md:text-xs uppercase tracking-widest">Dashboard</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild className="rounded-2xl p-4 cursor-pointer hover:bg-primary/5 transition-all">
+                <DropdownMenuItem asChild className="rounded-xl md:rounded-2xl p-3 md:p-4 cursor-pointer hover:bg-primary/5 transition-all">
                   <Link href="/dashboard/profile" className="flex items-center">
-                    <User className="mr-4 h-5 w-5 text-primary" /> <span className="font-black text-xs uppercase tracking-widest">My Profile</span>
+                    <User className="mr-3 md:mr-4 h-4 w-4 md:h-5 md:w-5 text-primary" /> <span className="font-black text-[10px] md:text-xs uppercase tracking-widest">My Profile</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="my-2" />
-                <DropdownMenuItem onClick={handleSignOut} className="text-destructive rounded-2xl p-4 cursor-pointer hover:bg-destructive/5 transition-all">
-                  <LogOut className="mr-4 h-5 w-5" /> <span className="font-black text-xs uppercase tracking-widest">Log out</span>
+                <DropdownMenuSeparator className="my-1 md:my-2" />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive rounded-xl md:rounded-2xl p-3 md:p-4 cursor-pointer hover:bg-destructive/5 transition-all">
+                  <LogOut className="mr-3 md:mr-4 h-4 w-4 md:h-5 md:w-5" /> <span className="font-black text-[10px] md:text-xs uppercase tracking-widest">Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
               <Link href="/login">
-                <Button variant="ghost" className="font-black text-xs uppercase tracking-widest h-12 px-6">Log in</Button>
+                <Button variant="ghost" className="font-black text-[10px] md:text-xs uppercase tracking-widest h-10 md:h-12 px-4 md:px-6">Log in</Button>
               </Link>
               <Link href="/signup">
-                <Button className="font-black text-xs uppercase tracking-widest h-12 px-8 rounded-2xl shadow-xl shadow-primary/20">Join</Button>
+                <Button className="font-black text-[10px] md:text-xs uppercase tracking-widest h-10 md:h-12 px-6 md:px-8 rounded-2xl shadow-xl shadow-primary/20">Join</Button>
               </Link>
             </div>
           )}

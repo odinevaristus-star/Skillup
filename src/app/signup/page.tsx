@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
 import { Navbar } from '@/components/navbar';
-import { Briefcase, User, Loader2, Check, Chrome } from 'lucide-react';
+import { Briefcase, User, Loader2, Check, Chrome, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { SearchableSelect } from '@/components/ui/searchable-select';
@@ -122,7 +122,7 @@ export default function SignupPage() {
         email: user.email,
         activeRole: selectedRole,
         roles: ['client', 'freelancer'],
-        updatedAt: new Date().toISOString()
+        updatedAt: serverTimestamp()
       }, { merge: true });
       
       window.location.replace('/dashboard');
@@ -143,56 +143,46 @@ export default function SignupPage() {
         <Card className="w-full max-w-2xl shadow-2xl border-none overflow-hidden rounded-[2.5rem]">
           <CardHeader className="space-y-4 text-center pb-8 border-b">
             <CardTitle className="text-4xl font-black tracking-tighter">Join SkillUp</CardTitle>
-            <CardDescription className="text-lg font-medium">Create your campus professional account</CardDescription>
+            <CardDescription className="text-lg font-medium">
+              {!selectedRole ? "Choose your account type" : `Sign up as a ${selectedRole}`}
+            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-10 p-8">
-            <div className="grid md:grid-cols-2 gap-6">
-              <button
-                type="button"
-                onClick={() => setSelectedRole('client')}
-                className={cn(
-                  'flex flex-col items-center p-8 border-4 rounded-[2rem] transition-all relative overflow-hidden group',
-                  selectedRole === 'client'
-                    ? 'border-primary bg-primary/5 shadow-2xl scale-[1.02]'
-                    : 'border-muted bg-card hover:border-primary/30'
-                )}
-              >
-                {selectedRole === 'client' && (
-                  <div className="absolute top-4 right-4 bg-primary text-primary-foreground p-1.5 rounded-full shadow-lg">
-                    <Check className="h-4 w-4" />
+            {!selectedRole ? (
+              <div className="grid md:grid-cols-2 gap-6 animate-in fade-in duration-500">
+                <button
+                  type="button"
+                  onClick={() => setSelectedRole('client')}
+                  className="flex flex-col items-center p-8 border-4 rounded-[2rem] transition-all relative overflow-hidden group border-muted bg-card hover:border-primary/30"
+                >
+                  <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-6">
+                    <User className="h-10 w-10 text-primary" />
                   </div>
-                )}
-                <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-6">
-                  <User className="h-10 w-10 text-primary" />
-                </div>
-                <h3 className="text-xl font-black mb-2">I am a Client</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed font-bold uppercase tracking-widest opacity-60">I want to hire talent</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedRole('freelancer')}
-                className={cn(
-                  'flex flex-col items-center p-8 border-4 rounded-[2rem] transition-all relative overflow-hidden group',
-                  selectedRole === 'freelancer'
-                    ? 'border-primary bg-primary/5 shadow-2xl scale-[1.02]'
-                    : 'border-muted bg-card hover:border-primary/30'
-                )}
-              >
-                {selectedRole === 'freelancer' && (
-                  <div className="absolute top-4 right-4 bg-primary text-primary-foreground p-1.5 rounded-full shadow-lg">
-                    <Check className="h-4 w-4" />
+                  <h3 className="text-xl font-black mb-2">I am a Client</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed font-bold uppercase tracking-widest opacity-60">I want to hire talent</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedRole('freelancer')}
+                  className="flex flex-col items-center p-8 border-4 rounded-[2rem] transition-all relative overflow-hidden group border-muted bg-card hover:border-primary/30"
+                >
+                  <div className="w-20 h-20 rounded-3xl bg-accent/10 flex items-center justify-center mb-6">
+                    <Briefcase className="h-10 w-10 text-accent" />
                   </div>
-                )}
-                <div className="w-20 h-20 rounded-3xl bg-accent/10 flex items-center justify-center mb-6">
-                  <Briefcase className="h-10 w-10 text-accent" />
-                </div>
-                <h3 className="text-xl font-black mb-2">I am a Freelancer</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed font-bold uppercase tracking-widest opacity-60">I want to work</p>
-              </button>
-            </div>
-
-            {selectedRole && (
+                  <h3 className="text-xl font-black mb-2">I am a Freelancer</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed font-bold uppercase tracking-widest opacity-60">I want to work</p>
+                </button>
+              </div>
+            ) : (
               <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setSelectedRole(null)}
+                  className="mb-4 gap-2 text-muted-foreground hover:text-primary font-bold"
+                >
+                  <ArrowLeft className="h-4 w-4" /> Change role
+                </Button>
+
                 <form onSubmit={handleSignup} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="grid gap-2.5">

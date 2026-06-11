@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendEmailVerification, signOut } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -76,7 +76,19 @@ export default function SignupPage() {
       };
 
       await setDoc(doc(db, "users", result.user.uid), userData);
-      window.location.replace("/dashboard");
+      
+      // Send verification email
+      await sendEmailVerification(result.user);
+      // Sign out immediately
+      await signOut(auth);
+
+      toast({
+        title: "Account created!",
+        description: "A verification email has been sent to your email address. Please verify before logging in."
+      });
+      
+      // Redirect to login
+      window.location.replace("/login");
 
     } catch (error: any) {
       toast({

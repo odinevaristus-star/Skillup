@@ -1,3 +1,4 @@
+
 "use client"
 
 import Link from "next/link"
@@ -13,7 +14,8 @@ import {
   signInWithEmailAndPassword, 
   GoogleAuthProvider, 
   signInWithPopup, 
-  sendPasswordResetEmail 
+  sendPasswordResetEmail,
+  signOut
 } from "firebase/auth"
 import { doc, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
@@ -45,7 +47,20 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
     try {
-      await signInWithEmailAndPassword(auth, email, password)
+      const result = await signInWithEmailAndPassword(auth, email, password)
+      
+      // Check for email verification
+      if (!result.user.emailVerified) {
+        await signOut(auth);
+        toast({
+          variant: "destructive",
+          title: "Email not verified",
+          description: "Please verify your email before logging in. Check your inbox."
+        });
+        setIsLoading(false);
+        return;
+      }
+      
     } catch (error: any) {
       toast({
         variant: "destructive",

@@ -101,6 +101,15 @@ export default function SignupPage() {
   };
 
   const handleGoogleLogin = async () => {
+    if (!selectedRole) {
+      toast({
+        variant: "destructive",
+        title: "Role required",
+        description: "Please select Client or Freelancer"
+      });
+      return;
+    }
+
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
@@ -111,7 +120,7 @@ export default function SignupPage() {
         lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
         fullName: user.displayName || '',
         email: user.email,
-        activeRole: 'client',
+        activeRole: selectedRole,
         roles: ['client', 'freelancer'],
         updatedAt: new Date().toISOString()
       }, { merge: true });
@@ -182,69 +191,71 @@ export default function SignupPage() {
               </button>
             </div>
 
-            {selectedRole ? (
-              <form onSubmit={handleSignup} className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="grid gap-2.5">
-                    <Label htmlFor="firstName" className="font-bold">First Name</Label>
-                    <Input id="firstName" placeholder="John" required className="h-12 rounded-xl" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                  </div>
-                  <div className="grid gap-2.5">
-                    <Label htmlFor="lastName" className="font-bold">Last Name</Label>
-                    <Input id="lastName" placeholder="Doe" required className="h-12 rounded-xl" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-                  </div>
-                </div>
-                
-                <div className="grid gap-4">
-                  <Label className="font-bold">Select Gender</Label>
-                  <RadioGroup value={gender} onValueChange={setGender} className="flex gap-4">
-                    <div className="flex items-center space-x-2 bg-muted/30 px-6 py-3 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors">
-                      <RadioGroupItem value="male" id="signup-male" />
-                      <Label htmlFor="signup-male" className="cursor-pointer font-bold">Male</Label>
+            {selectedRole && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                <form onSubmit={handleSignup} className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid gap-2.5">
+                      <Label htmlFor="firstName" className="font-bold">First Name</Label>
+                      <Input id="firstName" placeholder="John" required className="h-12 rounded-xl" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                     </div>
-                    <div className="flex items-center space-x-2 bg-muted/30 px-6 py-3 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors">
-                      <RadioGroupItem value="female" id="signup-female" />
-                      <Label htmlFor="signup-female" className="cursor-pointer font-bold">Female</Label>
+                    <div className="grid gap-2.5">
+                      <Label htmlFor="lastName" className="font-bold">Last Name</Label>
+                      <Input id="lastName" placeholder="Doe" required className="h-12 rounded-xl" value={lastName} onChange={(e) => setLastName(e.target.value)} />
                     </div>
-                  </RadioGroup>
-                </div>
+                  </div>
+                  
+                  <div className="grid gap-4">
+                    <Label className="font-bold">Select Gender</Label>
+                    <RadioGroup value={gender} onValueChange={setGender} className="flex gap-4">
+                      <div className="flex items-center space-x-2 bg-muted/30 px-6 py-3 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors">
+                        <RadioGroupItem value="male" id="signup-male" />
+                        <Label htmlFor="signup-male" className="cursor-pointer font-bold">Male</Label>
+                      </div>
+                      <div className="flex items-center space-x-2 bg-muted/30 px-6 py-3 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors">
+                        <RadioGroupItem value="female" id="signup-female" />
+                        <Label htmlFor="signup-female" className="cursor-pointer font-bold">Female</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
 
-                <div className="grid gap-2.5">
-                  <Label htmlFor="email" className="font-bold">Email address</Label>
-                  <Input id="email" type="email" placeholder="john@example.com" required className="h-12 rounded-xl" value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                {selectedRole === 'freelancer' && (
                   <div className="grid gap-2.5">
-                    <Label htmlFor="primarySkill" className="font-bold">Primary Skill / Category</Label>
-                    <SearchableSelect 
-                      value={primarySkill} 
-                      onValueChange={setPrimarySkill} 
-                      placeholder="Select or type your expertise"
-                    />
+                    <Label htmlFor="email" className="font-bold">Email address</Label>
+                    <Input id="email" type="email" placeholder="john@example.com" required className="h-12 rounded-xl" value={email} onChange={(e) => setEmail(e.target.value)} />
                   </div>
-                )}
-                <div className="grid gap-2.5">
-                  <Label htmlFor="password" className="font-bold">Password</Label>
-                  <Input id="password" type="password" required className="h-12 rounded-xl" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  {selectedRole === 'freelancer' && (
+                    <div className="grid gap-2.5">
+                      <Label htmlFor="primarySkill" className="font-bold">Primary Skill / Category</Label>
+                      <SearchableSelect 
+                        value={primarySkill} 
+                        onValueChange={setPrimarySkill} 
+                        placeholder="Select or type your expertise"
+                      />
+                    </div>
+                  )}
+                  <div className="grid gap-2.5">
+                    <Label htmlFor="password" className="font-bold">Password</Label>
+                    <Input id="password" type="password" required className="h-12 rounded-xl" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  </div>
+                  <Button className="w-full h-14 text-lg font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20" type="submit" disabled={isLoading}>
+                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
+                    {isLoading ? 'Creating account...' : 'Start My Journey'}
+                  </Button>
+                </form>
+
+                <div className="space-y-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-card px-2 text-muted-foreground font-bold">Or quick join with</span>
+                    </div>
+                  </div>
+                  <Button variant="outline" className="h-14 w-full rounded-2xl font-bold" onClick={handleGoogleLogin}>
+                    <Chrome className="mr-2 h-5 w-5 text-primary" /> Continue with Google
+                  </Button>
                 </div>
-                <Button className="w-full h-14 text-lg font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20" type="submit" disabled={isLoading}>
-                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
-                  {isLoading ? 'Creating account...' : 'Start My Journey'}
-                </Button>
-              </form>
-            ) : (
-              <div className="space-y-6">
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground font-bold">Or quick join with</span>
-                  </div>
-                </div>
-                <Button variant="outline" className="h-14 w-full rounded-2xl font-bold" onClick={handleGoogleLogin}>
-                  <Chrome className="mr-2 h-5 w-5 text-primary" /> Continue with Google
-                </Button>
               </div>
             )}
           </CardContent>

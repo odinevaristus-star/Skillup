@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from "@/firebase";
 import { AuthRedirectHandler } from "@/components/AuthRedirectHandler";
+import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -59,11 +60,13 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+        <link rel="apple-touch-icon" href="https://picsum.photos/seed/skillup-icon/192/192" />
       </head>
       <body className="font-body antialiased min-h-screen bg-background">
         <FirebaseClientProvider>
           <AuthRedirectHandler />
           {children}
+          <PWAInstallBanner />
           <Toaster />
         </FirebaseClientProvider>
       </body>

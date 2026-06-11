@@ -277,14 +277,14 @@ export default function Dashboard() {
   const email = userData?.email || getAuth().currentUser?.email || ""
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700">
-      <div className="bg-card p-10 md:p-14 rounded-[3rem] border border-muted/50 shadow-sm overflow-hidden relative group">
-        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-          <LayoutDashboard className="h-40 w-40 -mr-10 -mt-10" />
+    <div className="space-y-6 animate-in fade-in duration-700">
+      <div className="bg-card p-6 md:p-10 rounded-[2rem] border border-muted/50 shadow-sm overflow-hidden relative group">
+        <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+          <LayoutDashboard className="h-24 w-24 -mr-4 -mt-4" />
         </div>
-        <div className="relative z-10 space-y-6">
+        <div className="relative z-10 space-y-4">
           <div className="flex items-center justify-between gap-3">
-            <Badge className="bg-primary/10 text-primary border-none font-black text-[10px] uppercase tracking-widest px-4 py-1.5 rounded-full">
+            <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] uppercase tracking-widest px-3 py-1 rounded-full">
               {activeRole.toUpperCase()} MODE
             </Badge>
             <Button 
@@ -292,54 +292,54 @@ export default function Dashboard() {
               size="sm" 
               onClick={handleSwitchRole} 
               disabled={switching}
-              className="rounded-full font-bold text-[10px] uppercase tracking-widest h-10 px-6 gap-2 border-primary/20 hover:bg-primary hover:text-white transition-all"
+              className="rounded-full font-bold text-[9px] uppercase tracking-widest h-8 px-4 gap-2 border-primary/20 hover:bg-primary hover:text-white transition-all"
             >
               {switching ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-              Switch to {isFreelancer ? 'Client' : 'Freelancer'}
+              Switch
             </Button>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">
+          <h1 className="text-2xl md:text-4xl font-black tracking-tighter leading-none">
             Hello, <span className="text-primary">{firstName}!</span>
           </h1>
-          <p className="text-muted-foreground text-lg md:text-xl font-medium max-w-2xl leading-relaxed">
+          <p className="text-muted-foreground text-sm md:text-base font-medium max-w-xl leading-relaxed">
             Manage your campus projects and collaborations from your central command center.
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {isFreelancer ? (
           <>
-            <StatsCard icon={Briefcase} label="Active Projects" value={stats.activeProjects} sub="Current Contracts" color="text-blue-500" />
-            <StatsCard icon={FileText} label="Submitted Bids" value={stats.myProposals} sub="Total Proposals" color="text-purple-500" />
-            <StatsCard icon={CheckCircle2} label="Completed Jobs" value={stats.completedJobs} sub="Finished Tasks" color="text-green-500" />
+            <StatsCard icon={Briefcase} label="Active" value={stats.activeProjects} sub="Current" color="text-blue-500" />
+            <StatsCard icon={FileText} label="Bids" value={stats.myProposals} sub="Total" color="text-purple-500" />
+            <StatsCard icon={CheckCircle2} label="Done" value={stats.completedJobs} sub="Finished" color="text-green-500" />
             <StatsCard 
               icon={Star} 
-              label="MY RATING" 
+              label="Rating" 
               value={stats.reviewCount > 0 ? stats.averageRating.toFixed(1) : "N/A"} 
-              sub={stats.reviewCount > 0 ? `${stats.reviewCount} reviews` : "No reviews yet"} 
+              sub={stats.reviewCount > 0 ? `${stats.reviewCount} rev.` : "New"} 
               color="text-yellow-500" 
             />
           </>
         ) : (
           <>
-            <StatsCard icon={Briefcase} label="Active Listings" value={stats.activeJobs} sub="Open Jobs" color="text-blue-500" />
-            <StatsCard icon={Users} label="Experts Hired" value={stats.expertsHired} sub="Contractors" color="text-purple-500" />
-            <StatsCard icon={FileText} label="Pending Proposals" value={stats.pendingProposals} sub="Awaiting Review" color="text-orange-500" />
+            <StatsCard icon={Briefcase} label="Listings" value={stats.activeJobs} sub="Open" color="text-blue-500" />
+            <StatsCard icon={Users} label="Hired" value={stats.expertsHired} sub="Pros" color="text-purple-500" />
+            <StatsCard icon={FileText} label="Pending" value={stats.pendingProposals} sub="Reviews" color="text-orange-500" />
           </>
         )}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <div className="flex items-center justify-between px-2">
-            <h2 className="text-2xl font-black tracking-tight">Recent Activity</h2>
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-lg font-black tracking-tight">Recent Activity</h2>
             <Link href="/dashboard/notifications">
-              <Button variant="link" className="text-primary font-black text-xs uppercase tracking-widest">View All</Button>
+              <Button variant="link" className="text-primary font-black text-[10px] uppercase tracking-widest p-0 h-auto">View All</Button>
             </Link>
           </div>
           
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             {recentActivity.length > 0 ? recentActivity.map((activity) => (
               <ActivityItem 
                 key={activity.id}
@@ -350,18 +350,18 @@ export default function Dashboard() {
                 isNew={!activity.read}
               />
             )) : (
-              <div className="text-center py-20 bg-card rounded-3xl border-2 border-dashed border-muted/50">
-                <p className="text-muted-foreground font-medium">No recent activity yet.</p>
+              <div className="text-center py-12 bg-card rounded-2xl border-2 border-dashed border-muted/50">
+                <p className="text-xs text-muted-foreground font-medium">No recent activity yet.</p>
               </div>
             )}
           </div>
         </div>
 
-        <div className="space-y-8">
-          <h2 className="text-2xl font-black tracking-tight px-2">Quick Access</h2>
-          <Card className="border-none shadow-sm rounded-[2rem] overflow-hidden bg-card">
-            <CardContent className="p-8 space-y-6">
-              <div className="flex flex-col gap-4">
+        <div className="space-y-4">
+          <h2 className="text-lg font-black tracking-tight px-1">Quick Access</h2>
+          <Card className="border-none shadow-sm rounded-2xl overflow-hidden bg-card">
+            <CardContent className="p-4 space-y-2">
+              <div className="flex flex-col gap-1">
                 {isFreelancer ? (
                   <>
                     <QuickLink icon={Search} label="Find Work" href="/jobs" />
@@ -380,67 +380,67 @@ export default function Dashboard() {
       </div>
 
       <Dialog open={showSwitchModal} onOpenChange={setShowSwitchModal}>
-        <DialogContent className="rounded-[2.5rem] p-8 max-w-lg border-none shadow-2xl">
-          <DialogHeader className="space-y-4">
-            <DialogTitle className="text-3xl font-black tracking-tight flex items-center gap-3">
-              <Zap className="h-8 w-8 text-primary" /> Set Up Your Freelancer Profile
+        <DialogContent className="rounded-[2rem] p-6 max-w-md border-none shadow-2xl">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-2xl font-black tracking-tight flex items-center gap-2">
+              <Zap className="h-6 w-6 text-primary" /> Setup Profile
             </DialogTitle>
-            <DialogDescription className="text-base font-medium leading-relaxed">
+            <DialogDescription className="text-sm font-medium leading-relaxed">
               Complete these few details to start offering your services on campus.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSetupSubmit} className="space-y-6 py-4">
-            <div className="grid gap-4">
-              <div className="grid gap-2.5">
-                <Label className="font-bold text-xs uppercase tracking-widest opacity-60">Professional Name</Label>
-                <Input value={fullName} readOnly className="h-12 bg-muted/50 border-none rounded-xl cursor-not-allowed" />
+          <form onSubmit={handleSetupSubmit} className="space-y-4 py-2">
+            <div className="grid gap-3">
+              <div className="grid gap-2">
+                <Label className="font-bold text-[10px] uppercase tracking-widest opacity-60">Professional Name</Label>
+                <Input value={fullName} readOnly className="h-10 bg-muted/50 border-none rounded-xl cursor-not-allowed" />
               </div>
               
-              <div className="grid gap-4">
-                <Label className="font-bold text-xs uppercase tracking-widest">Select Gender</Label>
-                <RadioGroup value={setupGender} onValueChange={setSetupGender} className="flex gap-4">
-                  <div className="flex items-center space-x-2 bg-muted/30 px-6 py-3 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors">
+              <div className="grid gap-3">
+                <Label className="font-bold text-[10px] uppercase tracking-widest">Gender</Label>
+                <RadioGroup value={setupGender} onValueChange={setSetupGender} className="flex gap-2">
+                  <div className="flex items-center space-x-2 bg-muted/30 px-4 py-2 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors flex-1">
                     <RadioGroupItem value="male" id="setup-male" />
-                    <Label htmlFor="setup-male" className="cursor-pointer font-bold">Male</Label>
+                    <Label htmlFor="setup-male" className="cursor-pointer font-bold text-xs">Male</Label>
                   </div>
-                  <div className="flex items-center space-x-2 bg-muted/30 px-6 py-3 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center space-x-2 bg-muted/30 px-4 py-2 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors flex-1">
                     <RadioGroupItem value="female" id="setup-female" />
-                    <Label htmlFor="setup-female" className="cursor-pointer font-bold">Female</Label>
+                    <Label htmlFor="setup-female" className="cursor-pointer font-bold text-xs">Female</Label>
                   </div>
                 </RadioGroup>
               </div>
 
-              <div className="grid gap-2.5">
-                <Label htmlFor="setup-skill" className="font-bold text-xs uppercase tracking-widest">What can you do?</Label>
+              <div className="grid gap-2">
+                <Label htmlFor="setup-skill" className="font-bold text-[10px] uppercase tracking-widest">Skill / Craft</Label>
                 <Input 
                   id="setup-skill"
-                  placeholder="e.g. Graphic Designer, Plumber, Tutor" 
+                  placeholder="e.g. Graphic Designer, Plumber" 
                   value={setupSkill}
                   onChange={(e) => setSetupSkill(e.target.value)}
                   required
-                  className="h-14 rounded-xl border-2 border-muted focus-visible:ring-primary px-6 font-medium"
+                  className="h-12 rounded-xl border-2 border-muted focus-visible:ring-primary px-4 text-sm font-medium"
                 />
               </div>
-              <div className="grid gap-2.5">
-                <Label htmlFor="setup-price" className="font-bold text-xs uppercase tracking-widest">Price range e.g. NGN 2,000 - 5,000</Label>
+              <div className="grid gap-2">
+                <Label htmlFor="setup-price" className="font-bold text-[10px] uppercase tracking-widest">Price range (NGN)</Label>
                 <Input 
                   id="setup-price"
                   placeholder="NGN 1,000 - 3,000" 
                   value={setupPriceRange}
                   onChange={(e) => setSetupPriceRange(e.target.value)}
-                  className="h-14 rounded-xl border-2 border-muted focus-visible:ring-primary px-6 font-medium"
+                  className="h-12 rounded-xl border-2 border-muted focus-visible:ring-primary px-4 text-sm font-medium"
                 />
               </div>
             </div>
 
-            <DialogFooter className="pt-6">
+            <DialogFooter className="pt-4">
               <Button 
                 type="submit" 
                 disabled={isSubmittingSetup}
-                className="w-full h-16 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="w-full h-12 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 transition-all"
               >
-                {isSubmittingSetup ? <Loader2 className="h-5 w-5 animate-spin" /> : "Start Freelancing"}
+                {isSubmittingSetup ? <Loader2 className="h-4 w-4 animate-spin" /> : "Start Freelancing"}
               </Button>
             </DialogFooter>
           </form>
@@ -452,17 +452,17 @@ export default function Dashboard() {
 
 function StatsCard({ icon: Icon, label, value, sub, color }: any) {
   return (
-    <Card className="border-none shadow-sm hover:shadow-md transition-all rounded-[2rem] bg-card overflow-hidden">
-      <CardContent className="p-8">
-        <div className="flex items-center justify-between mb-4">
-          <div className={`p-3 rounded-2xl bg-muted group-hover:bg-primary/5 transition-colors ${color}`}>
-            <Icon className="h-6 w-6" />
+    <Card className="border-none shadow-sm hover:shadow-md transition-all rounded-2xl bg-card overflow-hidden">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className={`p-2 rounded-xl bg-muted transition-colors ${color}`}>
+            <Icon className="h-4 w-4" />
           </div>
-          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{label}</span>
+          <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{label}</span>
         </div>
-        <div className="space-y-1">
-          <h3 className="text-4xl font-black tracking-tight">{value}</h3>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.1em]">{sub}</p>
+        <div className="space-y-0.5">
+          <h3 className="text-2xl font-black tracking-tight">{value}</h3>
+          <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-[0.1em]">{sub}</p>
         </div>
       </CardContent>
     </Card>
@@ -471,19 +471,19 @@ function StatsCard({ icon: Icon, label, value, sub, color }: any) {
 
 function ActivityItem({ icon: Icon, title, time, desc, isNew }: any) {
   return (
-    <Card className={`border-none shadow-sm rounded-3xl overflow-hidden transition-all hover:bg-muted/30 group ${isNew ? 'bg-primary/5 border-l-4 border-l-primary' : 'bg-card'}`}>
-      <CardContent className="p-6 flex gap-6 items-start">
-        <div className="p-3 bg-muted rounded-2xl shrink-0 group-hover:bg-card transition-colors">
-          <Icon className="h-5 w-5 text-primary" />
+    <Card className={`border-none shadow-sm rounded-2xl overflow-hidden transition-all hover:bg-muted/30 group ${isNew ? 'bg-primary/5 border-l-4 border-l-primary' : 'bg-card'}`}>
+      <CardContent className="p-4 flex gap-4 items-start">
+        <div className="p-2 bg-muted rounded-xl shrink-0 group-hover:bg-card transition-colors">
+          <Icon className="h-4 w-4 text-primary" />
         </div>
-        <div className="flex-1 space-y-1">
+        <div className="flex-1 space-y-0.5">
           <div className="flex items-center justify-between">
-            <h4 className="font-bold text-base">{title}</h4>
-            <span className="text-[10px] font-bold text-muted-foreground uppercase">{time}</span>
+            <h4 className="font-bold text-sm">{title}</h4>
+            <span className="text-[9px] font-bold text-muted-foreground uppercase">{time}</span>
           </div>
-          <p className="text-sm text-muted-foreground line-clamp-1">{desc}</p>
+          <p className="text-xs text-muted-foreground line-clamp-1">{desc}</p>
         </div>
-        <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+        <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
       </CardContent>
     </Card>
   )
@@ -491,12 +491,12 @@ function ActivityItem({ icon: Icon, title, time, desc, isNew }: any) {
 
 function QuickLink({ icon: Icon, label, href }: any) {
   return (
-    <Link href={href} className="flex items-center justify-between p-4 rounded-xl hover:bg-muted transition-all group">
-      <div className="flex items-center gap-4">
-        <Icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-        <span className="text-sm font-bold">{label}</span>
+    <Link href={href} className="flex items-center justify-between p-3 rounded-xl hover:bg-muted transition-all group">
+      <div className="flex items-center gap-3">
+        <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+        <span className="text-xs font-bold">{label}</span>
       </div>
-      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all translate-x-[-4px] group-hover:translate-x-0" />
+      <ArrowRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all translate-x-[-4px] group-hover:translate-x-0" />
     </Link>
   )
 }

@@ -1,4 +1,3 @@
-
 "use client"
 
 import Link from "next/link"
@@ -47,20 +46,9 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
     try {
-      const result = await signInWithEmailAndPassword(auth, email, password)
-      
-      // Check for email verification
-      if (!result.user.emailVerified) {
-        await signOut(auth);
-        toast({
-          variant: "destructive",
-          title: "Email not verified",
-          description: "Please verify your email before logging in. Check your inbox."
-        });
-        setIsLoading(false);
-        return;
-      }
-      
+      await signInWithEmailAndPassword(auth, email, password)
+      // Verification check removed as per request
+      window.location.replace('/dashboard');
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -195,7 +183,6 @@ export default function LoginPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-wrap items-center justify-center gap-1">
-            <span className="text-sm text-muted-foreground">Don't have an account?</span>
             <Link href="/signup" className="text-sm font-semibold text-primary hover:underline">Sign up</Link>
           </CardFooter>
         </Card>

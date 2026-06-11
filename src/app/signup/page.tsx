@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useState } from 'react';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendEmailVerification, signOut } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -77,18 +76,12 @@ export default function SignupPage() {
 
       await setDoc(doc(db, "users", result.user.uid), userData);
       
-      // Send verification email
-      await sendEmailVerification(result.user);
-      // Sign out immediately
-      await signOut(auth);
-
       toast({
         title: "Account created!",
-        description: "A verification email has been sent to your email address. Please verify before logging in."
+        description: "Welcome to SkillUp! Redirecting to your dashboard..."
       });
       
-      // Redirect to login
-      window.location.replace("/login");
+      window.location.replace("/dashboard");
 
     } catch (error: any) {
       toast({

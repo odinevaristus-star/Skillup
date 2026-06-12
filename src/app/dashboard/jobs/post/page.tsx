@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState } from "react"
 import { useUser, useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase"
-import { collection, addDoc, serverTimestamp } from "firebase/firestore"
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -50,7 +49,45 @@ export default function PostJobPage() {
     }
 
     addDoc(collection(db, "jobs"), jobData)
-      .then(() => {
+      .then(async (docRef) => {
+        // Smart Matching: Notify freelancers with matching skills
+        try {
+          const freelancersQuery = query(
+            collection(db, "users"),
+            where("activeRole", "==", "freelancer")
+          );
+          
+          const querySnapshot = await getDocs(freelancersQuery);
+          const matchingFreelancers = querySnapshot.docs.filter(doc => {
+            const data = doc.data();
+            const matchesCategory = 
+              (data.skill && data.skill.toLowerCase() === formData.category.toLowerCase()) ||
+              (data.skills && Array.isArray(data.skills) && data.skills.some((s: string) => s.toLowerCase() === formData.category.toLowerCase()));
+            
+            // Don't notify the person who posted the job
+            return matchesCategory && doc.id !== user.uid;
+          });
+
+          // Create notifications for all matching freelancers
+          const notificationPromises = matchingFreelancers.map(freelancer => 
+            addDoc(collection(db, "notifications"), {
+              userId: freelancer.id,
+              type: "job_match",
+              title: "New job matching your skill!",
+              message: `A client needs a ${formData.category}. Tap to view.`,
+              jobId: docRef.id,
+              link: `/jobs/${docRef.id}`,
+              read: false,
+              createdAt: serverTimestamp()
+            })
+          );
+
+          await Promise.all(notificationPromises);
+        } catch (matchError) {
+          console.error("Smart matching failed:", matchError);
+          // We don't fail the whole job post if notifications fail
+        }
+
         toast({ title: "Project Published!", description: "Your job is now visible to the professional community." })
         window.location.replace("/dashboard/jobs");
       })
@@ -72,22 +109,22 @@ export default function PostJobPage() {
   return (
     <div className="max-w-4xl mx-auto py-10 px-4">
       <div className="mb-8 space-y-2 text-center md:text-left">
-        <h1 className="text-4xl font-bold tracking-tight">Post a New Project</h1>
-        <p className="text-muted-foreground text-lg">Detailed descriptions help you find the best matching talent.</p>
+        <h1 className="text-2xl md:text-4xl font-bold tracking-tight">Post a New Project</h1>
+        <p className="text-muted-foreground text-sm md:text-lg">Detailed descriptions help you find the best matching talent.</p>
       </div>
 
       <form onSubmit={handleSubmit}>
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <Card className="border-none shadow-sm bg-card rounded-3xl overflow-hidden">
-              <CardContent className="pt-8 space-y-6">
+              <CardContent className="pt-8 space-y-6 p-4 md:p-8">
                 <div className="grid gap-2.5">
                   <Label htmlFor="title" className="text-sm font-bold">Project Title</Label>
                   <Input 
                     id="title" 
                     placeholder="e.g. Need a professional plumber for kitchen remodel" 
                     required 
-                    className="h-14 rounded-2xl bg-muted/30 border-none px-6"
+                    className="h-12 md:h-14 rounded-2xl bg-muted/30 border-none px-6"
                     value={formData.title}
                     onChange={(e) => setFormData({...formData, title: e.target.value})}
                   />
@@ -99,6 +136,7 @@ export default function PostJobPage() {
                     value={formData.category} 
                     onValueChange={(val) => setFormData({...formData, category: val})}
                     placeholder="Select or type category..."
+                    className="h-12 md:h-14"
                   />
                 </div>
 
@@ -127,7 +165,7 @@ export default function PostJobPage() {
                     placeholder="Describe the scope, goals, and any specific requirements..." 
                     rows={8}
                     required
-                    className="rounded-2xl bg-muted/30 border-none p-6 resize-none"
+                    className="rounded-2xl bg-muted/30 border-none p-4 md:p-6 resize-none"
                     value={formData.description}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
                   />
@@ -138,17 +176,17 @@ export default function PostJobPage() {
 
           <div className="space-y-6">
             <Card className="border-none shadow-2xl rounded-3xl bg-primary text-primary-foreground overflow-hidden">
-              <CardHeader className="p-8 pb-4">
+              <CardHeader className="p-6 md:p-8 pb-4">
                 <CardTitle className="text-xl flex items-center gap-2"><Landmark className="h-5 w-5" /> Budget & Timeline</CardTitle>
               </CardHeader>
-              <CardContent className="p-8 pt-0 space-y-6">
+              <CardContent className="p-6 md:p-8 pt-0 space-y-6">
                 <div className="grid gap-2.5">
                   <Label htmlFor="budget" className="text-white/80 font-bold">Estimated Budget (NGN) - Optional</Label>
                   <Input 
                     id="budget" 
                     type="number" 
                     placeholder="Negotiable" 
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-14 rounded-2xl px-6 font-bold text-lg"
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12 md:h-14 rounded-2xl px-6 font-bold text-lg"
                     value={formData.budget}
                     onChange={(e) => setFormData({...formData, budget: e.target.value})}
                   />
@@ -158,14 +196,14 @@ export default function PostJobPage() {
                   <Input 
                     id="deadline" 
                     type="date" 
-                    className="bg-white/10 border-white/20 text-white h-14 rounded-2xl px-6"
+                    className="bg-white/10 border-white/20 text-white h-12 md:h-14 rounded-2xl px-6"
                     value={formData.deadline}
                     onChange={(e) => setFormData({...formData, deadline: e.target.value})}
                   />
                 </div>
               </CardContent>
-              <CardFooter className="p-8 pt-2">
-                <Button type="submit" disabled={isLoading} className="w-full h-14 bg-white text-primary hover:bg-white/90 rounded-2xl font-bold text-lg gap-2 shadow-xl">
+              <CardFooter className="p-6 md:p-8 pt-2">
+                <Button type="submit" disabled={isLoading} className="w-full h-12 md:h-14 bg-white text-primary hover:bg-white/90 rounded-2xl font-bold text-lg gap-2 shadow-xl">
                   {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                   Post Project
                 </Button>

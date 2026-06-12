@@ -9,11 +9,10 @@ export function PWAInstallBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
-    // Don't show if already installed or dismissed
+    // Don't show if already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    const isDismissed = localStorage.getItem('pwa-dismissed') === 'true';
 
-    if (isStandalone || isDismissed) return;
+    if (isStandalone) return;
 
     const handleBeforeInstallPrompt = (e: any) => {
       // Prevent the mini-infobar from appearing on mobile
@@ -58,7 +57,6 @@ export function PWAInstallBanner() {
 
   const handleDismiss = () => {
     setIsVisible(false);
-    localStorage.setItem('pwa-dismissed', 'true');
   };
 
   if (!isVisible) return null;
@@ -69,7 +67,9 @@ export function PWAInstallBanner() {
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shrink-0 relative overflow-hidden group">
             <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <Smartphone className="text-white h-6 w-6 relative z-10" />
+            <div className="relative z-10 p-2">
+              <Smartphone className="text-white h-full w-full" />
+            </div>
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">

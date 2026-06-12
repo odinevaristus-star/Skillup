@@ -3,55 +3,62 @@
 import { useState, useEffect } from 'react';
 import { X, Smartphone, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 export function PWAInstallBanner() {
   const [isVisible, setIsVisible] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Don't show if already installed
+    // Check if already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-
     if (isStandalone) return;
 
+    // Capture the native install prompt event
     const handleBeforeInstallPrompt = (e: any) => {
-      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
-      // Stash the event so it can be triggered later.
       setDeferredPrompt(e);
-      // Update UI notify the user they can install the PWA
-      setIsVisible(true);
-
-      // Auto-dismiss after 5 seconds if not interacted with
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-      }, 5000);
-
-      return () => clearTimeout(timer);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
+    // Force show the banner after 2 seconds of page load
+    const showTimer = setTimeout(() => {
+      setIsVisible(true);
+    }, 2000);
+
+    // Auto-dismiss after a longer period (e.g., 8 seconds) if not interacted with
+    // to give users enough time to see the new 2s delayed banner
+    const hideTimer = setTimeout(() => {
+      setIsVisible(false);
+    }, 10000);
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
     };
   }, []);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return;
-    
-    // Show the install prompt
-    deferredPrompt.prompt();
-    
-    // Wait for the user to respond to the prompt
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-      setDeferredPrompt(null);
-      setIsVisible(false);
+    if (deferredPrompt) {
+      // Show the native install prompt
+      deferredPrompt.prompt();
+      
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setIsVisible(false);
+      }
     } else {
-      console.log('User dismissed the install prompt');
+      // Fallback: Show manual instructions
+      toast({
+        title: "Manual Installation",
+        description: "Tap the menu (3 dots or share icon) and select 'Add to Home Screen' to install SkillUp.",
+        duration: 6000,
+      });
+      setIsVisible(false);
     }
   };
 

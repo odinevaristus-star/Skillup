@@ -15,7 +15,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: 'SkillUp - Campus Freelance Marketplace',
-  description: 'Connect with skilled students for any job. From artisan trades to digital projects, SkillUp is your portal to campus services.',
+  description: 'Connect with skilled students for any job. From plumbing to digital projects, SkillUp is your portal to campus services.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -27,12 +27,12 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'SkillUp - Campus Freelance Marketplace',
-    description: 'Connect with skilled students for any job. From artisan trades to digital projects, SkillUp is your portal to campus services.',
+    description: 'Connect with skilled students for any job. From plumbing to digital projects, SkillUp is your portal to campus services.',
     url: 'https://skillup-app-eta.vercel.app',
     siteName: 'SkillUp',
     images: [
       {
-        url: 'https://picsum.photos/seed/skillup-og/1200/630',
+        url: 'https://skillup-app-eta.vercel.app/og-image.png',
         width: 1200,
         height: 630,
         alt: 'SkillUp - Campus Freelance Marketplace',
@@ -44,8 +44,8 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'SkillUp - Campus Freelance Marketplace',
-    description: 'Connect with skilled students for any job.',
-    images: ['https://picsum.photos/seed/skillup-og/1200/630'],
+    description: 'Connect with skilled students for any job. From plumbing to digital projects, SkillUp is your portal to campus services.',
+    images: ['https://skillup-app-eta.vercel.app/og-image.png'],
   },
 };
 

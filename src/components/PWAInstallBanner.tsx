@@ -3,12 +3,10 @@
 import { useState, useEffect } from 'react';
 import { X, Smartphone, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 
 export function PWAInstallBanner() {
   const [isVisible, setIsVisible] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     // 1. Check if already installed
@@ -21,46 +19,45 @@ export function PWAInstallBanner() {
 
     // 3. Capture the native install prompt event
     const handleBeforeInstallPrompt = (e: any) => {
+      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
+      // Stash the event so it can be triggered later.
       setDeferredPrompt(e);
+      // Only show the banner once we have the prompt available
+      setIsVisible(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // 4. Show the banner after a short delay (2 seconds)
-    const showTimer = setTimeout(() => {
-      setIsVisible(true);
-    }, 2000);
-
-    // 5. Auto-dismiss after 5 seconds of visibility if no interaction
-    const autoDismissTimer = setTimeout(() => {
-      setIsVisible(false);
-    }, 7000); // 2s (initial delay) + 5s (display time)
-
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      clearTimeout(showTimer);
-      clearTimeout(autoDismissTimer);
     };
   }, []);
 
-  const handleInstall = async () => {
-    if (deferredPrompt) {
-      // Show the native install prompt
-      deferredPrompt.prompt();
-      
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
+  // Handle auto-dismissal after 5 seconds of visibility
+  useEffect(() => {
+    if (isVisible) {
+      const timer = setTimeout(() => {
         setIsVisible(false);
-      }
-    } else {
-      // Fallback: Show manual instructions for iOS/other browsers
-      toast({
-        title: "Installation Guide",
-        description: "To install: Tap the share/menu icon and select 'Add to Home Screen'.",
-        duration: 5000,
-      });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible]);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) {
+      setIsVisible(false);
+      return;
+    }
+
+    // Show the native install prompt
+    deferredPrompt.prompt();
+    
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
       setIsVisible(false);
     }
   };
@@ -71,7 +68,8 @@ export function PWAInstallBanner() {
     localStorage.setItem('pwa-dismissed', 'true');
   };
 
-  if (!isVisible) return null;
+  // Only render if visible AND we have the native prompt
+  if (!isVisible || !deferredPrompt) return null;
 
   return (
     <div className="fixed bottom-6 left-4 right-4 z-[200] animate-in fade-in slide-in-from-bottom-10 duration-700 ease-out pointer-events-none">

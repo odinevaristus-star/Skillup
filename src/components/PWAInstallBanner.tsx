@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react';
 import { X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import Image from 'next/image';
 
 /**
  * PWAInstallBanner Component
@@ -12,7 +10,7 @@ import Image from 'next/image';
  * Provides an interactive prompt for users to install the application as a PWA.
  * Features:
  * - Listens for 'beforeinstallprompt' to show native install dialog.
- * - Provides manual instructions as a fallback.
+ * - Provides manual instructions as a fallback via a small tagline change.
  * - Auto-dismisses after 8 seconds of inactivity.
  * - Persistently hides once dismissed using localStorage.
  */
@@ -40,12 +38,12 @@ export function PWAInstallBanner() {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // 4. Fallback: Show the banner after 3 seconds for browsers that don't trigger the event immediately
+    // 4. Fallback: Show the banner after 2 seconds for visibility
     const timer = setTimeout(() => {
       if (!isDismissed && !isStandalone) {
         setIsVisible(true);
       }
-    }, 3000);
+    }, 2000);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -92,13 +90,10 @@ export function PWAInstallBanner() {
         
         {/* Left side: Icon */}
         <div className="shrink-0">
-          <Image 
-            src="https://picsum.photos/seed/skillup-icon/192/192" 
-            alt="SkillUp Icon" 
-            width={50} 
-            height={50} 
-            className="rounded-2xl object-cover shadow-sm border border-muted"
-            data-ai-hint="app icon"
+          <img 
+            src="/icon-192-new.png" 
+            alt="SkillUp" 
+            style={{ width: '50px', height: '50px', borderRadius: '12px', objectFit: 'cover' }} 
           />
         </div>
 

@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     siteName: 'SkillUp',
     images: [
       {
-        url: 'https://skillup-app-eta.vercel.app/og-image.png',
+        url: 'https://skillup-app-eta.vercel.app/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'SkillUp - Campus Freelance Marketplace',
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'SkillUp - Campus Freelance Marketplace',
     description: 'Connect with skilled students for any job. From plumbing to digital projects, SkillUp is your portal to campus services.',
-    images: ['https://skillup-app-eta.vercel.app/og-image.png'],
+    images: ['https://skillup-app-eta.vercel.app/og-image.jpg'],
   },
 };
 

@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
@@ -103,68 +102,68 @@ export default function ManageJobApplicantsPage() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 overflow-x-hidden px-1">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
+        <div className="flex items-center gap-2 md:gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-primary/5">
-            <ArrowLeft className="h-6 w-6" />
+            <ArrowLeft className="h-5 w-5 md:h-6 md:w-6" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Review Applicants</h1>
-            <p className="text-muted-foreground font-medium">Select the best professional for "{job?.title}"</p>
+            <h1 className="text-xl md:text-3xl font-bold tracking-tight">Review Applicants</h1>
+            <p className="text-xs md:text-base text-muted-foreground font-medium">Select the best professional for "{job?.title}"</p>
           </div>
         </div>
-        <Badge variant={job?.status === 'open' ? 'secondary' : 'default'} className="capitalize h-8 px-4 text-sm font-bold">
+        <Badge variant={job?.status === 'open' ? 'secondary' : 'default'} className="capitalize h-7 md:h-8 px-3 md:px-4 text-[10px] md:text-sm font-bold w-fit">
           {job?.status.replace('-', ' ')}
         </Badge>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            Proposals <span className="bg-muted px-2 py-0.5 rounded text-xs">{applicants?.length || 0}</span>
+      <div className="grid lg:grid-cols-3 gap-6 md:gap-8">
+        <div className="lg:col-span-2 space-y-4 md:space-y-6">
+          <h2 className="text-base md:text-lg font-bold flex items-center gap-2">
+            Proposals <span className="bg-muted px-2 py-0.5 rounded text-[10px] md:text-xs">{applicants?.length || 0}</span>
           </h2>
 
           {applicants?.length ? applicants.map((app: any) => (
-            <Card key={app.id} className="border-none shadow-sm group hover:shadow-md transition-all overflow-hidden bg-card">
-              <CardContent className="p-8">
-                <div className="flex flex-col md:flex-row gap-8">
-                  <div className="shrink-0">
-                    <Avatar className="h-20 w-20 border-4 border-muted rounded-2xl shadow-sm">
+            <Card key={app.id} className="border-none shadow-sm group hover:shadow-md transition-all overflow-hidden bg-card rounded-2xl md:rounded-[2rem]">
+              <CardContent className="p-4 md:p-8">
+                <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+                  <div className="shrink-0 flex justify-center md:justify-start">
+                    <Avatar className="h-16 w-16 md:h-20 md:w-20 border-2 md:border-4 border-muted rounded-xl md:rounded-2xl shadow-sm">
                       <AvatarImage src={`https://picsum.photos/seed/${app.freelancerId}/128/128`} />
-                      <AvatarFallback><User className="h-8 w-8" /></AvatarFallback>
+                      <AvatarFallback><User className="h-6 w-6 md:h-8 md:w-8" /></AvatarFallback>
                     </Avatar>
                   </div>
-                  <div className="flex-1 space-y-6">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-2xl font-bold group-hover:text-primary transition-colors">{app.freelancerName}</h3>
-                        <p className="text-xs font-bold text-muted-foreground mt-1 uppercase tracking-widest opacity-60">Verified Freelancer</p>
+                  <div className="flex-1 space-y-4 md:space-y-6">
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-2 md:gap-4">
+                      <div className="text-center md:text-left">
+                        <h3 className="text-lg md:text-2xl font-bold group-hover:text-primary transition-colors">{app.freelancerName}</h3>
+                        <p className="text-[9px] md:text-xs font-bold text-muted-foreground mt-1 uppercase tracking-widest opacity-60">Verified Freelancer</p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-3xl font-black text-primary">
+                      <div className="text-center md:text-right">
+                        <p className="text-xl md:text-3xl font-black text-primary">
                           {app.bidAmount ? `NGN ${app.bidAmount.toLocaleString()}` : "Negotiable"}
                         </p>
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Proposal Bid</p>
+                        <p className="text-[8px] md:text-[10px] font-black text-muted-foreground uppercase tracking-widest">Proposal Bid</p>
                       </div>
                     </div>
                     
-                    <div className="p-6 bg-muted/30 rounded-[1.5rem] border border-dashed border-muted">
-                      <p className="text-sm leading-relaxed whitespace-pre-line text-muted-foreground italic">
+                    <div className="p-4 md:p-6 bg-muted/30 rounded-xl md:rounded-[1.5rem] border border-dashed border-muted">
+                      <p className="text-xs md:text-sm leading-relaxed whitespace-pre-line text-muted-foreground italic">
                         "{app.coverLetter}"
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-end gap-3 pt-4">
+                    <div className="flex flex-col md:flex-row items-center justify-end gap-3 pt-2 md:pt-4">
                       <Button 
                         variant="ghost" 
-                        className="font-bold text-primary hover:bg-primary/5 h-12 px-6 rounded-xl" 
+                        className="w-full md:w-auto font-bold text-primary hover:bg-primary/5 h-10 md:h-12 px-6 rounded-xl text-xs md:text-sm" 
                         onClick={() => router.push(`/dashboard/messages?userId=${app.freelancerId}`)}
                       >
                         <MessageSquare className="h-4 w-4 mr-2" /> Message & Interview
                       </Button>
                       <Button 
-                        className="font-bold px-10 h-12 rounded-xl shadow-xl shadow-primary/20" 
+                        className="w-full md:w-auto font-bold px-8 md:px-10 h-10 md:h-12 rounded-xl shadow-lg md:shadow-xl md:shadow-primary/20 text-xs md:text-sm" 
                         onClick={() => handleHire(app)} 
                         disabled={job?.status !== 'open' || isHiring}
                       >
@@ -176,34 +175,34 @@ export default function ManageJobApplicantsPage() {
               </CardContent>
             </Card>
           )) : (
-            <div className="text-center py-40 bg-card rounded-[2.5rem] border-2 border-dashed border-muted shadow-inner">
-              <Loader2 className="h-16 w-16 mx-auto mb-6 opacity-5 opacity-spin" />
-              <h3 className="text-2xl font-bold">No applications yet</h3>
-              <p className="text-muted-foreground mt-2 max-w-xs mx-auto">Your project is visible to our professional community. Proposals will appear here soon.</p>
+            <div className="text-center py-20 md:py-40 bg-card rounded-2xl md:rounded-[2.5rem] border-2 border-dashed border-muted shadow-inner px-4">
+              <Loader2 className="h-10 w-10 md:h-16 md:w-16 mx-auto mb-4 md:mb-6 opacity-5" />
+              <h3 className="text-lg md:text-2xl font-bold">No applications yet</h3>
+              <p className="text-xs md:text-base text-muted-foreground mt-2 max-w-xs mx-auto">Your project is visible to our professional community. Proposals will appear here soon.</p>
             </div>
           )}
         </div>
 
-        <div className="space-y-6">
-          <Card className="border-none shadow-sm overflow-hidden rounded-[2rem] bg-gradient-to-br from-primary to-primary/90 text-primary-foreground">
-            <CardHeader className="p-8">
-              <CardTitle className="text-xl flex items-center gap-2"><Briefcase className="h-5 w-5" /> Project Specs</CardTitle>
+        <div className="space-y-4 md:space-y-6">
+          <Card className="border-none shadow-sm overflow-hidden rounded-2xl md:rounded-[2rem] bg-gradient-to-br from-primary to-primary/90 text-primary-foreground">
+            <CardHeader className="p-6 md:p-8">
+              <CardTitle className="text-base md:text-xl flex items-center gap-2"><Briefcase className="h-4 w-4 md:h-5 md:w-5" /> Project Specs</CardTitle>
             </CardHeader>
-            <CardContent className="p-8 pt-0 space-y-6">
-              <div className="space-y-4">
+            <CardContent className="p-6 md:p-8 pt-0 space-y-4 md:space-y-6">
+              <div className="space-y-3 md:space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="opacity-70 text-sm flex items-center gap-2 font-medium"><Landmark className="h-4 w-4" /> Fixed Budget</span>
-                  <span className="font-bold text-lg">{job?.budget && job.budget > 0 ? `NGN ${job.budget.toLocaleString()}` : 'Negotiable'}</span>
+                  <span className="opacity-70 text-[10px] md:text-sm flex items-center gap-2 font-medium"><Landmark className="h-3 w-3 md:h-4 md:w-4" /> Fixed Budget</span>
+                  <span className="font-bold text-sm md:text-lg">{job?.budget && job.budget > 0 ? `NGN ${job.budget.toLocaleString()}` : 'Negotiable'}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="opacity-70 text-sm flex items-center gap-2 font-medium"><Calendar className="h-4 w-4" /> Due Date</span>
-                  <span className="font-bold text-lg">{job?.deadline || 'Flexible'}</span>
+                  <span className="opacity-70 text-[10px] md:text-sm flex items-center gap-2 font-medium"><Calendar className="h-3 w-3 md:h-4 md:w-4" /> Due Date</span>
+                  <span className="font-bold text-sm md:text-lg">{job?.deadline || 'Flexible'}</span>
                 </div>
               </div>
-              <div className="pt-6 border-t border-white/10">
-                <div className="p-4 bg-white/10 rounded-xl space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-widest text-white/60">Selected Category</h4>
-                  <p className="font-bold">{job?.category}</p>
+              <div className="pt-4 md:pt-6 border-t border-white/10">
+                <div className="p-3 md:p-4 bg-white/10 rounded-xl space-y-1 md:space-y-2">
+                  <h4 className="text-[8px] md:text-xs font-bold uppercase tracking-widest text-white/60">Selected Category</h4>
+                  <p className="font-bold text-xs md:text-base">{job?.category}</p>
                 </div>
               </div>
             </CardContent>

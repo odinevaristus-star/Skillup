@@ -44,7 +44,7 @@ export default function ManageJobApplicantsPage() {
 
     setIsHiring(true)
     const jobUpdate = {
-      status: 'in-progress',
+      status: 'hired',
       freelancerId: app.freelancerId,
       freelancerName: app.freelancerName,
       hiredAt: serverTimestamp(),
@@ -69,10 +69,10 @@ export default function ManageJobApplicantsPage() {
           createdAt: serverTimestamp()
         })
 
-        toast({ title: "Freelancer Hired!", description: `${app.freelancerName} is now assigned to this project.` })
+        toast({ title: "Freelancer hired successfully!", description: `${app.freelancerName} is now assigned to this project.` })
         
         setTimeout(() => {
-          window.location.replace("/dashboard/jobs");
+          router.push("/dashboard/jobs");
         }, 500);
       })
       .catch(async (error) => {

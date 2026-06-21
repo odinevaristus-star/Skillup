@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
@@ -115,42 +114,42 @@ export default function MyJobsPage() {
   const isClient = activeRole === 'client'
 
   return (
-    <div className="space-y-12 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-        <div className="space-y-2">
-          <h1 className="text-4xl md:text-5xl font-black tracking-tighter">My Projects</h1>
-          <p className="text-muted-foreground text-lg font-medium">
-            {isClient ? "Manage your job postings and active contracts." : "Track your submitted proposals and active work."}
+    <div className="space-y-6 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl md:text-4xl font-black tracking-tighter text-foreground">My Projects</h1>
+          <p className="text-muted-foreground text-sm font-medium">
+            {isClient ? "Manage postings and contracts." : "Track proposals and active work."}
           </p>
         </div>
         {isClient && (
           <Link href="/dashboard/jobs/post">
-            <Button className="font-black text-sm uppercase tracking-widest rounded-2xl h-16 px-10 gap-3 shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
-              <PlusCircle className="h-6 w-6" /> Post New Gig
+            <Button size="sm" className="font-bold text-xs uppercase tracking-widest rounded-xl h-10 px-6 gap-2 shadow-lg shadow-primary/10 transition-all hover:scale-[1.02]">
+              <PlusCircle className="h-4 w-4" /> Post New
             </Button>
           </Link>
         )}
       </div>
 
       <Tabs defaultValue={isFreelancer ? "applications" : "postings"} className="w-full">
-        <div className="flex items-center justify-between mb-10 overflow-x-auto pb-2">
-          <TabsList className="bg-muted/50 p-1.5 rounded-2xl h-auto">
+        <div className="flex items-center justify-between mb-6 overflow-x-auto pb-1">
+          <TabsList className="bg-muted/50 p-1 rounded-xl h-auto">
             {isClient && (
-              <TabsTrigger value="postings" className="rounded-xl px-8 py-3.5 font-black text-xs uppercase tracking-widest data-[state=active]:shadow-xl transition-all">My Postings</TabsTrigger>
+              <TabsTrigger value="postings" className="rounded-lg px-4 py-2 font-bold text-[10px] uppercase tracking-widest data-[state=active]:shadow-md transition-all">My Postings</TabsTrigger>
             )}
             {isFreelancer && (
-              <TabsTrigger value="applications" className="rounded-xl px-8 py-3.5 font-black text-xs uppercase tracking-widest data-[state=active]:shadow-xl transition-all">My Proposals</TabsTrigger>
+              <TabsTrigger value="applications" className="rounded-lg px-4 py-2 font-bold text-[10px] uppercase tracking-widest data-[state=active]:shadow-md transition-all">My Proposals</TabsTrigger>
             )}
-            <TabsTrigger value="contracts" className="rounded-xl px-8 py-3.5 font-black text-xs uppercase tracking-widest data-[state=active]:shadow-xl transition-all">Active Work</TabsTrigger>
+            <TabsTrigger value="contracts" className="rounded-lg px-4 py-2 font-bold text-[10px] uppercase tracking-widest data-[state=active]:shadow-md transition-all">Active Work</TabsTrigger>
           </TabsList>
         </div>
 
         {isClient && (
-          <TabsContent value="postings" className="space-y-8">
+          <TabsContent value="postings" className="space-y-4">
             {loading ? (
-              <div className="flex justify-center py-32"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-10" /></div>
+              <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-10" /></div>
             ) : postedJobs?.length ? (
-              <div className="grid gap-8">
+              <div className="grid gap-4">
                 {postedJobs.map((job: any) => (
                   <JobManagementCard key={job.id} job={job} onUpdateStatus={handleUpdateJobStatus} />
                 ))}
@@ -159,20 +158,20 @@ export default function MyJobsPage() {
               <EmptyState 
                 icon={Briefcase} 
                 title="No active postings" 
-                description="Ready to hire talent? Start by describing your project and publishing a job post." 
+                description="Ready to hire? Start by creating a job post." 
                 actionUrl="/dashboard/jobs/post" 
-                actionText="Create New Post" 
+                actionText="Create Post" 
               />
             )}
           </TabsContent>
         )}
 
         {isFreelancer && (
-          <TabsContent value="applications" className="space-y-8">
+          <TabsContent value="applications" className="space-y-4">
             {loading ? (
-              <div className="flex justify-center py-32"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-10" /></div>
+              <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-10" /></div>
             ) : applications?.length ? (
-              <div className="grid gap-8">
+              <div className="grid gap-4">
                 {applications.map((app: any) => (
                   <ApplicationTrackCard key={app.id} application={app} />
                 ))}
@@ -181,21 +180,21 @@ export default function MyJobsPage() {
               <EmptyState 
                 icon={FileText} 
                 title="No active proposals" 
-                description="Start earning by finding the right project for your unique skills on campus." 
+                description="Find the right project for your skills." 
                 actionUrl="/jobs" 
-                actionText="Browse Job Board" 
+                actionText="Browse Jobs" 
               />
             )}
           </TabsContent>
         )}
 
-        <TabsContent value="contracts" className="space-y-8">
-          <div className="text-center py-40 bg-card rounded-[3rem] border-2 border-dashed border-muted shadow-inner">
-            <div className="w-24 h-24 bg-muted/50 rounded-3xl flex items-center justify-center mx-auto mb-8">
-              <UserCheck className="h-12 w-12 text-muted-foreground opacity-20" />
+        <TabsContent value="contracts" className="space-y-4">
+          <div className="text-center py-20 bg-card rounded-[2rem] border border-dashed shadow-sm">
+            <div className="w-16 h-16 bg-muted/50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <UserCheck className="h-8 w-8 text-muted-foreground opacity-20" />
             </div>
-            <h3 className="text-3xl font-black tracking-tight mb-4">Active Contracts</h3>
-            <p className="text-muted-foreground mt-2 max-w-sm mx-auto font-medium text-lg leading-relaxed">Agreed project milestones and active timers will appear here once hiring is finalized.</p>
+            <h3 className="text-xl font-bold tracking-tight mb-2">Active Contracts</h3>
+            <p className="text-muted-foreground mt-2 max-w-[240px] mx-auto font-medium text-xs leading-relaxed">Agreed milestones and active work will appear here after hiring.</p>
           </div>
         </TabsContent>
       </Tabs>
@@ -205,7 +204,8 @@ export default function MyJobsPage() {
 
 function JobManagementCard({ job, onUpdateStatus }: { job: any, onUpdateStatus: (job: any, s: string) => void }) {
   const statusConfig: any = {
-    'open': { color: 'bg-green-500/10 text-green-700', label: 'Seeking Talent' },
+    'open': { color: 'bg-green-500/10 text-green-700', label: 'Open' },
+    'hired': { color: 'bg-blue-500/10 text-blue-700', label: 'Hired' },
     'in-progress': { color: 'bg-blue-500/10 text-blue-700', label: 'In Progress' },
     'completed': { color: 'bg-slate-500/10 text-slate-700', label: 'Finished' },
     'cancelled': { color: 'bg-red-500/10 text-red-700', label: 'Cancelled' }
@@ -214,60 +214,55 @@ function JobManagementCard({ job, onUpdateStatus }: { job: any, onUpdateStatus: 
   const current = statusConfig[job.status] || { color: 'bg-muted', label: job.status }
 
   return (
-    <Card className="border-none shadow-sm overflow-hidden group hover:shadow-xl transition-all duration-500 rounded-[2.5rem] bg-card border border-muted/30">
+    <Card className="border-none shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300 rounded-2xl bg-card border border-muted/50">
       <CardContent className="p-0">
-        <div className="p-10">
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-10">
-            <div className="space-y-6 flex-1">
-              <div className="flex items-center gap-4">
-                <Badge className={cn("px-5 py-2 border-none font-black text-[10px] uppercase tracking-widest rounded-full", current.color)}>
+        <div className="p-5">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <div className="space-y-3 flex-1">
+              <div className="flex items-center gap-2">
+                <Badge className={cn("px-3 py-0.5 border-none font-bold text-[8px] uppercase tracking-widest rounded-full", current.color)}>
                   {current.label}
                 </Badge>
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                  <Clock className="h-4 w-4" /> Posted {job.createdAt ? new Date(job.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
-                </span>
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                  <MapPin className="h-4 w-4" /> {job.location || 'Remote'}
+                <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-3 w-3" /> {job.createdAt ? new Date(job.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
                 </span>
               </div>
-              <div className="space-y-2">
-                <h3 className="text-3xl font-black group-hover:text-primary transition-colors tracking-tighter leading-tight">{job.title}</h3>
-                <p className="text-muted-foreground font-medium line-clamp-2 leading-relaxed max-w-2xl">{job.description}</p>
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold group-hover:text-primary transition-colors tracking-tight leading-snug">{job.title}</h3>
+                <p className="text-muted-foreground text-xs font-medium line-clamp-1 leading-relaxed max-w-xl">{job.description}</p>
               </div>
             </div>
             <div className="md:text-right shrink-0">
-              <p className="text-4xl font-black text-primary flex items-center gap-1 md:justify-end">
+              <p className="text-base font-black text-primary flex items-center gap-1 md:justify-end">
                 {job.budget && job.budget > 0 ? (
                   <>
-                    <span className="text-2xl font-bold opacity-50">NGN </span>{job.budget.toLocaleString()}
+                    <span className="text-xs font-bold opacity-50">NGN </span>{job.budget.toLocaleString()}
                   </>
                 ) : (
                   "Negotiable"
                 )}
               </p>
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">
-                {job.budget && job.budget > 0 ? "Project Budget" : "Budget: Negotiable"}
+              <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
+                Budget
               </p>
             </div>
           </div>
         </div>
-        <div className="px-10 py-8 bg-muted/20 border-t flex flex-wrap items-center justify-between gap-6">
-          <div className="flex gap-4">
-            <Link href={`/jobs/${job.id}`}>
-              <Button variant="ghost" className="font-black text-xs uppercase tracking-widest text-primary gap-3 hover:bg-primary/5 rounded-xl h-12">
-                Review Listing <ArrowUpRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-          <div className="flex gap-4">
-            {job.status === 'in-progress' && (
-              <Button variant="outline" className="font-black text-xs uppercase tracking-widest border-muted-foreground/20 rounded-xl px-8 h-12 hover:bg-primary/5" onClick={() => onUpdateStatus(job, 'completed')}>
-                Complete Milestone
+        <div className="px-5 py-3 bg-muted/20 border-t flex flex-wrap items-center justify-between gap-4">
+          <Link href={`/jobs/${job.id}`}>
+            <Button variant="ghost" className="font-bold text-[10px] uppercase tracking-widest text-primary gap-2 hover:bg-primary/5 h-9 px-3 rounded-lg">
+              Listing <ArrowUpRight className="h-3.5 w-3.5" />
+            </Button>
+          </Link>
+          <div className="flex gap-2">
+            {(job.status === 'in-progress' || job.status === 'hired') && (
+              <Button variant="outline" size="sm" className="font-bold text-[10px] uppercase tracking-widest h-9 px-4 rounded-lg" onClick={() => onUpdateStatus(job, 'completed')}>
+                Complete
               </Button>
             )}
             {job.status === 'open' && (
               <Link href={`/dashboard/jobs/manage/${job.id}`}>
-                <Button className="font-black text-xs uppercase tracking-widest rounded-xl px-10 h-12 shadow-xl shadow-primary/20">Manage Proposals</Button>
+                <Button size="sm" className="font-bold text-[10px] uppercase tracking-widest rounded-lg px-4 h-9">Manage</Button>
               </Link>
             )}
           </div>
@@ -285,31 +280,31 @@ function ApplicationTrackCard({ application }: { application: any }) {
   }
 
   return (
-    <Card className="border-none shadow-sm group hover:shadow-xl transition-all duration-500 rounded-[2.5rem] bg-card border border-muted/30">
-      <CardContent className="p-10">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-12">
-          <div className="space-y-6 flex-1">
-            <div className="flex items-center gap-4">
-              <Badge className={cn("border-none text-[10px] font-black uppercase tracking-widest px-5 py-2 rounded-full", statusColors[application.status])}>
+    <Card className="border-none shadow-sm group hover:shadow-md transition-all duration-300 rounded-2xl bg-card border border-muted/50">
+      <CardContent className="p-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-3 flex-1">
+            <div className="flex items-center gap-2">
+              <Badge className={cn("border-none text-[8px] font-bold uppercase tracking-widest px-3 py-0.5 rounded-full", statusColors[application.status])}>
                 {application.status}
               </Badge>
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Applied {application.createdAt ? new Date(application.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
+              <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Applied {application.createdAt ? new Date(application.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
             </div>
-            <div className="space-y-2">
-              <h3 className="text-2xl font-black leading-tight tracking-tight">Proposal for: {application.jobTitle}</h3>
-              <p className="text-muted-foreground font-medium italic line-clamp-2 leading-relaxed">"{application.coverLetter}"</p>
+            <div className="space-y-1">
+              <h3 className="text-base font-bold leading-tight tracking-tight">Proposal: {application.jobTitle}</h3>
+              <p className="text-muted-foreground text-xs font-medium italic line-clamp-1">"{application.coverLetter}"</p>
             </div>
           </div>
-          <div className="flex items-center gap-12 shrink-0">
+          <div className="flex items-center gap-6 shrink-0">
             <div className="text-right">
-              <p className="text-4xl font-black text-primary flex items-center gap-1 md:justify-end">
-                <span className="text-2xl font-bold opacity-50">NGN </span>{application.bidAmount?.toLocaleString() || '0'}
+              <p className="text-base font-black text-primary flex items-center gap-1 md:justify-end">
+                <span className="text-xs font-bold opacity-50">NGN </span>{application.bidAmount?.toLocaleString() || '0'}
               </p>
-              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1">Your Proposed Bid</p>
+              <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest">Bid</p>
             </div>
             <Link href={`/jobs/${application.jobId}`}>
-              <Button variant="outline" size="icon" className="rounded-2xl h-16 w-16 border-muted-foreground/20 hover:border-primary hover:text-primary transition-all">
-                <ArrowUpRight className="h-7 w-7" />
+              <Button variant="outline" size="icon" className="rounded-xl h-10 w-10 hover:border-primary hover:text-primary transition-all">
+                <ArrowUpRight className="h-4 w-4" />
               </Button>
             </Link>
           </div>
@@ -321,14 +316,14 @@ function ApplicationTrackCard({ application }: { application: any }) {
 
 function EmptyState({ icon: Icon, title, description, actionUrl, actionText }: any) {
   return (
-    <div className="text-center py-48 bg-card rounded-[4rem] border-2 border-dashed border-muted shadow-inner px-8">
-      <div className="w-28 h-28 bg-muted/50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 transition-transform hover:scale-105 duration-500">
-        <Icon className="h-12 w-12 text-muted-foreground opacity-20" />
+    <div className="text-center py-16 bg-card rounded-[2rem] border border-dashed shadow-sm px-6">
+      <div className="w-16 h-16 bg-muted/50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+        <Icon className="h-8 w-8 text-muted-foreground opacity-20" />
       </div>
-      <h3 className="text-4xl font-black tracking-tight mb-4">{title}</h3>
-      <p className="text-muted-foreground max-w-md mx-auto leading-relaxed text-lg font-medium mb-12">{description}</p>
+      <h3 className="text-xl font-bold tracking-tight mb-2">{title}</h3>
+      <p className="text-muted-foreground max-w-[280px] mx-auto text-xs font-medium mb-6">{description}</p>
       <Link href={actionUrl}>
-        <Button className="rounded-2xl px-14 h-16 font-black text-sm uppercase tracking-widest shadow-2xl shadow-primary/30 transition-all hover:scale-[1.03] active:scale-[0.98]">
+        <Button size="sm" className="rounded-xl px-8 h-10 font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/10">
           {actionText}
         </Button>
       </Link>

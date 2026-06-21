@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -348,6 +347,7 @@ export default function Dashboard() {
                 time={activity.createdAt ? new Date(activity.createdAt.seconds * 1000).toLocaleDateString() : 'Recent'} 
                 desc={activity.message}
                 isNew={!activity.read}
+                href={activity.link}
               />
             )) : (
               <div className="text-center py-12 bg-card rounded-2xl border-2 border-dashed border-muted/50">
@@ -469,8 +469,8 @@ function StatsCard({ icon: Icon, label, value, sub, color }: any) {
   )
 }
 
-function ActivityItem({ icon: Icon, title, time, desc, isNew }: any) {
-  return (
+function ActivityItem({ icon: Icon, title, time, desc, isNew, href }: any) {
+  const content = (
     <Card className={`border-none shadow-sm rounded-2xl overflow-hidden transition-all hover:bg-muted/30 group ${isNew ? 'bg-primary/5 border-l-4 border-l-primary' : 'bg-card'}`}>
       <CardContent className="p-4 flex gap-4 items-start">
         <div className="p-2 bg-muted rounded-xl shrink-0 group-hover:bg-card transition-colors">
@@ -487,6 +487,12 @@ function ActivityItem({ icon: Icon, title, time, desc, isNew }: any) {
       </CardContent>
     </Card>
   )
+
+  if (href) {
+    return <Link href={href}>{content}</Link>
+  }
+
+  return content
 }
 
 function QuickLink({ icon: Icon, label, href }: any) {

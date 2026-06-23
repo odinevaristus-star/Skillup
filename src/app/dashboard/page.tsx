@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -27,7 +28,9 @@ import {
   LayoutDashboard,
   RefreshCw,
   Zap,
-  Star
+  Star,
+  Bell,
+  UserCheck
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -45,6 +48,7 @@ import {
 } from "@/components/ui/dialog"
 import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
+import { cn } from "@/lib/utils"
 
 export default function Dashboard() {
   const [userData, setUserData] = useState<any>(null)
@@ -182,6 +186,10 @@ export default function Dashboard() {
   const handleSwitchRole = async () => {
     if (!userData || switching) return
     const db = getFirestore()
+    const auth = getAuth()
+    const user = auth.currentUser
+    if (!user) return
+
     const newRole = userData.activeRole === 'client' ? 'freelancer' : 'client'
     
     if (newRole === 'freelancer' && (!userData.skill || userData.skill.trim() === "" || !userData.gender)) {
@@ -197,7 +205,7 @@ export default function Dashboard() {
         updatedAt: serverTimestamp()
       }
 
-      await setDoc(doc(db, 'users', userData.id), updates, { merge: true })
+      await setDoc(doc(db, 'users', user.uid), updates, { merge: true })
       
       toast({
         title: `Switched to ${newRole === 'client' ? 'Client' : 'Freelancer'} Mode`,
@@ -273,7 +281,17 @@ export default function Dashboard() {
   const isFreelancer = activeRole === 'freelancer'
   const firstName = userData?.firstName || userData?.fullName?.split(' ')[0] || 'User'
   const fullName = userData?.fullName || `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() || "User"
-  const email = userData?.email || getAuth().currentUser?.email || ""
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'message': return MessageSquare;
+      case 'hire': return UserCheck;
+      case 'status': return CheckCircle2;
+      case 'job_match': return Zap;
+      case 'job': return Briefcase;
+      default: return Bell;
+    }
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
@@ -342,7 +360,7 @@ export default function Dashboard() {
             {recentActivity.length > 0 ? recentActivity.map((activity) => (
               <ActivityItem 
                 key={activity.id}
-                icon={activity.type === 'message' ? MessageSquare : Briefcase} 
+                icon={getActivityIcon(activity.type)} 
                 title={activity.title} 
                 time={activity.createdAt ? new Date(activity.createdAt.seconds * 1000).toLocaleDateString() : 'Recent'} 
                 desc={activity.message}
@@ -471,7 +489,11 @@ function StatsCard({ icon: Icon, label, value, sub, color }: any) {
 
 function ActivityItem({ icon: Icon, title, time, desc, isNew, href }: any) {
   const content = (
-    <Card className={`border-none shadow-sm rounded-2xl overflow-hidden transition-all hover:bg-muted/30 group ${isNew ? 'bg-primary/5 border-l-4 border-l-primary' : 'bg-card'}`}>
+    <Card className={cn(
+      "border-none shadow-sm rounded-2xl overflow-hidden transition-all hover:bg-muted/30 group",
+      isNew ? 'bg-primary/5 border-l-4 border-l-primary' : 'bg-card',
+      href && "cursor-pointer"
+    )}>
       <CardContent className="p-4 flex gap-4 items-start">
         <div className="p-2 bg-muted rounded-xl shrink-0 group-hover:bg-card transition-colors">
           <Icon className="h-4 w-4 text-primary" />
@@ -483,7 +505,7 @@ function ActivityItem({ icon: Icon, title, time, desc, isNew, href }: any) {
           </div>
           <p className="text-xs text-muted-foreground line-clamp-1">{desc}</p>
         </div>
-        <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+        <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all translate-x-[-4px] group-hover:translate-x-0" />
       </CardContent>
     </Card>
   )

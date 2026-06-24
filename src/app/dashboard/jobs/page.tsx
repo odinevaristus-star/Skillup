@@ -216,14 +216,14 @@ function JobManagementCard({ job, onUpdateStatus }: { job: any, onUpdateStatus: 
   return (
     <Card className="border-none shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300 rounded-2xl bg-card border border-muted/50">
       <CardContent className="p-0">
-        <div className="p-5">
+        <div className="p-4">
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
             <div className="space-y-3 flex-1">
               <div className="flex items-center gap-2">
-                <Badge className={cn("px-3 py-0.5 border-none font-bold text-[8px] uppercase tracking-widest rounded-full", current.color)}>
+                <Badge className={cn("px-2.5 py-0.5 border-none font-bold text-[10px] uppercase tracking-widest rounded-full", current.color)}>
                   {current.label}
                 </Badge>
-                <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
                   <Clock className="h-3 w-3" /> {job.createdAt ? new Date(job.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
                 </span>
               </div>
@@ -233,7 +233,7 @@ function JobManagementCard({ job, onUpdateStatus }: { job: any, onUpdateStatus: 
               </div>
             </div>
             <div className="md:text-right shrink-0">
-              <p className="text-base font-black text-primary flex items-center gap-1 md:justify-end">
+              <p className="text-xl font-black text-primary flex items-center gap-1 md:justify-end">
                 {job.budget && job.budget > 0 ? (
                   <>
                     <span className="text-xs font-bold opacity-50">NGN </span>{job.budget.toLocaleString()}
@@ -242,13 +242,13 @@ function JobManagementCard({ job, onUpdateStatus }: { job: any, onUpdateStatus: 
                   "Negotiable"
                 )}
               </p>
-              <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
                 Budget
               </p>
             </div>
           </div>
         </div>
-        <div className="px-5 py-3 bg-muted/20 border-t flex flex-wrap items-center justify-between gap-4">
+        <div className="px-4 py-3 bg-muted/20 border-t flex flex-wrap items-center justify-between gap-4">
           <Link href={`/jobs/${job.id}`}>
             <Button variant="ghost" className="font-bold text-[10px] uppercase tracking-widest text-primary gap-2 hover:bg-primary/5 h-9 px-3 rounded-lg">
               Listing <ArrowUpRight className="h-3.5 w-3.5" />
@@ -281,26 +281,26 @@ function ApplicationTrackCard({ application }: { application: any }) {
 
   return (
     <Card className="border-none shadow-sm group hover:shadow-md transition-all duration-300 rounded-2xl bg-card border border-muted/50">
-      <CardContent className="p-5">
+      <CardContent className="p-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-3 flex-1">
             <div className="flex items-center gap-2">
-              <Badge className={cn("border-none text-[8px] font-bold uppercase tracking-widest px-3 py-0.5 rounded-full", statusColors[application.status])}>
+              <Badge className={cn("border-none text-[10px] font-bold uppercase tracking-widest px-3 py-0.5 rounded-full", statusColors[application.status])}>
                 {application.status}
               </Badge>
-              <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Applied {application.createdAt ? new Date(application.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Applied {application.createdAt ? new Date(application.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
             </div>
             <div className="space-y-1">
-              <h3 className="text-base font-bold leading-tight tracking-tight">Proposal: {application.jobTitle}</h3>
+              <h3 className="text-lg font-bold leading-tight tracking-tight">Proposal: {application.jobTitle}</h3>
               <p className="text-muted-foreground text-xs font-medium italic line-clamp-1">"{application.coverLetter}"</p>
             </div>
           </div>
           <div className="flex items-center gap-6 shrink-0">
             <div className="text-right">
-              <p className="text-base font-black text-primary flex items-center gap-1 md:justify-end">
+              <p className="text-xl font-black text-primary flex items-center gap-1 md:justify-end">
                 <span className="text-xs font-bold opacity-50">NGN </span>{application.bidAmount?.toLocaleString() || '0'}
               </p>
-              <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest">Bid</p>
+              <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Bid</p>
             </div>
             <Link href={`/jobs/${application.jobId}`}>
               <Button variant="outline" size="icon" className="rounded-xl h-10 w-10 hover:border-primary hover:text-primary transition-all">

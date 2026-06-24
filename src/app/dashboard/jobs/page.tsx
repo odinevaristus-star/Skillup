@@ -13,8 +13,7 @@ import {
   ArrowUpRight,
   PlusCircle,
   FileText,
-  UserCheck,
-  MapPin
+  UserCheck
 } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState, useEffect } from "react"
@@ -220,7 +219,7 @@ function JobManagementCard({ job, onUpdateStatus }: { job: any, onUpdateStatus: 
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
             <div className="space-y-3 flex-1">
               <div className="flex items-center gap-2">
-                <Badge className={cn("px-2.5 py-0.5 border-none font-bold text-[10px] uppercase tracking-widest rounded-full", current.color)}>
+                <Badge className={cn("px-2 py-0.5 border-none font-bold text-[9px] uppercase tracking-widest rounded-full", current.color)}>
                   {current.label}
                 </Badge>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
@@ -285,13 +284,13 @@ function ApplicationTrackCard({ application }: { application: any }) {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-3 flex-1">
             <div className="flex items-center gap-2">
-              <Badge className={cn("border-none text-[10px] font-bold uppercase tracking-widest px-3 py-0.5 rounded-full", statusColors[application.status])}>
+              <Badge className={cn("border-none text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full", statusColors[application.status])}>
                 {application.status}
               </Badge>
               <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Applied {application.createdAt ? new Date(application.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
             </div>
             <div className="space-y-1">
-              <h3 className="text-lg font-bold leading-tight tracking-tight">Proposal: {application.jobTitle}</h3>
+              <h3 className="text-lg font-bold leading-tight tracking-tight">{application.jobTitle}</h3>
               <p className="text-muted-foreground text-xs font-medium italic line-clamp-1">"{application.coverLetter}"</p>
             </div>
           </div>

@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect, useMemo, useRef } from "react"
@@ -12,7 +13,8 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { X, Plus, Save, Loader2, Landmark, User, MapPin, Briefcase, Play, Edit, Trash, Upload, ExternalLink, Image as ImageIcon } from "lucide-react"
+import { Progress } from "@/components/ui/progress"
+import { X, Plus, Save, Loader2, Landmark, User, MapPin, Briefcase, Play, Edit, Trash, Upload, ExternalLink, Image as ImageIcon, Sparkles } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useSearchParams, useRouter } from "next/navigation"
 import { SearchableSelect } from "@/components/ui/searchable-select"
@@ -70,6 +72,18 @@ export default function ProfileManagement() {
   const [portfolioSkillInput, setPortfolioSkillInput] = useState("")
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Completion calculation
+  const completionScore = useMemo(() => {
+    if (!profile && !user) return 0
+    let score = 0
+    if (user?.photoURL || profile?.avatarUrl) score += 20
+    if (bio) score += 20
+    if (skills.length > 0) score += 20
+    if (title) score += 10
+    if (portfolio.length > 0) score += 30
+    return score
+  }, [profile, user, bio, skills, title, portfolio])
 
   useEffect(() => {
     if (profile) {
@@ -217,7 +231,6 @@ export default function ProfileManagement() {
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
           
-          // Export as compressed JPEG base64 (0.6 quality is a good balance)
           const dataUrl = canvas.toDataURL('image/jpeg', 0.6); 
           resolve(dataUrl);
         };
@@ -243,7 +256,6 @@ export default function ProfileManagement() {
 
     setIsUploadingImage(true)
     try {
-      // Optimize image before storing to keep Firestore documents under 1MB
       const compressedBase64 = await compressImage(file)
       
       setCurrentPortfolioItem({ 
@@ -312,7 +324,6 @@ export default function ProfileManagement() {
             requestResourceData: data,
           }));
         } else {
-          // Surface specific Firestore errors like 'document-too-large'
           toast({
             variant: "destructive",
             title: "Error saving profile",
@@ -345,17 +356,26 @@ export default function ProfileManagement() {
   return (
     <div className="space-y-10 animate-in fade-in duration-500 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
+        <div className="space-y-2">
           <h1 className="text-4xl font-bold tracking-tight">Professional Profile</h1>
-          <p className="text-muted-foreground text-lg font-medium mt-1">Enhance your visibility and attract top-tier clients.</p>
+          <p className="text-muted-foreground text-lg font-medium">Enhance your visibility and attract top-tier clients.</p>
         </div>
-        <div className="flex items-center gap-4 bg-card px-6 py-3 rounded-2xl border shadow-sm">
-          <Label htmlFor="availability" className="font-bold text-sm">Active & Available</Label>
-          <Switch 
-            id="availability" 
-            checked={isAvailable} 
-            onCheckedChange={setIsAvailable} 
-          />
+        <div className="flex flex-col items-end gap-3">
+          <div className="flex items-center gap-4 bg-card px-6 py-3 rounded-2xl border shadow-sm">
+            <Label htmlFor="availability" className="font-bold text-sm">Active & Available</Label>
+            <Switch 
+              id="availability" 
+              checked={isAvailable} 
+              onCheckedChange={setIsAvailable} 
+            />
+          </div>
+          <div className="w-full max-w-[200px] space-y-1.5 px-1">
+            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-primary">
+              <span>Profile Strength</span>
+              <span>{completionScore}%</span>
+            </div>
+            <Progress value={completionScore} className="h-1.5" />
+          </div>
         </div>
       </div>
 

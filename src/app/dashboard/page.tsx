@@ -30,7 +30,9 @@ import {
   Zap,
   Star,
   Bell,
-  UserCheck
+  UserCheck,
+  Sparkles,
+  Info
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -38,6 +40,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Progress } from "@/components/ui/progress"
 import {
   Dialog,
   DialogContent,
@@ -76,6 +79,12 @@ export default function Dashboard() {
     reviewCount: 0
   })
   const [recentActivity, setRecentActivity] = useState<any[]>([])
+  
+  // Profile Completion State
+  const [completion, setCompletion] = useState({
+    percentage: 0,
+    missing: [] as string[]
+  })
 
   useEffect(() => {
     setMounted(true)
@@ -99,6 +108,22 @@ export default function Dashboard() {
           if (!profile.activeRole) profile.activeRole = profile.role || 'freelancer'
           setUserData(profile)
           if (profile.gender) setSetupGender(profile.gender)
+          
+          // Calculate Profile Completion
+          if (profile.activeRole === 'freelancer') {
+            const items = [
+              { label: "Profile photo", exists: !!(profile.avatarUrl || user.photoURL), weight: 20 },
+              { label: "Professional bio", exists: !!profile.bio, weight: 20 },
+              { label: "Skills", exists: profile.skills && profile.skills.length > 0, weight: 20 },
+              { label: "Professional title", exists: !!profile.title, weight: 10 },
+              { label: "Portfolio projects", exists: profile.portfolio && profile.portfolio.length > 0, weight: 30 },
+            ]
+            
+            const score = items.reduce((acc, item) => acc + (item.exists ? item.weight : 0), 0)
+            const missing = items.filter(i => !i.exists).map(i => i.label)
+            
+            setCompletion({ percentage: score, missing })
+          }
         } else {
           profile = { 
             id: user.uid, 
@@ -294,7 +319,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-700">
+    <div className="space-y-6 animate-in fade-in duration-700 pb-10">
       <div className="bg-card p-6 md:p-10 rounded-[2rem] border border-muted/50 shadow-sm overflow-hidden relative group">
         <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
           <LayoutDashboard className="h-24 w-24 -mr-4 -mt-4" />
@@ -323,6 +348,64 @@ export default function Dashboard() {
           </p>
         </div>
       </div>
+
+      {/* Profile Completion Indicator */}
+      {isFreelancer && completion.percentage < 100 && (
+        <Card className="border-none shadow-xl shadow-primary/5 rounded-[2rem] bg-card overflow-hidden border-2 border-primary/5 animate-in slide-in-from-top-4 duration-1000">
+          <CardContent className="p-6 md:p-10 flex flex-col md:flex-row items-center gap-6 md:gap-10">
+            <div className="relative shrink-0 flex items-center justify-center">
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-8 border-muted flex items-center justify-center">
+                <span className="text-2xl md:text-3xl font-black text-primary">{completion.percentage}%</span>
+              </div>
+              <svg className="absolute w-24 h-24 md:w-32 md:h-32 -rotate-90 pointer-events-none">
+                <circle
+                  cx="50%"
+                  cy="50%"
+                  r={typeof window !== 'undefined' && window.innerWidth >= 768 ? "58" : "44"}
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="transparent"
+                  className="text-primary"
+                  style={{
+                    strokeDasharray: typeof window !== 'undefined' && window.innerWidth >= 768 ? "364" : "276",
+                    strokeDashoffset: typeof window !== 'undefined' && window.innerWidth >= 768 
+                      ? 364 - (364 * completion.percentage) / 100 
+                      : 276 - (276 * completion.percentage) / 100,
+                    transition: "stroke-dashoffset 1.5s ease-in-out"
+                  }}
+                />
+              </svg>
+            </div>
+            
+            <div className="flex-1 space-y-4 text-center md:text-left">
+              <div>
+                <h3 className="text-xl md:text-2xl font-black tracking-tight flex items-center justify-center md:justify-start gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" /> Complete Your Profile
+                </h3>
+                <p className="text-muted-foreground text-sm md:text-base font-medium mt-1">
+                  Complete your professional setup to stand out and win more campus projects.
+                </p>
+              </div>
+              
+              {completion.missing.length > 0 && (
+                <div className="flex flex-wrap justify-center md:justify-start gap-2 pt-2">
+                  {completion.missing.map((item) => (
+                    <Badge key={item} variant="secondary" className="bg-muted/50 text-[9px] uppercase font-bold tracking-widest px-2.5 py-1">
+                      + {item}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Link href="/dashboard/profile" className="shrink-0 w-full md:w-auto">
+              <Button className="w-full md:w-auto h-12 md:h-14 px-8 md:px-10 rounded-2xl font-black text-xs md:text-sm uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all">
+                Finish Setup
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {isFreelancer ? (

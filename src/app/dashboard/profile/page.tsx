@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useMemo, useRef } from "react"
@@ -60,10 +59,12 @@ export default function ProfileManagement() {
   const [department, setDepartment] = useState("")
   const [location, setLocation] = useState("")
   const [priceRange, setPriceRange] = useState("")
+  const [avatarUrl, setAvatarUrl] = useState("")
   const [isAvailable, setIsAvailable] = useState(true)
   const [skills, setSkills] = useState<string[]>([])
   const [newSkill, setNewSkill] = useState("")
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 
   // Portfolio fields
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([])
@@ -71,19 +72,21 @@ export default function ProfileManagement() {
   const [currentPortfolioItem, setCurrentPortfolioItem] = useState<Partial<PortfolioItem>>({})
   const [portfolioSkillInput, setPortfolioSkillInput] = useState("")
   const [isUploadingImage, setIsUploadingImage] = useState(false)
+  
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   // Completion calculation
   const completionScore = useMemo(() => {
     if (!profile && !user) return 0
     let score = 0
-    if (user?.photoURL || profile?.avatarUrl) score += 20
+    if (avatarUrl || user?.photoURL) score += 20
     if (bio) score += 20
     if (skills.length > 0) score += 20
     if (title) score += 10
     if (portfolio.length > 0) score += 30
     return score
-  }, [profile, user, bio, skills, title, portfolio])
+  }, [profile, user, bio, skills, title, portfolio, avatarUrl])
 
   useEffect(() => {
     if (profile) {
@@ -94,6 +97,7 @@ export default function ProfileManagement() {
       setDepartment(profile.department || "")
       setLocation(profile.location || "")
       setPriceRange(profile.priceRange || "")
+      setAvatarUrl(profile.avatarUrl || "")
       setIsAvailable(profile.isAvailable !== undefined ? profile.isAvailable : true)
       setSkills(profile.skills || [])
       
@@ -240,6 +244,31 @@ export default function ProfileManagement() {
     });
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingAvatar(true)
+    try {
+      const compressedBase64 = await compressImage(file)
+      setAvatarUrl(compressedBase64)
+      toast({
+        title: "Photo selected",
+        description: "Remember to update profile to save changes."
+      })
+    } catch (error: any) {
+      console.error("Avatar processing error:", error)
+      toast({
+        variant: "destructive",
+        title: "Upload failed",
+        description: "Could not process image."
+      })
+    } finally {
+      setIsUploadingAvatar(false)
+      if (avatarInputRef.current) avatarInputRef.current.value = ""
+    }
+  }
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -300,6 +329,7 @@ export default function ProfileManagement() {
       department,
       location,
       priceRange,
+      avatarUrl,
       isAvailable,
       skills,
       portfolio,
@@ -389,12 +419,29 @@ export default function ProfileManagement() {
             <CardContent className="p-8 pt-0 space-y-8">
               <div className="flex flex-col md:flex-row gap-10 items-start">
                 <div className="relative group shrink-0">
-                  <Avatar className="w-32 h-32 md:w-40 md:h-40 border-4 border-muted shadow-2xl rounded-3xl overflow-hidden relative">
-                    <AvatarImage src={user?.photoURL || profile?.avatarUrl || ""} />
-                    <AvatarFallback className={cn("text-4xl font-bold flex items-center justify-center", getFallbackBg())}>
-                      {getFallbackIcon()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <button 
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="relative w-32 h-32 md:w-40 md:h-40 group cursor-pointer"
+                  >
+                    <Avatar className="w-full h-full border-4 border-muted shadow-2xl rounded-3xl overflow-hidden relative">
+                      <AvatarImage src={avatarUrl || user?.photoURL || ""} />
+                      <AvatarFallback className={cn("text-4xl font-bold flex items-center justify-center", getFallbackBg())}>
+                        {getFallbackIcon()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl">
+                      {isUploadingAvatar ? <Loader2 className="h-8 w-8 text-white animate-spin" /> : <Upload className="h-8 w-8 text-white" />}
+                      <p className="text-[10px] font-black text-white uppercase tracking-widest mt-2">Update Photo</p>
+                    </div>
+                  </button>
+                  <input 
+                    type="file" 
+                    ref={avatarInputRef} 
+                    hidden 
+                    accept="image/*" 
+                    onChange={handleAvatarUpload} 
+                  />
                 </div>
                 <div className="flex-1 space-y-6 w-full">
                   <div className="grid md:grid-cols-2 gap-6">

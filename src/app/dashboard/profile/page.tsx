@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { X, Plus, Save, Loader2, Landmark, User, MapPin, Briefcase, Play, Edit, Trash, Upload, ExternalLink } from "lucide-react"
+import { X, Plus, Save, Loader2, Landmark, User, MapPin, Briefcase, Play, Edit, Trash, Upload, ExternalLink, Image as ImageIcon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useSearchParams, useRouter } from "next/navigation"
 import { SearchableSelect } from "@/components/ui/searchable-select"
@@ -32,7 +32,7 @@ interface PortfolioItem {
   title: string;
   description: string;
   category: string;
-  imageUrl: string;
+  images: string[]; // Changed from imageUrl: string
   videoLink?: string;
 }
 
@@ -82,7 +82,13 @@ export default function ProfileManagement() {
       setPriceRange(profile.priceRange || "")
       setIsAvailable(profile.isAvailable !== undefined ? profile.isAvailable : true)
       setSkills(profile.skills || [])
-      setPortfolio(profile.portfolio || [])
+      
+      // Handle legacy portfolio items with single imageUrl
+      const processedPortfolio = (profile.portfolio || []).map((item: any) => ({
+        ...item,
+        images: item.images || (item.imageUrl ? [item.imageUrl] : [])
+      }))
+      setPortfolio(processedPortfolio)
     }
   }, [profile])
 
@@ -119,7 +125,7 @@ export default function ProfileManagement() {
         title: "",
         description: "",
         category: "",
-        imageUrl: "",
+        images: [],
         videoLink: ""
       })
     }
@@ -127,11 +133,11 @@ export default function ProfileManagement() {
   }
 
   const handleSavePortfolioItem = () => {
-    if (!currentPortfolioItem.title || !currentPortfolioItem.imageUrl || !currentPortfolioItem.category) {
+    if (!currentPortfolioItem.title || !currentPortfolioItem.images || currentPortfolioItem.images.length === 0 || !currentPortfolioItem.category) {
       toast({
         variant: "destructive",
         title: "Missing fields",
-        description: "Please provide a title, category, and image for your work."
+        description: "Please provide a title, category, and at least one image of your work."
       })
       return
     }
@@ -162,11 +168,21 @@ export default function ProfileManagement() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    if (file.size > 800000) { // Limit roughly to 800KB for Firestore doc safety
+    const currentImages = currentPortfolioItem.images || []
+    if (currentImages.length >= 5) {
+      toast({
+        variant: "destructive",
+        title: "Limit reached",
+        description: "You can only upload up to 5 images per project."
+      })
+      return
+    }
+
+    if (file.size > 800000) { 
       toast({
         variant: "destructive",
         title: "File too large",
-        description: "Please select an image smaller than 800KB."
+        description: "Please select an image smaller than 800KB for faster loading."
       })
       return
     }
@@ -174,10 +190,21 @@ export default function ProfileManagement() {
     setIsUploadingImage(true)
     const reader = new FileReader()
     reader.onloadend = () => {
-      setCurrentPortfolioItem({ ...currentPortfolioItem, imageUrl: reader.result as string })
+      setCurrentPortfolioItem({ 
+        ...currentPortfolioItem, 
+        images: [...currentImages, reader.result as string] 
+      })
       setIsUploadingImage(false)
     }
     reader.readAsDataURL(file)
+  }
+
+  const removePortfolioImage = (idx: number) => {
+    const currentImages = currentPortfolioItem.images || []
+    setCurrentPortfolioItem({
+      ...currentPortfolioItem,
+      images: currentImages.filter((_, i) => i !== idx)
+    })
   }
 
   const handleSave = () => {
@@ -202,7 +229,7 @@ export default function ProfileManagement() {
       .then(() => {
         toast({
           title: "Profile updated",
-          description: "Your professional details have been saved successfully."
+          description: "Your professional details and portfolio have been saved successfully."
         })
         router.push("/dashboard")
       })
@@ -429,7 +456,16 @@ export default function ProfileManagement() {
                   {portfolio.map((item) => (
                     <Card key={item.id} className="group overflow-hidden border bg-muted/20 rounded-2xl relative">
                       <div className="aspect-video relative overflow-hidden bg-muted">
-                        <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                        <img 
+                          src={item.images?.[0] || (item as any).imageUrl || ""} 
+                          alt={item.title} 
+                          className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+                        />
+                        <div className="absolute top-2 right-2 flex gap-1">
+                          {item.images && item.images.length > 1 && (
+                            <Badge className="bg-black/60 text-white border-none text-[10px] font-bold">+ {item.images.length - 1} more</Badge>
+                          )}
+                        </div>
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                           <Button size="icon" variant="secondary" onClick={() => handleOpenPortfolioModal(item)} className="rounded-full">
                             <Edit className="h-4 w-4" />
@@ -474,13 +510,13 @@ export default function ProfileManagement() {
 
       {/* Portfolio Item Modal */}
       <Dialog open={showPortfolioModal} onOpenChange={setShowPortfolioModal}>
-        <DialogContent className="rounded-[2rem] p-8 max-w-xl border-none shadow-2xl">
+        <DialogContent className="rounded-[2rem] p-8 max-w-2xl border-none shadow-2xl">
           <DialogHeader className="space-y-4">
             <DialogTitle className="text-3xl font-black tracking-tight flex items-center gap-3">
               <Briefcase className="h-8 w-8 text-primary" /> {currentPortfolioItem.id ? "Edit Portfolio Item" : "Add Portfolio Item"}
             </DialogTitle>
             <DialogDescription className="text-base font-medium">
-              Share a project you've completed to build trust with clients.
+              Share a project you've completed to build trust with clients. Add up to 5 photos.
             </DialogDescription>
           </DialogHeader>
 
@@ -500,7 +536,7 @@ export default function ProfileManagement() {
                 <SearchableSelect 
                   value={currentPortfolioItem.category || ""} 
                   onValueChange={(val) => setCurrentPortfolioItem({ ...currentPortfolioItem, category: val })}
-                  placeholder="Select category..."
+                  placeholder="Select or search category..."
                   className="h-12"
                 />
               </div>
@@ -518,41 +554,50 @@ export default function ProfileManagement() {
             </div>
 
             <div className="grid gap-2.5">
-              <Label className="font-bold">Project Image</Label>
-              <div className="flex flex-col gap-4">
-                {currentPortfolioItem.imageUrl ? (
-                  <div className="relative aspect-video rounded-xl overflow-hidden group">
-                    <img src={currentPortfolioItem.imageUrl} className="w-full h-full object-cover" alt="Preview" />
+              <div className="flex items-center justify-between">
+                <Label className="font-bold">Project Images ({currentPortfolioItem.images?.length || 0}/5)</Label>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Recommended: 4:3 Ratio</span>
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {currentPortfolioItem.images?.map((img, idx) => (
+                  <div key={idx} className="relative aspect-square rounded-xl overflow-hidden group border bg-muted/30">
+                    <img src={img} className="w-full h-full object-cover" alt={`Preview ${idx + 1}`} />
                     <button 
-                      onClick={() => setCurrentPortfolioItem({ ...currentPortfolioItem, imageUrl: "" })}
-                      className="absolute top-3 right-3 p-2 bg-destructive text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removePortfolioImage(idx)}
+                      className="absolute top-2 right-2 p-1.5 bg-destructive text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3 w-3" />
                     </button>
+                    <div className="absolute bottom-2 left-2">
+                       <Badge className="bg-black/50 text-white border-none text-[8px]">{idx === 0 ? 'Main' : idx + 1}</Badge>
+                    </div>
                   </div>
-                ) : (
+                ))}
+
+                {(currentPortfolioItem.images?.length || 0) < 5 && (
                   <div 
                     onClick={() => fileInputRef.current?.click()}
-                    className="aspect-video bg-muted/50 border-2 border-dashed border-muted flex flex-col items-center justify-center rounded-xl cursor-pointer hover:bg-muted/80 transition-colors"
+                    className="aspect-square bg-muted/50 border-2 border-dashed border-muted flex flex-col items-center justify-center rounded-xl cursor-pointer hover:bg-muted/80 transition-colors"
                   >
                     {isUploadingImage ? (
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     ) : (
                       <>
-                        <Upload className="h-8 w-8 text-muted-foreground/50 mb-2" />
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Click to upload image</p>
+                        <Upload className="h-6 w-6 text-muted-foreground/50 mb-2" />
+                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest text-center px-2">Upload Photo</p>
                       </>
                     )}
                   </div>
                 )}
-                <input 
-                  type="file" 
-                  hidden 
-                  ref={fileInputRef} 
-                  accept="image/*" 
-                  onChange={handleImageUpload} 
-                />
               </div>
+              <input 
+                type="file" 
+                hidden 
+                ref={fileInputRef} 
+                accept="image/*" 
+                onChange={handleImageUpload} 
+              />
             </div>
 
             <div className="grid gap-2.5">
@@ -560,7 +605,7 @@ export default function ProfileManagement() {
                 <Play className="h-4 w-4 text-primary fill-current" /> Video Link (Optional)
               </Label>
               <Input 
-                placeholder="YouTube or Drive URL" 
+                placeholder="YouTube or Google Drive URL" 
                 value={currentPortfolioItem.videoLink} 
                 onChange={(e) => setCurrentPortfolioItem({ ...currentPortfolioItem, videoLink: e.target.value })}
                 className="rounded-xl h-12"
@@ -571,7 +616,7 @@ export default function ProfileManagement() {
           <DialogFooter className="pt-6">
             <Button variant="ghost" onClick={() => setShowPortfolioModal(false)} className="rounded-xl font-bold h-12">Cancel</Button>
             <Button onClick={handleSavePortfolioItem} className="rounded-xl font-black px-10 h-12 shadow-xl shadow-primary/20">
-              Save Item
+              Save Project
             </Button>
           </DialogFooter>
         </DialogContent>

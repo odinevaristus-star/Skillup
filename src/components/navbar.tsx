@@ -42,7 +42,7 @@ export function Navbar() {
 
   const { data: allNotifications } = useCollection(notificationsQuery);
   const unreadNotificationsCount = useMemo(() => {
-    return allNotifications.filter((n: any) => !n.read).length;
+    return allNotifications ? allNotifications.filter((n: any) => !n.read).length : 0;
   }, [allNotifications]);
 
   const messagesQuery = useMemoFirebase(() => {
@@ -52,7 +52,7 @@ export function Navbar() {
 
   const { data: allReceivedMessages } = useCollection(messagesQuery);
   const unreadMessagesCount = useMemo(() => {
-    return allReceivedMessages.filter((m: any) => !m.read).length;
+    return allReceivedMessages ? allReceivedMessages.filter((m: any) => !m.read).length : 0;
   }, [allReceivedMessages]);
 
   const handleSignOut = async () => {
@@ -162,7 +162,7 @@ export function Navbar() {
                 </Button>
               </Link>
               
-              <Link href={isFreelancer ? "/dashboard/freelancers/jobs" : "/dashboard/jobs"}>
+              <Link href="/dashboard/jobs">
                 <Button variant="ghost" className="rounded-2xl h-10 w-10 md:h-12 md:w-auto md:px-4 p-0 flex items-center justify-center gap-2 hover:bg-muted transition-all">
                   <Briefcase className="h-4 w-4 md:h-5 md:w-5" />
                   <span className="hidden md:inline font-black text-[10px] uppercase tracking-widest">My Jobs</span>

@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsUpDown, Search, Sparkles } from "lucide-react"
+import { Check, ChevronsUpDown, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -35,13 +35,18 @@ export function SearchableSelect({
   className,
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(false)
-  const [inputValue, setInputValue] = React.useState("")
+  const [search, setSearch] = React.useState("")
+
+  const allSkills = React.useMemo(() => [...ARTISAN_SKILLS, ...DIGITAL_SKILLS], [])
 
   const handleSelect = (currentValue: string) => {
     onValueChange(currentValue)
     setOpen(false)
-    setInputValue("")
+    setSearch("")
   }
+
+  // Check if search exactly matches any existing skill
+  const isExactMatch = allSkills.some(s => s.toLowerCase() === search.toLowerCase())
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -60,23 +65,27 @@ export function SearchableSelect({
         <Command className="bg-card">
           <CommandInput 
             placeholder="Search or type custom skill..." 
-            value={inputValue}
-            onValueChange={setInputValue}
+            value={search}
+            onValueChange={setSearch}
             className="h-12"
           />
           <CommandList className="max-h-[350px]">
-            <CommandEmpty className="p-4">
-              <div className="flex flex-col gap-2">
-                <p className="text-xs text-muted-foreground font-medium px-1">No exact matches found.</p>
-                <button
-                  type="button"
-                  className="w-full text-left p-3 rounded-xl bg-primary/10 text-primary font-bold text-sm flex items-center gap-2 hover:bg-primary/20 transition-all"
-                  onClick={() => handleSelect(inputValue)}
+            {/* "Use Custom" option shown whenever user types something new and not an exact match */}
+            {search.length > 0 && !isExactMatch && (
+              <CommandGroup heading="Custom Skill">
+                <CommandItem
+                  value={search}
+                  onSelect={() => handleSelect(search)}
+                  className="rounded-xl mx-1 cursor-pointer flex items-center gap-2 bg-primary/5"
                 >
-                  <Sparkles className="h-4 w-4" />
-                  Use custom: "{inputValue}"
-                </button>
-              </div>
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span className="font-bold text-primary">Use: "{search}"</span>
+                </CommandItem>
+              </CommandGroup>
+            )}
+            
+            <CommandEmpty className="p-4 text-center text-sm text-muted-foreground">
+              No results found. Type to add a custom skill.
             </CommandEmpty>
             
             <CommandGroup heading="Artisan Skills">

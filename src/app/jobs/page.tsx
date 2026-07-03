@@ -14,39 +14,52 @@ import {
   Loader2, 
   ArrowRight, 
   Filter,
-  Landmark
+  Landmark,
+  CheckCircle2
 } from "lucide-react"
 import Link from "next/link"
-import { useFirestore } from "@/firebase"
-import { collection, getDocs } from "firebase/firestore"
+import { useFirestore, useUser } from "@/firebase"
+import { collection, getDocs, query, where } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
 import { SearchableSelect } from "@/components/ui/searchable-select"
 
 export default function JobSearchPage() {
+  const { user } = useUser()
   const [searchTerm, setSearchTerm] = useState("")
   const [activeCategory, setActiveCategory] = useState("all")
   const [jobs, setJobs] = useState<any[]>([])
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const db = useFirestore()
 
   useEffect(() => {
-    async function fetchJobs() {
+    async function fetchData() {
       if (!db) return
       setLoading(true)
       try {
+        // Fetch jobs
         const jobsRef = collection(db, 'jobs')
         const snapshot = await getDocs(jobsRef)
         const fetchedJobs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
         setJobs(fetchedJobs)
+
+        // Fetch user's applications if logged in
+        if (user?.uid) {
+          const appsRef = collection(db, 'applications')
+          const appsQuery = query(appsRef, where('freelancerId', '==', user.uid))
+          const appsSnap = await getDocs(appsQuery)
+          const ids = new Set(appsSnap.docs.map(doc => doc.data().jobId))
+          setAppliedJobIds(ids)
+        }
       } catch (error) {
         console.error("Error fetching jobs:", error)
       } finally {
         setLoading(false)
       }
     }
-    fetchJobs()
-  }, [db])
+    fetchData()
+  }, [db, user?.uid])
 
   const filteredJobs = useMemo(() => {
     return jobs
@@ -79,8 +92,8 @@ export default function JobSearchPage() {
             </p>
             <div className="relative group max-w-2xl mx-auto">
               <Search className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5 md:h-6 md:w-6" />
-              <Input 
-                className="h-14 md:h-16 pl-12 md:pl-16 pr-6 md:pr-8 bg-white text-foreground text-lg rounded-2xl border-none shadow-2xl transition-all focus:scale-[1.01]"
+              <input 
+                className="flex h-14 md:h-16 w-full rounded-2xl border-none bg-white px-12 md:px-16 pr-6 md:pr-8 text-lg text-foreground shadow-2xl transition-all focus:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-primary"
                 placeholder="What skills are you offering?"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -125,62 +138,76 @@ export default function JobSearchPage() {
               </div>
             ) : filteredJobs?.length ? (
               <div className="grid gap-6 md:gap-8">
-                {filteredJobs.map((job: any) => (
-                  <Link key={job.id} href={`/jobs/${job.id}`}>
-                    <Card className="group hover:shadow-2xl transition-all duration-500 border-none shadow-sm overflow-hidden bg-card cursor-pointer rounded-[1.5rem] md:rounded-[2.5rem] border border-muted/30">
-                      <CardContent className="p-6 md:p-10">
-                        <div className="flex flex-col md:flex-row gap-6 md:gap-8">
-                          <div className="flex-1 space-y-4 md:space-y-6">
-                            <div className="flex items-center gap-3">
-                              <Badge className="bg-primary/5 text-primary border-none text-[8px] md:text-[10px] font-black uppercase tracking-widest px-3 md:px-4 py-1 md:py-1.5 rounded-full">
-                                {job.category}
-                              </Badge>
-                              <span className="text-[8px] md:text-[10px] text-muted-foreground font-black uppercase tracking-[0.1em] flex items-center gap-1.5">
-                                <Clock className="h-3 w-3 md:h-3.5 md:w-3.5" /> 
-                                {job.createdAt ? formatDistanceToNow(new Date(job.createdAt.seconds * 1000), { addSuffix: true }) : 'Just now'}
-                              </span>
+                {filteredJobs.map((job: any) => {
+                  const hasApplied = appliedJobIds.has(job.id);
+                  return (
+                    <Link key={job.id} href={`/jobs/${job.id}`}>
+                      <Card className="group hover:shadow-2xl transition-all duration-500 border-none shadow-sm overflow-hidden bg-card cursor-pointer rounded-[1.5rem] md:rounded-[2.5rem] border border-muted/30">
+                        <CardContent className="p-6 md:p-10">
+                          <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+                            <div className="flex-1 space-y-4 md:space-y-6">
+                              <div className="flex items-center gap-3">
+                                <Badge className="bg-primary/5 text-primary border-none text-[8px] md:text-[10px] font-black uppercase tracking-widest px-3 md:px-4 py-1 md:py-1.5 rounded-full">
+                                  {job.category}
+                                </Badge>
+                                <span className="text-[8px] md:text-[10px] text-muted-foreground font-black uppercase tracking-[0.1em] flex items-center gap-1.5">
+                                  <Clock className="h-3 w-3 md:h-3.5 md:w-3.5" /> 
+                                  {job.createdAt ? formatDistanceToNow(new Date(job.createdAt.seconds * 1000), { addSuffix: true }) : 'Just now'}
+                                </span>
+                              </div>
+                              <div className="space-y-1 md:space-y-2">
+                                <h3 className="text-xl md:text-3xl font-black group-hover:text-primary transition-colors leading-tight tracking-tighter">
+                                  {job.title}
+                                </h3>
+                                <p className="text-xs md:text-base text-muted-foreground line-clamp-2 leading-relaxed max-w-2xl font-medium">
+                                  {job.description}
+                                </p>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-4 md:gap-6 pt-1 md:pt-2">
+                                <span className="flex items-center gap-1.5 text-[8px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-muted/50 px-3 md:px-4 py-1.5 md:py-2 rounded-xl">
+                                  <MapPin className="h-3 w-3 md:h-4 md:w-4 text-primary" /> {job.location || 'Remote'}
+                                </span>
+                                <span className="flex items-center gap-1.5 text-[8px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-muted/50 px-3 md:px-4 py-1.5 md:py-2 rounded-xl">
+                                  <Briefcase className="h-3 w-3 md:h-4 md:w-4 text-primary" /> {job.clientFirstName || 'User'}
+                                </span>
+                              </div>
                             </div>
-                            <div className="space-y-1 md:space-y-2">
-                              <h3 className="text-xl md:text-3xl font-black group-hover:text-primary transition-colors leading-tight tracking-tighter">
-                                {job.title}
-                              </h3>
-                              <p className="text-xs md:text-base text-muted-foreground line-clamp-2 leading-relaxed max-w-2xl font-medium">
-                                {job.description}
-                              </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-4 md:gap-6 pt-1 md:pt-2">
-                              <span className="flex items-center gap-1.5 text-[8px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-muted/50 px-3 md:px-4 py-1.5 md:py-2 rounded-xl">
-                                <MapPin className="h-3 w-3 md:h-4 md:w-4 text-primary" /> {job.location || 'Remote'}
-                              </span>
-                              <span className="flex items-center gap-1.5 text-[8px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-muted/50 px-3 md:px-4 py-1.5 md:py-2 rounded-xl">
-                                <Briefcase className="h-3 w-3 md:h-4 md:w-4 text-primary" /> {job.clientFirstName || 'User'}
-                              </span>
+                            <div className="md:w-56 flex flex-col items-start md:items-end justify-between gap-4 md:gap-6 md:border-l md:pl-8 md:pt-0">
+                              <div className="md:text-right w-full md:w-auto">
+                                <p className="text-2xl md:text-4xl font-black text-primary flex items-center gap-1 md:justify-end">
+                                  {job.budget && job.budget > 0 ? (
+                                    <>
+                                      <span className="text-base md:text-2xl font-bold opacity-70">NGN </span>{job.budget.toLocaleString()}
+                                    </>
+                                  ) : (
+                                    "Negotiable"
+                                  )}
+                                </p>
+                                <p className="text-[8px] md:text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-0.5">
+                                  {job.budget && job.budget > 0 ? "Est. Budget" : "Negotiable"}
+                                </p>
+                              </div>
+                              
+                              {hasApplied ? (
+                                <Button 
+                                  disabled 
+                                  variant="secondary" 
+                                  className="w-full md:w-auto font-black text-xs uppercase tracking-widest h-11 md:h-14 rounded-2xl gap-2 md:gap-3 px-6 md:px-8 bg-green-500/10 text-green-600 border-none"
+                                >
+                                  Applied <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5" />
+                                </Button>
+                              ) : (
+                                <Button variant="outline" className="w-full md:w-auto font-black text-xs uppercase tracking-widest h-11 md:h-14 rounded-2xl border-muted-foreground/20 hover:border-primary group-hover:bg-primary/5 transition-all gap-2 md:gap-3 px-6 md:px-8">
+                                  Apply Now <ArrowRight className="h-4 w-4 md:h-5 md:w-5 transition-transform group-hover:translate-x-1" />
+                                </Button>
+                              )}
                             </div>
                           </div>
-                          <div className="md:w-56 flex flex-col items-start md:items-end justify-between gap-4 md:gap-6 md:border-l md:pl-8 md:pt-0">
-                            <div className="md:text-right w-full md:w-auto">
-                              <p className="text-2xl md:text-4xl font-black text-primary flex items-center gap-1 md:justify-end">
-                                {job.budget && job.budget > 0 ? (
-                                  <>
-                                    <span className="text-base md:text-2xl font-bold opacity-70">NGN </span>{job.budget.toLocaleString()}
-                                  </>
-                                ) : (
-                                  "Negotiable"
-                                )}
-                              </p>
-                              <p className="text-[8px] md:text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-0.5">
-                                {job.budget && job.budget > 0 ? "Est. Budget" : "Negotiable"}
-                              </p>
-                            </div>
-                            <Button variant="outline" className="w-full md:w-auto font-black text-xs uppercase tracking-widest h-11 md:h-14 rounded-2xl border-muted-foreground/20 hover:border-primary group-hover:bg-primary/5 transition-all gap-2 md:gap-3 px-6 md:px-8">
-                              Apply Now <ArrowRight className="h-4 w-4 md:h-5 md:w-5 transition-transform group-hover:translate-x-1" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-20 md:py-48 bg-card rounded-[2rem] md:rounded-[3rem] border-2 border-dashed border-muted shadow-inner max-w-2xl mx-auto w-full px-6">

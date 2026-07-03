@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsUpDown, Search } from "lucide-react"
+import { Check, ChevronsUpDown, Search, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,6 +12,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from "@/components/ui/command"
 import {
   Popover,
@@ -39,6 +40,7 @@ export function SearchableSelect({
   const handleSelect = (currentValue: string) => {
     onValueChange(currentValue)
     setOpen(false)
+    setInputValue("")
   }
 
   return (
@@ -54,7 +56,7 @@ export function SearchableSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 rounded-2xl overflow-hidden border-none shadow-2xl">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 rounded-2xl overflow-hidden border-none shadow-2xl z-[150]">
         <Command className="bg-card">
           <CommandInput 
             placeholder="Search or type custom skill..." 
@@ -62,23 +64,28 @@ export function SearchableSelect({
             onValueChange={setInputValue}
             className="h-12"
           />
-          <CommandList className="max-h-[300px]">
+          <CommandList className="max-h-[350px]">
             <CommandEmpty className="p-4">
-              <button
-                type="button"
-                className="w-full text-left p-2 rounded-xl bg-primary/10 text-primary font-bold text-sm"
-                onClick={() => handleSelect(inputValue)}
-              >
-                Use custom: "{inputValue}"
-              </button>
+              <div className="flex flex-col gap-2">
+                <p className="text-xs text-muted-foreground font-medium px-1">No exact matches found.</p>
+                <button
+                  type="button"
+                  className="w-full text-left p-3 rounded-xl bg-primary/10 text-primary font-bold text-sm flex items-center gap-2 hover:bg-primary/20 transition-all"
+                  onClick={() => handleSelect(inputValue)}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Use custom: "{inputValue}"
+                </button>
+              </div>
             </CommandEmpty>
+            
             <CommandGroup heading="Artisan Skills">
               {ARTISAN_SKILLS.map((skill) => (
                 <CommandItem
                   key={skill}
                   value={skill}
                   onSelect={handleSelect}
-                  className="rounded-xl mx-1"
+                  className="rounded-xl mx-1 cursor-pointer"
                 >
                   <Check
                     className={cn(
@@ -90,13 +97,16 @@ export function SearchableSelect({
                 </CommandItem>
               ))}
             </CommandGroup>
+            
+            <CommandSeparator className="my-1" />
+            
             <CommandGroup heading="Digital Skills">
               {DIGITAL_SKILLS.map((skill) => (
                 <CommandItem
                   key={skill}
                   value={skill}
                   onSelect={handleSelect}
-                  className="rounded-xl mx-1"
+                  className="rounded-xl mx-1 cursor-pointer"
                 >
                   <Check
                     className={cn(

@@ -32,7 +32,7 @@ interface PortfolioItem {
   title: string;
   description: string;
   category: string;
-  images: string[]; // Changed from imageUrl: string
+  images: string[];
   videoLink?: string;
 }
 
@@ -83,7 +83,6 @@ export default function ProfileManagement() {
       setIsAvailable(profile.isAvailable !== undefined ? profile.isAvailable : true)
       setSkills(profile.skills || [])
       
-      // Handle legacy portfolio items with single imageUrl
       const processedPortfolio = (profile.portfolio || []).map((item: any) => ({
         ...item,
         images: item.images || (item.imageUrl ? [item.imageUrl] : [])
@@ -115,10 +114,9 @@ export default function ProfileManagement() {
     setSkills(skills.filter(s => s !== skillToRemove))
   }
 
-  // Portfolio Management
   const handleOpenPortfolioModal = (item?: PortfolioItem) => {
     if (item) {
-      setCurrentPortfolioItem(item)
+      setCurrentPortfolioItem({ ...item })
     } else {
       setCurrentPortfolioItem({
         id: crypto.randomUUID(),
@@ -439,7 +437,6 @@ export default function ProfileManagement() {
             </CardContent>
           </Card>
 
-          {/* Portfolio Section */}
           <Card className="border-none shadow-sm rounded-3xl bg-card overflow-hidden">
             <CardHeader className="p-8 flex flex-row items-center justify-between">
               <div>
@@ -457,7 +454,7 @@ export default function ProfileManagement() {
                     <Card key={item.id} className="group overflow-hidden border bg-muted/20 rounded-2xl relative">
                       <div className="aspect-video relative overflow-hidden bg-muted">
                         <img 
-                          src={item.images?.[0] || (item as any).imageUrl || ""} 
+                          src={item.images?.[0] || ""} 
                           alt={item.title} 
                           className="w-full h-full object-cover transition-transform group-hover:scale-105" 
                         />
@@ -508,9 +505,8 @@ export default function ProfileManagement() {
         </div>
       </div>
 
-      {/* Portfolio Item Modal */}
       <Dialog open={showPortfolioModal} onOpenChange={setShowPortfolioModal}>
-        <DialogContent className="rounded-[2rem] p-8 max-w-2xl border-none shadow-2xl">
+        <DialogContent className="rounded-[2rem] p-8 max-w-2xl border-none shadow-2xl z-[140]">
           <DialogHeader className="space-y-4">
             <DialogTitle className="text-3xl font-black tracking-tight flex items-center gap-3">
               <Briefcase className="h-8 w-8 text-primary" /> {currentPortfolioItem.id ? "Edit Portfolio Item" : "Add Portfolio Item"}

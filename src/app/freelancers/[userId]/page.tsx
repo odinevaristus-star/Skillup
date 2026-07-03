@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useParams, useRouter } from "next/navigation"
@@ -504,11 +503,15 @@ function PortfolioCard({ item }: { item: any }) {
       </div>
       <div className="p-8 flex-1 flex flex-col">
         <div className="flex items-center justify-between gap-4 mb-4">
-          <Badge variant="secondary" className="px-3 py-1 rounded-full text-[10px] uppercase font-black tracking-[0.2em]">{item.category}</Badge>
+          <div className="flex flex-wrap gap-1.5">
+            {item.skills?.map((s: string) => (
+              <Badge key={s} variant="secondary" className="px-3 py-1 rounded-full text-[10px] uppercase font-black tracking-[0.2em]">{s}</Badge>
+            ))}
+          </div>
           {item.videoLink && (
             <button 
               onClick={() => window.open(item.videoLink, '_blank')}
-              className="p-2 bg-primary/10 rounded-full text-primary hover:bg-primary/20 transition-colors"
+              className="p-2 bg-primary/10 rounded-full text-primary hover:bg-primary/20 transition-colors shrink-0"
             >
               <ExternalLink className="h-4 w-4" />
             </button>

@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useMemo, useRef } from "react"
@@ -31,7 +30,7 @@ interface PortfolioItem {
   id: string;
   title: string;
   description: string;
-  category: string;
+  skills: string[];
   images: string[];
   videoLink?: string;
 }
@@ -68,6 +67,7 @@ export default function ProfileManagement() {
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([])
   const [showPortfolioModal, setShowPortfolioModal] = useState(false)
   const [currentPortfolioItem, setCurrentPortfolioItem] = useState<Partial<PortfolioItem>>({})
+  const [portfolioSkillInput, setPortfolioSkillInput] = useState("")
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -85,6 +85,7 @@ export default function ProfileManagement() {
       
       const processedPortfolio = (profile.portfolio || []).map((item: any) => ({
         ...item,
+        skills: item.skills || (item.category ? [item.category] : []),
         images: item.images || (item.imageUrl ? [item.imageUrl] : [])
       }))
       setPortfolio(processedPortfolio)
@@ -122,20 +123,44 @@ export default function ProfileManagement() {
         id: crypto.randomUUID(),
         title: "",
         description: "",
-        category: "",
+        skills: [],
         images: [],
         videoLink: ""
       })
     }
+    setPortfolioSkillInput("")
     setShowPortfolioModal(true)
   }
 
+  const addPortfolioSkill = (e?: React.FormEvent) => {
+    e?.preventDefault()
+    const trimmed = portfolioSkillInput.trim()
+    if (trimmed) {
+      const currentSkills = currentPortfolioItem.skills || []
+      if (!currentSkills.includes(trimmed)) {
+        setCurrentPortfolioItem({
+          ...currentPortfolioItem,
+          skills: [...currentSkills, trimmed]
+        })
+      }
+      setPortfolioSkillInput("")
+    }
+  }
+
+  const removePortfolioSkill = (skillToRemove: string) => {
+    const currentSkills = currentPortfolioItem.skills || []
+    setCurrentPortfolioItem({
+      ...currentPortfolioItem,
+      skills: currentSkills.filter(s => s !== skillToRemove)
+    })
+  }
+
   const handleSavePortfolioItem = () => {
-    if (!currentPortfolioItem.title || !currentPortfolioItem.images || currentPortfolioItem.images.length === 0 || !currentPortfolioItem.category) {
+    if (!currentPortfolioItem.title || !currentPortfolioItem.images || currentPortfolioItem.images.length === 0 || !currentPortfolioItem.skills || currentPortfolioItem.skills.length === 0) {
       toast({
         variant: "destructive",
         title: "Missing fields",
-        description: "Please provide a title, category, and at least one image of your work."
+        description: "Please provide a title, at least one skill, and at least one image of your work."
       })
       return
     }
@@ -473,7 +498,14 @@ export default function ProfileManagement() {
                         </div>
                       </div>
                       <div className="p-4">
-                        <Badge variant="outline" className="text-[10px] uppercase tracking-widest font-black mb-2">{item.category}</Badge>
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {item.skills?.slice(0, 2).map((s) => (
+                            <Badge key={s} variant="outline" className="text-[8px] uppercase tracking-widest font-black">{s}</Badge>
+                          ))}
+                          {item.skills && item.skills.length > 2 && (
+                            <Badge variant="outline" className="text-[8px] uppercase tracking-widest font-black">+{item.skills.length - 2}</Badge>
+                          )}
+                        </div>
                         <h4 className="font-bold text-sm truncate">{item.title}</h4>
                         <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{item.description}</p>
                         {item.videoLink && (
@@ -528,13 +560,32 @@ export default function ProfileManagement() {
                 />
               </div>
               <div className="grid gap-2.5">
-                <Label className="font-bold">Category</Label>
-                <SearchableSelect 
-                  value={currentPortfolioItem.category || ""} 
-                  onValueChange={(val) => setCurrentPortfolioItem({ ...currentPortfolioItem, category: val })}
-                  placeholder="Select or search category..."
-                  className="h-12"
-                />
+                <Label className="font-bold">Skills Used</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="e.g. Photoshop, HTML" 
+                    value={portfolioSkillInput} 
+                    onChange={(e) => setPortfolioSkillInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        addPortfolioSkill()
+                      }
+                    }}
+                    className="rounded-xl h-12 flex-1"
+                  />
+                  <Button type="button" onClick={addPortfolioSkill} variant="outline" className="h-12 rounded-xl px-4">Add</Button>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {currentPortfolioItem.skills?.map((s) => (
+                    <Badge key={s} variant="secondary" className="px-3 py-1 rounded-lg flex items-center gap-1.5">
+                      {s}
+                      <button onClick={() => removePortfolioSkill(s)} className="hover:text-destructive">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
               </div>
             </div>
 

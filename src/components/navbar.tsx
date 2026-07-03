@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/use-theme';
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { Sun, Moon, Zap, User, LogOut, LayoutDashboard, Bell, MessageSquare, Users, Search, PlusCircle } from 'lucide-react';
+import { Sun, Moon, Zap, User, LogOut, LayoutDashboard, Bell, MessageSquare, Users, Search, PlusCircle, Briefcase } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -161,6 +161,14 @@ export function Navbar() {
                   )}
                 </Button>
               </Link>
+              
+              <Link href={isFreelancer ? "/dashboard/freelancers/jobs" : "/dashboard/jobs"}>
+                <Button variant="ghost" className="rounded-2xl h-10 w-10 md:h-12 md:w-auto md:px-4 p-0 flex items-center justify-center gap-2 hover:bg-muted transition-all">
+                  <Briefcase className="h-4 w-4 md:h-5 md:w-5" />
+                  <span className="hidden md:inline font-black text-[10px] uppercase tracking-widest">My Jobs</span>
+                </Button>
+              </Link>
+
               <Link href="/dashboard/notifications" className="relative">
                 <Button variant="ghost" size="icon" className="rounded-2xl h-10 w-10 md:h-12 md:w-12 hover:bg-muted transition-all">
                   <Bell className="h-4 w-4 md:h-5 md:w-5" />

@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
@@ -140,52 +139,52 @@ export default function JobDetailPage() {
   return (
     <div className="min-h-screen bg-muted/20 flex flex-col">
       <Navbar />
-      <div className="container mx-auto px-4 py-16 flex-1 max-w-6xl">
-        <Button variant="ghost" onClick={() => router.back()} className="mb-10 gap-2 text-primary font-bold rounded-xl hover:bg-primary/5">
+      <div className="container mx-auto px-4 py-8 md:py-16 flex-1 max-w-6xl">
+        <Button variant="ghost" onClick={() => router.back()} className="mb-6 md:mb-10 gap-2 text-primary font-bold rounded-xl hover:bg-primary/5 h-10 md:h-12">
           <ChevronLeft className="h-5 w-5" /> Back to Search
         </Button>
 
-        <div className="grid lg:grid-cols-3 gap-12">
-          <div className="lg:col-span-2 space-y-12">
-            <Card className="border-none shadow-sm overflow-hidden rounded-[2.5rem] bg-card">
-              <CardHeader className="p-10 border-b">
-                <div className="flex flex-wrap gap-3 mb-6">
-                  <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full">
+        <div className="grid lg:grid-cols-3 gap-8 md:gap-12">
+          <div className="lg:col-span-2 space-y-8 md:space-y-12">
+            <Card className="border-none shadow-sm overflow-hidden rounded-[1.5rem] md:rounded-[2.5rem] bg-card">
+              <CardHeader className="p-6 md:p-10 border-b">
+                <div className="flex flex-wrap gap-2 mb-4 md:mb-6">
+                  <Badge className="bg-primary/5 text-primary border-none text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 md:px-4 py-1.5 rounded-full">
                     {job.category}
                   </Badge>
-                  <Badge variant="outline" className="border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full">
+                  <Badge variant="outline" className="border-primary/20 text-primary text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 md:px-4 py-1.5 rounded-full">
                     {job.status === 'open' ? 'Active Listing' : 'Project Closed'}
                   </Badge>
                 </div>
-                <CardTitle className="text-4xl md:text-5xl font-black tracking-tighter leading-tight">{job.title}</CardTitle>
-                <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mt-8 text-muted-foreground text-sm font-bold uppercase tracking-widest">
-                  <span className="flex items-center gap-2"><Calendar className="h-4 w-4 text-primary" /> {job.createdAt ? formatDistanceToNow(new Date(job.createdAt.seconds * 1000), { addSuffix: true }) : 'Recent'}</span>
-                  <span className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /> {job.location || 'Remote'}</span>
-                  <span className="flex items-center gap-2 text-primary">
-                    <Landmark className="h-4 w-4" /> 
+                <CardTitle className="text-2xl md:text-4xl font-black tracking-tighter leading-tight">{job.title}</CardTitle>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mt-6 text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest">
+                  <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5 text-primary" /> {job.createdAt ? formatDistanceToNow(new Date(job.createdAt.seconds * 1000), { addSuffix: true }) : 'Recent'}</span>
+                  <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-primary" /> {job.location || 'Remote'}</span>
+                  <span className="flex items-center gap-1.5 text-primary">
+                    <Landmark className="h-3.5 w-3.5" /> 
                     {job.budget && job.budget > 0 ? `NGN ${job.budget.toLocaleString()}` : "Negotiable"}
                   </span>
                 </div>
               </CardHeader>
-              <CardContent className="p-10 space-y-10">
+              <CardContent className="p-6 md:p-10 space-y-8 md:space-y-10">
                 <div>
-                  <h3 className="text-xl font-black mb-6 flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">01</span>
+                  <h3 className="text-lg md:text-xl font-black mb-4 md:mb-6 flex items-center gap-3">
+                    <span className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-xs md:text-sm font-bold">01</span>
                     Description
                   </h3>
-                  <p className="text-muted-foreground text-lg leading-relaxed whitespace-pre-line font-medium">{job.description}</p>
+                  <p className="text-muted-foreground text-base md:text-lg leading-relaxed whitespace-pre-line font-medium">{job.description}</p>
                 </div>
                 
-                <div className="pt-10 border-t">
-                  <h3 className="text-xl font-black mb-6 flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">02</span>
+                <div className="pt-8 md:pt-10 border-t">
+                  <h3 className="text-lg md:text-xl font-black mb-4 md:mb-6 flex items-center gap-3">
+                    <span className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-xs md:text-sm font-bold">02</span>
                     Requirements
                   </h3>
-                  <div className="flex flex-wrap gap-3">
+                  <div className="flex flex-wrap gap-2 md:gap-3">
                     {job.skillsRequired?.length ? job.skillsRequired.map((s: string) => (
-                      <Badge key={s} variant="secondary" className="px-5 py-2.5 text-xs font-bold rounded-xl">{s}</Badge>
+                      <Badge key={s} variant="secondary" className="px-4 py-2 md:px-5 md:py-2.5 text-[10px] md:text-xs font-bold rounded-xl">{s}</Badge>
                     )) : (
-                      <span className="text-base text-muted-foreground font-medium flex items-center gap-2">
+                      <span className="text-sm md:text-base text-muted-foreground font-medium flex items-center gap-2">
                         <Zap className="h-4 w-4 text-primary" /> Open to all qualified professionals
                       </span>
                     )}
@@ -196,62 +195,62 @@ export default function JobDetailPage() {
           </div>
 
           <aside className="space-y-8">
-            <Card className="border-none shadow-2xl bg-primary text-primary-foreground rounded-[2.5rem] overflow-hidden sticky top-28">
-              <CardHeader className="p-10 pb-4">
-                <CardTitle className="text-2xl font-black">
+            <Card className="border-none shadow-2xl bg-primary text-primary-foreground rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden sticky top-28">
+              <CardHeader className="p-6 md:p-10 pb-4">
+                <CardTitle className="text-xl md:text-2xl font-black">
                   {hasApplied ? "Applied ✓" : "Join Project"}
                 </CardTitle>
-                <CardDescription className="text-primary-foreground/70 font-medium text-base">
+                <CardDescription className="text-primary-foreground/70 font-medium text-sm md:text-base">
                   {hasApplied 
                     ? "Your proposal is being reviewed by the client." 
                     : "Submit your professional proposal to begin this collaboration."}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-10 pt-6">
+              <CardContent className="p-6 md:p-10 pt-4 md:pt-6">
                 {!showApplyForm ? (
                   <Button 
-                    className="w-full bg-white text-primary hover:bg-white/90 h-16 text-xl font-black rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="w-full bg-white text-primary hover:bg-white/90 h-14 md:h-16 text-lg md:text-xl font-black rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
                     onClick={() => setShowApplyForm(true)}
                     disabled={hasApplied || job.status !== 'open'}
                   >
                     {hasApplied ? "Application Submitted" : "Quick Apply"}
                   </Button>
                 ) : (
-                  <form onSubmit={handleApply} className="space-y-6">
-                    <div className="grid gap-3">
-                      <Label htmlFor="bid" className="text-white font-bold text-sm uppercase tracking-widest">Your Bid (NGN)</Label>
+                  <form onSubmit={handleApply} className="space-y-4 md:space-y-6">
+                    <div className="grid gap-2">
+                      <Label htmlFor="bid" className="text-white font-bold text-[10px] md:text-sm uppercase tracking-widest">Your Bid (NGN)</Label>
                       <Input 
                         id="bid" 
                         type="number" 
                         placeholder={job.budget && job.budget > 0 ? job.budget.toString() : "Enter your bid"} 
-                        className="bg-primary-foreground/10 border-white/20 text-white placeholder:text-white/40 h-14 rounded-xl px-6 font-bold text-lg"
+                        className="bg-primary-foreground/10 border-white/20 text-white placeholder:text-white/40 h-12 md:h-14 rounded-xl px-4 md:px-6 font-bold text-base md:text-lg"
                         value={bidAmount}
                         onChange={(e) => setBidAmount(e.target.value)}
                       />
                     </div>
-                    <div className="grid gap-3">
-                      <Label htmlFor="letter" className="text-white font-bold text-sm uppercase tracking-widest">Cover Letter (Optional)</Label>
+                    <div className="grid gap-2">
+                      <Label htmlFor="letter" className="text-white font-bold text-[10px] md:text-sm uppercase tracking-widest">Cover Letter (Optional)</Label>
                       <Textarea 
                         id="letter" 
                         placeholder="Detail your relevant experience (optional)..." 
-                        className="bg-primary-foreground/10 border-white/20 text-white placeholder:text-white/40 rounded-xl p-6 resize-none"
+                        className="bg-primary-foreground/10 border-white/20 text-white placeholder:text-white/40 rounded-xl p-4 md:p-6 resize-none text-sm md:text-base"
                         rows={5}
                         value={coverLetter}
                         onChange={(e) => setCoverLetter(e.target.value)}
                       />
                     </div>
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-2 md:gap-3">
                       <Button 
                         type="submit" 
-                        className="w-full bg-white text-primary hover:bg-white/90 h-16 text-lg font-black rounded-2xl shadow-xl"
+                        className="w-full bg-white text-primary hover:bg-white/90 h-12 md:h-14 text-base md:text-lg font-black rounded-2xl shadow-xl"
                         disabled={isApplying}
                       >
-                        {isApplying ? <Loader2 className="h-6 w-6 animate-spin" /> : "Submit Proposal"}
+                        {isApplying ? <Loader2 className="h-5 w-5 animate-spin" /> : "Submit Proposal"}
                       </Button>
                       <Button 
                         type="button" 
                         variant="ghost" 
-                        className="w-full text-white hover:bg-white/10 h-12 font-bold"
+                        className="w-full text-white hover:bg-white/10 h-10 md:h-12 font-bold text-xs md:text-sm"
                         onClick={() => setShowApplyForm(false)}
                       >
                         Cancel
@@ -262,19 +261,19 @@ export default function JobDetailPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-sm rounded-[2.5rem] bg-card overflow-hidden">
-              <CardHeader className="p-10 pb-4">
-                <CardTitle className="text-xl font-black">About Client</CardTitle>
+            <Card className="border-none shadow-sm rounded-[1.5rem] md:rounded-[2.5rem] bg-card overflow-hidden">
+              <CardHeader className="p-6 md:p-10 pb-4">
+                <CardTitle className="text-lg md:text-xl font-black">About Client</CardTitle>
               </CardHeader>
-              <CardContent className="p-10 pt-4 space-y-8">
+              <CardContent className="p-6 md:p-10 pt-2 md:pt-4 space-y-6 md:space-y-8">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center border-2 border-background shadow-sm">
-                    <User className="h-7 w-7 text-muted-foreground/40" />
+                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-muted flex items-center justify-center border-2 border-background shadow-sm shrink-0">
+                    <User className="h-6 w-6 md:h-7 md:w-7 text-muted-foreground/40" />
                   </div>
-                  <div>
-                    <p className="font-black text-lg">{job.clientName}</p>
-                    <p className="text-[10px] text-green-500 font-black uppercase tracking-widest flex items-center gap-1.5">
-                      <ShieldCheck className="h-3.5 w-3.5" /> Verified Account
+                  <div className="min-w-0">
+                    <p className="font-black text-base md:text-lg truncate">{job.clientName}</p>
+                    <p className="text-[9px] md:text-[10px] text-green-500 font-black uppercase tracking-widest flex items-center gap-1.5">
+                      <ShieldCheck className="h-3 w-3 md:h-3.5 md:w-3.5" /> Verified Account
                     </p>
                   </div>
                 </div>

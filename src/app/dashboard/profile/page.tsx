@@ -538,7 +538,7 @@ export default function ProfileManagement() {
       </div>
 
       <Dialog open={showPortfolioModal} onOpenChange={setShowPortfolioModal}>
-        <DialogContent className="rounded-[2rem] p-8 max-w-2xl border-none shadow-2xl z-[140]">
+        <DialogContent className="rounded-[2rem] p-8 max-w-2xl border-none shadow-2xl z-[140] max-h-[95vh] overflow-y-auto">
           <DialogHeader className="space-y-4">
             <DialogTitle className="text-3xl font-black tracking-tight flex items-center gap-3">
               <Briefcase className="h-8 w-8 text-primary" /> {currentPortfolioItem.id ? "Edit Portfolio Item" : "Add Portfolio Item"}

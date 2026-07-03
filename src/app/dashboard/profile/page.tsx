@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect, useMemo, useRef } from "react"
-import { useUser, useFirestore, useDoc, errorEmitter, FirestorePermissionError } from "@/firebase"
+import { useUser, useFirestore, useDoc, errorEmitter, FirestorePermissionError, useStorage } from "@/firebase"
 import { doc, setDoc } from "firebase/firestore"
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -38,6 +39,7 @@ interface PortfolioItem {
 export default function ProfileManagement() {
   const { user, loading: authLoading } = useUser()
   const db = useFirestore()
+  const storage = useStorage()
   const { toast } = useToast()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -187,9 +189,9 @@ export default function ProfileManagement() {
     })
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file || !user?.uid) return
 
     const currentImages = currentPortfolioItem.images || []
     if (currentImages.length >= 5) {
@@ -201,25 +203,36 @@ export default function ProfileManagement() {
       return
     }
 
-    if (file.size > 800000) { 
-      toast({
-        variant: "destructive",
-        title: "File too large",
-        description: "Please select an image smaller than 800KB for faster loading."
-      })
-      return
-    }
-
     setIsUploadingImage(true)
-    const reader = new FileReader()
-    reader.onloadend = () => {
+    try {
+      // Upload to Firebase Storage instead of storing as base64 to avoid Firestore document size limits (1MB)
+      const storagePath = `portfolio-images/${user.uid}/${Date.now()}-${file.name}`
+      const storageRef = ref(storage, storagePath)
+      
+      const snapshot = await uploadBytes(storageRef, file)
+      const downloadURL = await getDownloadURL(snapshot.ref)
+      
       setCurrentPortfolioItem({ 
         ...currentPortfolioItem, 
-        images: [...currentImages, reader.result as string] 
+        images: [...currentImages, downloadURL] 
       })
+
+      toast({
+        title: "Image uploaded",
+        description: "Successfully stored in portfolio."
+      })
+    } catch (error: any) {
+      console.error("Storage upload error:", error)
+      toast({
+        variant: "destructive",
+        title: "Upload failed",
+        description: error.message || "Could not upload image. Please try again."
+      })
+    } finally {
       setIsUploadingImage(false)
+      // Clear input value to allow same file re-upload if needed
+      if (fileInputRef.current) fileInputRef.current.value = ""
     }
-    reader.readAsDataURL(file)
   }
 
   const removePortfolioImage = (idx: number) => {
@@ -256,18 +269,22 @@ export default function ProfileManagement() {
         })
         router.push("/dashboard")
       })
-      .catch(async (serverError) => {
+      .catch(async (serverError: any) => {
         setIsSaving(false)
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: `users/${user.uid}`,
-          operation: 'write',
-          requestResourceData: data,
-        }));
-        toast({
-          variant: "destructive",
-          title: "Error saving profile",
-          description: "Please check your connectivity and try again."
-        })
+        
+        if (serverError?.code === 'permission-denied') {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `users/${user.uid}`,
+            operation: 'write',
+            requestResourceData: data,
+          }));
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Error saving profile",
+            description: serverError.message || "Please check your connectivity and try again."
+          })
+        }
       });
   }
 
@@ -603,7 +620,7 @@ export default function ProfileManagement() {
             <div className="grid gap-2.5">
               <div className="flex items-center justify-between">
                 <Label className="font-bold">Project Images ({currentPortfolioItem.images?.length || 0}/5)</Label>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Recommended: 4:3 Ratio</span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Uploads stored in Cloud Storage</span>
               </div>
               
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">

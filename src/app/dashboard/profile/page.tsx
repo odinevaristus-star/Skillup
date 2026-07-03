@@ -1,9 +1,8 @@
 "use client"
 
 import { useState, useEffect, useMemo, useRef } from "react"
-import { useUser, useFirestore, useDoc, errorEmitter, FirestorePermissionError, useStorage } from "@/firebase"
+import { useUser, useFirestore, useDoc, errorEmitter, FirestorePermissionError } from "@/firebase"
 import { doc, setDoc } from "firebase/firestore"
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -39,7 +38,6 @@ interface PortfolioItem {
 export default function ProfileManagement() {
   const { user, loading: authLoading } = useUser()
   const db = useFirestore()
-  const storage = useStorage()
   const { toast } = useToast()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -87,8 +85,8 @@ export default function ProfileManagement() {
       
       const processedPortfolio = (profile.portfolio || []).map((item: any) => ({
         ...item,
-        skills: item.skills || (item.category ? [item.category] : []),
-        images: item.images || (item.imageUrl ? [item.imageUrl] : [])
+        skills: item.skills || [],
+        images: item.images || []
       }))
       setPortfolio(processedPortfolio)
     }
@@ -189,9 +187,49 @@ export default function ProfileManagement() {
     })
   }
 
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Export as compressed JPEG base64 (0.6 quality is a good balance)
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.6); 
+          resolve(dataUrl);
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file || !user?.uid) return
+    if (!file) return
 
     const currentImages = currentPortfolioItem.images || []
     if (currentImages.length >= 5) {
@@ -205,32 +243,27 @@ export default function ProfileManagement() {
 
     setIsUploadingImage(true)
     try {
-      // Upload to Firebase Storage instead of storing as base64 to avoid Firestore document size limits (1MB)
-      const storagePath = `portfolio-images/${user.uid}/${Date.now()}-${file.name}`
-      const storageRef = ref(storage, storagePath)
-      
-      const snapshot = await uploadBytes(storageRef, file)
-      const downloadURL = await getDownloadURL(snapshot.ref)
+      // Optimize image before storing to keep Firestore documents under 1MB
+      const compressedBase64 = await compressImage(file)
       
       setCurrentPortfolioItem({ 
         ...currentPortfolioItem, 
-        images: [...currentImages, downloadURL] 
+        images: [...currentImages, compressedBase64] 
       })
 
       toast({
-        title: "Image uploaded",
-        description: "Successfully stored in portfolio."
+        title: "Image added",
+        description: "Successfully optimized and added to project."
       })
     } catch (error: any) {
-      console.error("Storage upload error:", error)
+      console.error("Image processing error:", error)
       toast({
         variant: "destructive",
-        title: "Upload failed",
-        description: error.message || "Could not upload image. Please try again."
+        title: "Processing failed",
+        description: "Could not process image. Please try again."
       })
     } finally {
       setIsUploadingImage(false)
-      // Clear input value to allow same file re-upload if needed
       if (fileInputRef.current) fileInputRef.current.value = ""
     }
   }
@@ -279,6 +312,7 @@ export default function ProfileManagement() {
             requestResourceData: data,
           }));
         } else {
+          // Surface specific Firestore errors like 'document-too-large'
           toast({
             variant: "destructive",
             title: "Error saving profile",
@@ -620,7 +654,7 @@ export default function ProfileManagement() {
             <div className="grid gap-2.5">
               <div className="flex items-center justify-between">
                 <Label className="font-bold">Project Images ({currentPortfolioItem.images?.length || 0}/5)</Label>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Uploads stored in Cloud Storage</span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Optimized for storage</span>
               </div>
               
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -645,7 +679,10 @@ export default function ProfileManagement() {
                     className="aspect-square bg-muted/50 border-2 border-dashed border-muted flex flex-col items-center justify-center rounded-xl cursor-pointer hover:bg-muted/80 transition-colors"
                   >
                     {isUploadingImage ? (
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <div className="flex flex-col items-center gap-2">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        <p className="text-[8px] font-bold text-primary animate-pulse">OPTIMIZING...</p>
+                      </div>
                     ) : (
                       <>
                         <Upload className="h-6 w-6 text-muted-foreground/50 mb-2" />

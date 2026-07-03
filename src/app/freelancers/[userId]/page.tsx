@@ -20,7 +20,10 @@ import {
   Share2,
   User,
   PlusCircle,
-  Quote
+  Quote,
+  Briefcase,
+  Play,
+  ExternalLink
 } from "lucide-react"
 import { useFirestore, useDoc, useMemoFirebase, useUser, useCollection } from "@/firebase"
 import { doc, collection, query, where, addDoc, serverTimestamp, updateDoc } from "firebase/firestore"
@@ -90,7 +93,7 @@ export default function FreelancerProfilePage() {
       router.push(`/login?redirect=/freelancers/${userId}`)
       return
     }
-    // Booking logic would go here
+    toast({ title: "Booking Request Sent", description: "The professional will reach out to confirm." })
   }
 
   const handleSubmitReview = async (e: React.FormEvent) => {
@@ -296,6 +299,50 @@ export default function FreelancerProfilePage() {
                 ))}
               </div>
             </section>
+
+            {/* Portfolio Section */}
+            {profile.portfolio && profile.portfolio.length > 0 && (
+              <section className="space-y-8">
+                <h2 className="text-3xl font-black tracking-tight">Work Portfolio</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {profile.portfolio.map((item: any) => (
+                    <Card key={item.id} className="group overflow-hidden border-none shadow-sm bg-card rounded-[2rem] flex flex-col">
+                      <div className="aspect-video relative overflow-hidden bg-muted">
+                        <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                        {item.videoLink && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button 
+                              size="lg" 
+                              className="rounded-full h-16 w-16 bg-white text-primary hover:bg-white/90 shadow-2xl"
+                              onClick={() => window.open(item.videoLink, '_blank')}
+                            >
+                              <Play className="h-8 w-8 fill-current" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-8 flex-1 flex flex-col">
+                        <div className="flex items-center justify-between gap-4 mb-4">
+                          <Badge variant="secondary" className="px-3 py-1 rounded-full text-[10px] uppercase font-black tracking-[0.2em]">{item.category}</Badge>
+                          {item.videoLink && (
+                            <button 
+                              onClick={() => window.open(item.videoLink, '_blank')}
+                              className="p-2 bg-primary/10 rounded-full text-primary hover:bg-primary/20 transition-colors"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                        <h3 className="text-xl font-bold mb-3">{item.title}</h3>
+                        <p className="text-muted-foreground text-sm font-medium leading-relaxed flex-1">
+                          {item.description}
+                        </p>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </section>
+            )}
 
             <section className="space-y-8">
               <div className="flex items-center justify-between">

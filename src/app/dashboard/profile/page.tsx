@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { useUser, useFirestore, useDoc, errorEmitter, FirestorePermissionError } from "@/firebase"
 import { doc, setDoc } from "firebase/firestore"
 import { Button } from "@/components/ui/button"
@@ -13,11 +13,28 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { X, Plus, Save, Loader2, Landmark, User, MapPin } from "lucide-react"
+import { X, Plus, Save, Loader2, Landmark, User, MapPin, Briefcase, Play, Edit, Trash, Upload, ExternalLink } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useSearchParams, useRouter } from "next/navigation"
 import { SearchableSelect } from "@/components/ui/searchable-select"
 import { cn } from "@/lib/utils"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+
+interface PortfolioItem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  imageUrl: string;
+  videoLink?: string;
+}
 
 export default function ProfileManagement() {
   const { user, loading: authLoading } = useUser()
@@ -34,6 +51,7 @@ export default function ProfileManagement() {
 
   const { data: profile, loading: profileLoading } = useDoc(userDocRef)
 
+  // Profile fields
   const [fullName, setFullName] = useState("")
   const [title, setTitle] = useState("")
   const [bio, setBio] = useState("")
@@ -46,6 +64,13 @@ export default function ProfileManagement() {
   const [newSkill, setNewSkill] = useState("")
   const [isSaving, setIsSaving] = useState(false)
 
+  // Portfolio fields
+  const [portfolio, setPortfolio] = useState<PortfolioItem[]>([])
+  const [showPortfolioModal, setShowPortfolioModal] = useState(false)
+  const [currentPortfolioItem, setCurrentPortfolioItem] = useState<Partial<PortfolioItem>>({})
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     if (profile) {
       setFullName(profile.fullName || "")
@@ -57,6 +82,7 @@ export default function ProfileManagement() {
       setPriceRange(profile.priceRange || "")
       setIsAvailable(profile.isAvailable !== undefined ? profile.isAvailable : true)
       setSkills(profile.skills || [])
+      setPortfolio(profile.portfolio || [])
     }
   }, [profile])
 
@@ -83,6 +109,77 @@ export default function ProfileManagement() {
     setSkills(skills.filter(s => s !== skillToRemove))
   }
 
+  // Portfolio Management
+  const handleOpenPortfolioModal = (item?: PortfolioItem) => {
+    if (item) {
+      setCurrentPortfolioItem(item)
+    } else {
+      setCurrentPortfolioItem({
+        id: crypto.randomUUID(),
+        title: "",
+        description: "",
+        category: "",
+        imageUrl: "",
+        videoLink: ""
+      })
+    }
+    setShowPortfolioModal(true)
+  }
+
+  const handleSavePortfolioItem = () => {
+    if (!currentPortfolioItem.title || !currentPortfolioItem.imageUrl || !currentPortfolioItem.category) {
+      toast({
+        variant: "destructive",
+        title: "Missing fields",
+        description: "Please provide a title, category, and image for your work."
+      })
+      return
+    }
+
+    const updatedPortfolio = [...portfolio]
+    const index = updatedPortfolio.findIndex(i => i.id === currentPortfolioItem.id)
+
+    if (index > -1) {
+      updatedPortfolio[index] = currentPortfolioItem as PortfolioItem
+    } else {
+      updatedPortfolio.push(currentPortfolioItem as PortfolioItem)
+    }
+
+    setPortfolio(updatedPortfolio)
+    setShowPortfolioModal(false)
+    setCurrentPortfolioItem({})
+  }
+
+  const handleDeletePortfolioItem = (id: string) => {
+    setPortfolio(portfolio.filter(i => i.id !== id))
+    toast({
+      title: "Portfolio item removed",
+      description: "Remember to save your profile to persist changes."
+    })
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 800000) { // Limit roughly to 800KB for Firestore doc safety
+      toast({
+        variant: "destructive",
+        title: "File too large",
+        description: "Please select an image smaller than 800KB."
+      })
+      return
+    }
+
+    setIsUploadingImage(true)
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setCurrentPortfolioItem({ ...currentPortfolioItem, imageUrl: reader.result as string })
+      setIsUploadingImage(false)
+    }
+    reader.readAsDataURL(file)
+  }
+
   const handleSave = () => {
     if (!user?.uid || !db) return
     setIsSaving(true)
@@ -97,6 +194,7 @@ export default function ProfileManagement() {
       priceRange,
       isAvailable,
       skills,
+      portfolio,
       updatedAt: new Date().toISOString()
     };
 
@@ -144,7 +242,7 @@ export default function ProfileManagement() {
   }
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500">
+    <div className="space-y-10 animate-in fade-in duration-500 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Professional Profile</h1>
@@ -265,12 +363,6 @@ export default function ProfileManagement() {
                 />
               </div>
             </CardContent>
-            <CardFooter className="p-8 border-t bg-muted/20">
-              <Button className="ml-auto h-12 px-10 rounded-xl font-bold gap-2 shadow-xl shadow-primary/20" onClick={handleSave} disabled={isSaving}>
-                {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-                Save Professional Profile
-              </Button>
-            </CardFooter>
           </Card>
 
           <Card className="border-none shadow-sm rounded-3xl bg-card overflow-hidden">
@@ -319,8 +411,171 @@ export default function ProfileManagement() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Portfolio Section */}
+          <Card className="border-none shadow-sm rounded-3xl bg-card overflow-hidden">
+            <CardHeader className="p-8 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-2xl">Work Portfolio</CardTitle>
+                <CardDescription>Showcase your best projects to clients.</CardDescription>
+              </div>
+              <Button onClick={() => handleOpenPortfolioModal()} className="rounded-xl font-bold gap-2">
+                <Plus className="h-4 w-4" /> Add Work
+              </Button>
+            </CardHeader>
+            <CardContent className="p-8 pt-0">
+              {portfolio.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {portfolio.map((item) => (
+                    <Card key={item.id} className="group overflow-hidden border bg-muted/20 rounded-2xl relative">
+                      <div className="aspect-video relative overflow-hidden bg-muted">
+                        <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <Button size="icon" variant="secondary" onClick={() => handleOpenPortfolioModal(item)} className="rounded-full">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="destructive" onClick={() => handleDeletePortfolioItem(item.id)} className="rounded-full">
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <Badge variant="outline" className="text-[10px] uppercase tracking-widest font-black mb-2">{item.category}</Badge>
+                        <h4 className="font-bold text-sm truncate">{item.title}</h4>
+                        <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{item.description}</p>
+                        {item.videoLink && (
+                          <div className="mt-3 flex items-center gap-1.5 text-primary">
+                            <Play className="h-3 w-3 fill-current" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Video Included</span>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 bg-muted/20 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center">
+                  <Briefcase className="h-10 w-10 text-muted-foreground/30 mb-4" />
+                  <p className="text-sm text-muted-foreground font-medium">Your portfolio is empty. Add your first project!</p>
+                  <Button variant="link" onClick={() => handleOpenPortfolioModal()} className="mt-2 text-primary font-bold">Add Portfolio Item</Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end pt-6">
+            <Button className="h-14 px-12 rounded-2xl font-black text-lg gap-3 shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />}
+              Update Profile & Portfolio
+            </Button>
+          </div>
         </div>
       </div>
+
+      {/* Portfolio Item Modal */}
+      <Dialog open={showPortfolioModal} onOpenChange={setShowPortfolioModal}>
+        <DialogContent className="rounded-[2rem] p-8 max-w-xl border-none shadow-2xl">
+          <DialogHeader className="space-y-4">
+            <DialogTitle className="text-3xl font-black tracking-tight flex items-center gap-3">
+              <Briefcase className="h-8 w-8 text-primary" /> {currentPortfolioItem.id ? "Edit Portfolio Item" : "Add Portfolio Item"}
+            </DialogTitle>
+            <DialogDescription className="text-base font-medium">
+              Share a project you've completed to build trust with clients.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2.5">
+                <Label className="font-bold">Project Title</Label>
+                <Input 
+                  placeholder="e.g. Modern Brand Identity" 
+                  value={currentPortfolioItem.title} 
+                  onChange={(e) => setCurrentPortfolioItem({ ...currentPortfolioItem, title: e.target.value })}
+                  className="rounded-xl h-12"
+                />
+              </div>
+              <div className="grid gap-2.5">
+                <Label className="font-bold">Category</Label>
+                <SearchableSelect 
+                  value={currentPortfolioItem.category || ""} 
+                  onValueChange={(val) => setCurrentPortfolioItem({ ...currentPortfolioItem, category: val })}
+                  placeholder="Select category..."
+                  className="h-12"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-2.5">
+              <Label className="font-bold">Description</Label>
+              <Textarea 
+                placeholder="What was your role? What did you achieve?" 
+                value={currentPortfolioItem.description} 
+                onChange={(e) => setCurrentPortfolioItem({ ...currentPortfolioItem, description: e.target.value })}
+                rows={3}
+                className="rounded-xl resize-none"
+              />
+            </div>
+
+            <div className="grid gap-2.5">
+              <Label className="font-bold">Project Image</Label>
+              <div className="flex flex-col gap-4">
+                {currentPortfolioItem.imageUrl ? (
+                  <div className="relative aspect-video rounded-xl overflow-hidden group">
+                    <img src={currentPortfolioItem.imageUrl} className="w-full h-full object-cover" alt="Preview" />
+                    <button 
+                      onClick={() => setCurrentPortfolioItem({ ...currentPortfolioItem, imageUrl: "" })}
+                      className="absolute top-3 right-3 p-2 bg-destructive text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="aspect-video bg-muted/50 border-2 border-dashed border-muted flex flex-col items-center justify-center rounded-xl cursor-pointer hover:bg-muted/80 transition-colors"
+                  >
+                    {isUploadingImage ? (
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    ) : (
+                      <>
+                        <Upload className="h-8 w-8 text-muted-foreground/50 mb-2" />
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Click to upload image</p>
+                      </>
+                    )}
+                  </div>
+                )}
+                <input 
+                  type="file" 
+                  hidden 
+                  ref={fileInputRef} 
+                  accept="image/*" 
+                  onChange={handleImageUpload} 
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-2.5">
+              <Label className="font-bold flex items-center gap-2">
+                <Play className="h-4 w-4 text-primary fill-current" /> Video Link (Optional)
+              </Label>
+              <Input 
+                placeholder="YouTube or Drive URL" 
+                value={currentPortfolioItem.videoLink} 
+                onChange={(e) => setCurrentPortfolioItem({ ...currentPortfolioItem, videoLink: e.target.value })}
+                className="rounded-xl h-12"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="pt-6">
+            <Button variant="ghost" onClick={() => setShowPortfolioModal(false)} className="rounded-xl font-bold h-12">Cancel</Button>
+            <Button onClick={handleSavePortfolioItem} className="rounded-xl font-black px-10 h-12 shadow-xl shadow-primary/20">
+              Save Item
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

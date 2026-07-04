@@ -136,6 +136,20 @@ export default function JobDetailPage() {
     )
   }
 
+  const getStatusBadge = () => {
+    switch(job.status) {
+      case 'open':
+        return <Badge className="bg-green-500/10 text-green-600 border-none px-3 py-1 rounded-full uppercase text-[10px] font-black">Active Listing</Badge>
+      case 'hired':
+      case 'in-progress':
+        return <Badge className="bg-blue-500/10 text-blue-600 border-none px-3 py-1 rounded-full uppercase text-[10px] font-black">Work in Progress</Badge>
+      case 'completed':
+        return <Badge className="bg-slate-500/10 text-slate-600 border-none px-3 py-1 rounded-full uppercase text-[10px] font-black">Project Completed</Badge>
+      default:
+        return <Badge variant="outline" className="px-3 py-1 rounded-full uppercase text-[10px] font-black">Closed</Badge>
+    }
+  }
+
   return (
     <div className="min-h-screen bg-muted/20 flex flex-col">
       <Navbar />
@@ -152,9 +166,7 @@ export default function JobDetailPage() {
                   <Badge className="bg-primary/5 text-primary border-none text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 md:px-4 py-1.5 rounded-full">
                     {job.category}
                   </Badge>
-                  <Badge variant="outline" className="border-primary/20 text-primary text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 md:px-4 py-1.5 rounded-full">
-                    {job.status === 'open' ? 'Active Listing' : 'Project Closed'}
-                  </Badge>
+                  {getStatusBadge()}
                 </div>
                 <CardTitle className="text-2xl md:text-4xl font-black tracking-tighter leading-tight">{job.title}</CardTitle>
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mt-6 text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest">
@@ -213,7 +225,7 @@ export default function JobDetailPage() {
                     onClick={() => setShowApplyForm(true)}
                     disabled={hasApplied || job.status !== 'open'}
                   >
-                    {hasApplied ? "Application Submitted" : "Quick Apply"}
+                    {hasApplied ? "Application Submitted" : (job.status === 'open' ? "Quick Apply" : "Project Closed")}
                   </Button>
                 ) : (
                   <form onSubmit={handleApply} className="space-y-4 md:space-y-6">

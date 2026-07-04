@@ -1,7 +1,7 @@
 "use client"
 
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from "@/firebase"
-import { collection, doc, updateDoc, serverTimestamp, addDoc, query, where, or } from "firebase/firestore"
+import { collection, doc, updateDoc, serverTimestamp, addDoc, query, where, or, deleteDoc } from "firebase/firestore"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -16,7 +16,9 @@ import {
   UserCheck,
   User,
   CheckCircle2,
-  MessageSquare
+  MessageSquare,
+  Edit,
+  Trash2
 } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState, useEffect } from "react"
@@ -25,6 +27,17 @@ import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 import { cn } from "@/lib/utils"
 import { useSearchParams, useRouter } from "next/navigation"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function MyJobsPage() {
   const { user, loading: authLoading } = useUser()
@@ -129,6 +142,17 @@ export default function MyJobsPage() {
     })
   }
 
+  const handleDeleteJob = async (jobId: string) => {
+    if (!db) return
+    deleteDoc(doc(db, "jobs", jobId))
+      .then(() => {
+        toast({ title: "Job Deleted", description: "The posting has been removed successfully." })
+      })
+      .catch((error) => {
+        toast({ variant: "destructive", title: "Deletion Failed", description: "You don't have permission to delete this job." })
+      })
+  }
+
   const isFreelancer = activeRole === 'freelancer'
   const isClient = activeRole === 'client'
   
@@ -143,7 +167,7 @@ export default function MyJobsPage() {
             {isClient ? "Manage postings and contracts." : "Track proposals and active work."}
           </p>
         </div>
-        {isClient && (
+        {isClient && ( activeTab === 'postings' || activeTab === 'contracts' ) && (
           <Link href="/dashboard/jobs/post">
             <Button size="sm" className="font-bold text-xs uppercase tracking-widest rounded-xl h-10 px-6 gap-2 shadow-lg shadow-primary/10 transition-all hover:scale-[1.02]">
               <PlusCircle className="h-4 w-4" /> Post New
@@ -175,7 +199,7 @@ export default function MyJobsPage() {
             ) : postedJobs?.length ? (
               <div className="grid gap-4">
                 {postedJobs.map((job: any) => (
-                  <JobManagementCard key={job.id} job={job} />
+                  <JobManagementCard key={job.id} job={job} onDelete={handleDeleteJob} />
                 ))}
               </div>
             ) : (
@@ -311,7 +335,7 @@ function ActiveContractCard({ job, onUpdateStatus, currentUserId, router }: { jo
   )
 }
 
-function JobManagementCard({ job }: { job: any }) {
+function JobManagementCard({ job, onDelete }: { job: any, onDelete: (id: string) => void }) {
   return (
     <Card className="border-none shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300 rounded-2xl bg-card border border-muted/50">
       <CardContent className="p-0">
@@ -348,11 +372,37 @@ function JobManagementCard({ job }: { job: any }) {
           </div>
         </div>
         <div className="px-4 py-3 bg-muted/20 border-t flex flex-wrap items-center justify-between gap-4">
-          <Link href={`/jobs/${job.id}`}>
-            <Button variant="ghost" className="font-bold text-[10px] uppercase tracking-widest text-primary gap-2 hover:bg-primary/5 h-9 px-3 rounded-lg">
-              Listing <ArrowUpRight className="h-3.5 w-3.5" />
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href={`/jobs/${job.id}`}>
+              <Button variant="ghost" className="font-bold text-[10px] uppercase tracking-widest text-primary gap-2 hover:bg-primary/5 h-9 px-3 rounded-lg">
+                Listing <ArrowUpRight className="h-3.5 w-3.5" />
+              </Button>
+            </Link>
+            <Link href={`/dashboard/jobs/edit/${job.id}`}>
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg hover:bg-primary/5 text-primary">
+                <Edit className="h-4 w-4" />
+              </Button>
+            </Link>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg hover:bg-destructive/10 text-destructive">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="rounded-2xl">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete job posting?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently remove your project listing. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                  <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl" onClick={() => onDelete(job.id)}>Delete Posting</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
           <div className="flex gap-2">
             <Link href={`/dashboard/jobs/manage/${job.id}`}>
               <Button size="sm" className="font-bold text-[10px] uppercase tracking-widest rounded-lg px-4 h-9">Manage Applicants</Button>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -118,6 +117,7 @@ export function DashboardSidebar() {
       ? [
           { label: 'Hire Talent', href: '/freelancers', icon: Users },
           { label: 'My Jobs', href: '/dashboard/jobs', icon: Briefcase },
+          { label: 'Profile', href: '/dashboard/profile', icon: User },
           { label: 'Settings', href: '/dashboard/settings', icon: Settings },
         ]
       : [

@@ -51,6 +51,10 @@ export default function ProfileManagement() {
 
   const { data: profile, loading: profileLoading } = useDoc(userDocRef)
 
+  // Role check
+  const activeRole = profile?.activeRole || 'client'
+  const isFreelancer = activeRole === 'freelancer'
+
   // Profile fields
   const [fullName, setFullName] = useState("")
   const [title, setTitle] = useState("")
@@ -111,14 +115,14 @@ export default function ProfileManagement() {
   }, [profile])
 
   useEffect(() => {
-    if (isPrompted) {
+    if (isPrompted && isFreelancer) {
       toast({
         title: "Almost there!",
         description: "Complete your freelancer profile to start finding work.",
         duration: 6000
       })
     }
-  }, [isPrompted, toast])
+  }, [isPrompted, toast, isFreelancer])
 
   const addSkill = (e: React.FormEvent) => {
     e.preventDefault()
@@ -323,16 +327,16 @@ export default function ProfileManagement() {
     
     const data = {
       fullName,
-      title,
-      bio,
+      title: isFreelancer ? title : "",
+      bio: isFreelancer ? bio : "",
       gender,
       department,
       location,
-      priceRange,
+      priceRange: isFreelancer ? priceRange : "",
       avatarUrl,
       isAvailable,
-      skills,
-      portfolio,
+      skills: isFreelancer ? skills : [],
+      portfolio: isFreelancer ? portfolio : [],
       updatedAt: new Date().toISOString()
     };
 
@@ -340,7 +344,7 @@ export default function ProfileManagement() {
       .then(() => {
         toast({
           title: "Profile updated",
-          description: "Your professional details and portfolio have been saved successfully."
+          description: "Your personal details have been saved successfully."
         })
         router.push("/dashboard")
       })
@@ -387,25 +391,36 @@ export default function ProfileManagement() {
     <div className="space-y-10 animate-in fade-in duration-500 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight">Professional Profile</h1>
-          <p className="text-muted-foreground text-lg font-medium">Enhance your visibility and attract top-tier clients.</p>
+          <h1 className="text-4xl font-bold tracking-tight">
+            {isFreelancer ? "Professional Profile" : "My Profile"}
+          </h1>
+          <p className="text-muted-foreground text-lg font-medium">
+            {isFreelancer 
+              ? "Enhance your visibility and attract top-tier clients." 
+              : "Manage your campus identity and academic details."}
+          </p>
         </div>
+        
         <div className="flex flex-col items-end gap-3">
-          <div className="flex items-center gap-4 bg-card px-6 py-3 rounded-2xl border shadow-sm">
-            <Label htmlFor="availability" className="font-bold text-sm">Active & Available</Label>
-            <Switch 
-              id="availability" 
-              checked={isAvailable} 
-              onCheckedChange={setIsAvailable} 
-            />
-          </div>
-          <div className="w-full max-w-[200px] space-y-1.5 px-1">
-            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-primary">
-              <span>Profile Strength</span>
-              <span>{completionScore}%</span>
-            </div>
-            <Progress value={completionScore} className="h-1.5" />
-          </div>
+          {isFreelancer && (
+            <>
+              <div className="flex items-center gap-4 bg-card px-6 py-3 rounded-2xl border shadow-sm">
+                <Label htmlFor="availability" className="font-bold text-sm">Active & Available</Label>
+                <Switch 
+                  id="availability" 
+                  checked={isAvailable} 
+                  onCheckedChange={setIsAvailable} 
+                />
+              </div>
+              <div className="w-full max-w-[200px] space-y-1.5 px-1">
+                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-primary">
+                  <span>Profile Strength</span>
+                  <span>{completionScore}%</span>
+                </div>
+                <Progress value={completionScore} className="h-1.5" />
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -414,7 +429,11 @@ export default function ProfileManagement() {
           <Card className="border-none shadow-sm rounded-3xl bg-card overflow-hidden">
             <CardHeader className="p-8">
               <CardTitle className="text-2xl">Personal & Academic Info</CardTitle>
-              <CardDescription>How you'll appear to potential clients.</CardDescription>
+              <CardDescription>
+                {isFreelancer 
+                  ? "How you'll appear to potential clients." 
+                  : "Basic information for your campus interactions."}
+              </CardDescription>
             </CardHeader>
             <CardContent className="p-8 pt-0 space-y-8">
               <div className="flex flex-col md:flex-row gap-10 items-start">
@@ -454,16 +473,18 @@ export default function ProfileManagement() {
                         onChange={(e) => setFullName(e.target.value)} 
                       />
                     </div>
-                    <div className="grid gap-2.5">
-                      <Label htmlFor="title" className="font-bold">Professional Headline</Label>
-                      <Input 
-                        id="title" 
-                        className="h-12 rounded-xl"
-                        value={title} 
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="e.g. Lead Brand Designer"
-                      />
-                    </div>
+                    {isFreelancer && (
+                      <div className="grid gap-2.5">
+                        <Label htmlFor="title" className="font-bold">Professional Headline</Label>
+                        <Input 
+                          id="title" 
+                          className="h-12 rounded-xl"
+                          value={title} 
+                          onChange={(e) => setTitle(e.target.value)}
+                          placeholder="e.g. Lead Brand Designer"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid gap-4">
@@ -503,153 +524,162 @@ export default function ProfileManagement() {
                     </div>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="grid gap-2.5">
-                      <Label htmlFor="priceRange" className="font-bold text-primary flex items-center gap-2">
-                        <Landmark className="h-4 w-4" /> Price Range (NGN)
-                      </Label>
-                      <Input 
-                        id="priceRange" 
-                        className="h-12 rounded-xl font-bold"
-                        value={priceRange} 
-                        onChange={(e) => setPriceRange(e.target.value)}
-                        placeholder="e.g. 500 - 5,000"
-                      />
+                  {isFreelancer && (
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="grid gap-2.5">
+                        <Label htmlFor="priceRange" className="font-bold text-primary flex items-center gap-2">
+                          <Landmark className="h-4 w-4" /> Price Range (NGN)
+                        </Label>
+                        <Input 
+                          id="priceRange" 
+                          className="h-12 rounded-xl font-bold"
+                          value={priceRange} 
+                          onChange={(e) => setPriceRange(e.target.value)}
+                          placeholder="e.g. 500 - 5,000"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
-              </div>
-              <div className="grid gap-2.5">
-                <Label htmlFor="bio" className="font-bold">Professional Bio</Label>
-                <Textarea 
-                  id="bio" 
-                  rows={6} 
-                  className="rounded-2xl resize-none p-4"
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  placeholder="Detail your experience, tools, and what makes your service unique..."
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-none shadow-sm rounded-3xl bg-card overflow-hidden">
-            <CardHeader className="p-8">
-              <CardTitle className="text-2xl">Skills & Specialized Tools</CardTitle>
-              <CardDescription>Add the tags you want to be discovered for.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-8 pt-0 space-y-8">
-              <div className="flex flex-wrap gap-3">
-                {skills.map((skill) => (
-                  <Badge key={skill} variant="secondary" className="px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 group transition-all hover:bg-destructive/10 hover:text-destructive">
-                    {skill}
-                    <button onClick={() => removeSkill(skill)} className="opacity-40 group-hover:opacity-100">
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </Badge>
-                ))}
-                {skills.length === 0 && <p className="text-sm text-muted-foreground italic font-medium">No skills showcased yet.</p>}
               </div>
               
-              <div className="space-y-4">
-                <Label className="font-bold text-xs uppercase tracking-widest text-muted-foreground">Quick Add Skills</Label>
-                <SearchableSelect 
-                  value=""
-                  onValueChange={(val) => {
-                    if (val && !skills.includes(val)) setSkills([...skills, val])
-                  }}
-                  placeholder="Select a common skill..."
-                  className="h-12 bg-muted/20"
-                />
-                
-                <div className="relative flex gap-4 mt-4">
-                  <Input 
-                    placeholder="Or type a custom skill..." 
-                    className="h-12 rounded-xl flex-1"
-                    value={newSkill}
-                    onChange={(e) => setNewSkill(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') addSkill(e)
-                    }}
+              {isFreelancer && (
+                <div className="grid gap-2.5">
+                  <Label htmlFor="bio" className="font-bold">Professional Bio</Label>
+                  <Textarea 
+                    id="bio" 
+                    rows={6} 
+                    className="rounded-2xl resize-none p-4"
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="Detail your experience, tools, and what makes your service unique..."
                   />
-                  <Button onClick={addSkill} type="button" variant="outline" size="icon" className="h-12 w-12 rounded-xl border-muted-foreground/20">
-                    <Plus className="h-6 w-6" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-none shadow-sm rounded-3xl bg-card overflow-hidden">
-            <CardHeader className="p-8 flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl">Work Portfolio</CardTitle>
-                <CardDescription>Showcase your best projects to clients.</CardDescription>
-              </div>
-              <Button onClick={() => handleOpenPortfolioModal()} className="rounded-xl font-bold gap-2">
-                <Plus className="h-4 w-4" /> Add Work
-              </Button>
-            </CardHeader>
-            <CardContent className="p-8 pt-0">
-              {portfolio.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {portfolio.map((item) => (
-                    <Card key={item.id} className="group overflow-hidden border bg-muted/20 rounded-2xl relative">
-                      <div className="aspect-video relative overflow-hidden bg-muted">
-                        <img 
-                          src={item.images?.[0] || ""} 
-                          alt={item.title} 
-                          className="w-full h-full object-cover transition-transform group-hover:scale-105" 
-                        />
-                        <div className="absolute top-2 right-2 flex gap-1">
-                          {item.images && item.images.length > 1 && (
-                            <Badge className="bg-black/60 text-white border-none text-[10px] font-bold">+ {item.images.length - 1} more</Badge>
-                          )}
-                        </div>
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                          <Button size="icon" variant="secondary" onClick={() => handleOpenPortfolioModal(item)} className="rounded-full">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button size="icon" variant="destructive" onClick={() => handleDeletePortfolioItem(item.id)} className="rounded-full">
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="p-4">
-                        <div className="flex flex-wrap gap-1.5 mb-2">
-                          {item.skills?.slice(0, 2).map((s) => (
-                            <Badge key={s} variant="outline" className="text-[8px] uppercase tracking-widest font-black">{s}</Badge>
-                          ))}
-                          {item.skills && item.skills.length > 2 && (
-                            <Badge variant="outline" className="text-[8px] uppercase tracking-widest font-black">+{item.skills.length - 2}</Badge>
-                          )}
-                        </div>
-                        <h4 className="font-bold text-sm truncate">{item.title}</h4>
-                        <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{item.description}</p>
-                        {item.videoLink && (
-                          <div className="mt-3 flex items-center gap-1.5 text-primary">
-                            <Play className="h-3 w-3 fill-current" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Video Included</span>
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 bg-muted/20 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center">
-                  <Briefcase className="h-10 w-10 text-muted-foreground/30 mb-4" />
-                  <p className="text-sm text-muted-foreground font-medium">Your portfolio is empty. Add your first project!</p>
-                  <Button variant="link" onClick={() => handleOpenPortfolioModal()} className="mt-2 text-primary font-bold">Add Portfolio Item</Button>
                 </div>
               )}
             </CardContent>
           </Card>
 
+          {isFreelancer && (
+            <>
+              <Card className="border-none shadow-sm rounded-3xl bg-card overflow-hidden">
+                <CardHeader className="p-8">
+                  <CardTitle className="text-2xl">Skills & Specialized Tools</CardTitle>
+                  <CardDescription>Add the tags you want to be discovered for.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-8 pt-0 space-y-8">
+                  <div className="flex flex-wrap gap-3">
+                    {skills.map((skill) => (
+                      <Badge key={skill} variant="secondary" className="px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 group transition-all hover:bg-destructive/10 hover:text-destructive">
+                        {skill}
+                        <button onClick={() => removeSkill(skill)} className="opacity-40 group-hover:opacity-100">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </Badge>
+                    ))}
+                    {skills.length === 0 && <p className="text-sm text-muted-foreground italic font-medium">No skills showcased yet.</p>}
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <Label className="font-bold text-xs uppercase tracking-widest text-muted-foreground">Quick Add Skills</Label>
+                    <SearchableSelect 
+                      value=""
+                      onValueChange={(val) => {
+                        if (val && !skills.includes(val)) setSkills([...skills, val])
+                      }}
+                      placeholder="Select a common skill..."
+                      className="h-12 bg-muted/20"
+                    />
+                    
+                    <div className="relative flex gap-4 mt-4">
+                      <Input 
+                        placeholder="Or type a custom skill..." 
+                        className="h-12 rounded-xl flex-1"
+                        value={newSkill}
+                        onChange={(e) => setNewSkill(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') addSkill(e)
+                        }}
+                      />
+                      <Button onClick={addSkill} type="button" variant="outline" size="icon" className="h-12 w-12 rounded-xl border-muted-foreground/20">
+                        <Plus className="h-6 w-6" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-sm rounded-3xl bg-card overflow-hidden">
+                <CardHeader className="p-8 flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl">Work Portfolio</CardTitle>
+                    <CardDescription>Showcase your best projects to clients.</CardDescription>
+                  </div>
+                  <Button onClick={() => handleOpenPortfolioModal()} className="rounded-xl font-bold gap-2">
+                    <Plus className="h-4 w-4" /> Add Work
+                  </Button>
+                </CardHeader>
+                <CardContent className="p-8 pt-0">
+                  {portfolio.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      {portfolio.map((item) => (
+                        <Card key={item.id} className="group overflow-hidden border bg-muted/20 rounded-2xl relative">
+                          <div className="aspect-video relative overflow-hidden bg-muted">
+                            <img 
+                              src={item.images?.[0] || ""} 
+                              alt={item.title} 
+                              className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+                            />
+                            <div className="absolute top-2 right-2 flex gap-1">
+                              {item.images && item.images.length > 1 && (
+                                <Badge className="bg-black/60 text-white border-none text-[10px] font-bold">+ {item.images.length - 1} more</Badge>
+                              )}
+                            </div>
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                              <Button size="icon" variant="secondary" onClick={() => handleOpenPortfolioModal(item)} className="rounded-full">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="destructive" onClick={() => handleDeletePortfolioItem(item.id)} className="rounded-full">
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="p-4">
+                            <div className="flex flex-wrap gap-1.5 mb-2">
+                              {item.skills?.slice(0, 2).map((s) => (
+                                <Badge key={s} variant="outline" className="text-[8px] uppercase tracking-widest font-black">{s}</Badge>
+                              ))}
+                              {item.skills && item.skills.length > 2 && (
+                                <Badge variant="outline" className="text-[8px] uppercase tracking-widest font-black">+{item.skills.length - 2}</Badge>
+                              )}
+                            </div>
+                            <h4 className="font-bold text-sm truncate">{item.title}</h4>
+                            <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{item.description}</p>
+                            {item.videoLink && (
+                              <div className="mt-3 flex items-center gap-1.5 text-primary">
+                                <Play className="h-3 w-3 fill-current" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Video Included</span>
+                              </div>
+                            )}
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 bg-muted/20 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center">
+                      <Briefcase className="h-10 w-10 text-muted-foreground/30 mb-4" />
+                      <p className="text-sm text-muted-foreground font-medium">Your portfolio is empty. Add your first project!</p>
+                      <Button variant="link" onClick={() => handleOpenPortfolioModal()} className="mt-2 text-primary font-bold">Add Portfolio Item</Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+
           <div className="flex justify-end pt-6">
             <Button className="h-14 px-12 rounded-2xl font-black text-lg gap-3 shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all" onClick={handleSave} disabled={isSaving}>
               {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />}
-              Update Profile & Portfolio
+              Save Changes
             </Button>
           </div>
         </div>

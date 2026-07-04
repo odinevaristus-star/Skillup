@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -410,22 +409,23 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {isFreelancer ? (
           <>
-            <StatsCard icon={Briefcase} label="Active" value={stats.activeProjects} sub="Current" color="text-blue-500" />
-            <StatsCard icon={FileText} label="Bids" value={stats.myProposals} sub="Total" color="text-purple-500" />
-            <StatsCard icon={CheckCircle2} label="Done" value={stats.completedJobs} sub="Finished" color="text-green-500" />
+            <StatsCard icon={Briefcase} label="Active" value={stats.activeProjects} sub="Current" color="text-blue-500" href="/dashboard/jobs?tab=contracts" />
+            <StatsCard icon={FileText} label="Bids" value={stats.myProposals} sub="Total" color="text-purple-500" href="/dashboard/jobs?tab=applications" />
+            <StatsCard icon={CheckCircle2} label="Done" value={stats.completedJobs} sub="Finished" color="text-green-500" href="/dashboard/jobs" />
             <StatsCard 
               icon={Star} 
               label="Rating" 
               value={stats.reviewCount > 0 ? stats.averageRating.toFixed(1) : "N/A"} 
               sub={stats.reviewCount > 0 ? `${stats.reviewCount} rev.` : "New"} 
               color="text-yellow-500" 
+              href="/dashboard/profile"
             />
           </>
         ) : (
           <>
-            <StatsCard icon={Briefcase} label="Listings" value={stats.activeJobs} sub="Open" color="text-blue-500" />
-            <StatsCard icon={Users} label="Hired" value={stats.expertsHired} sub="Pros" color="text-purple-500" />
-            <StatsCard icon={FileText} label="Pending" value={stats.pendingProposals} sub="Reviews" color="text-orange-500" />
+            <StatsCard icon={Briefcase} label="Listings" value={stats.activeJobs} sub="Open" color="text-blue-500" href="/dashboard/jobs" />
+            <StatsCard icon={Users} label="Hired" value={stats.expertsHired} sub="Pros" color="text-purple-500" href="/dashboard/jobs?tab=contracts" />
+            <StatsCard icon={FileText} label="Pending" value={stats.pendingProposals} sub="Reviews" color="text-orange-500" href="/dashboard/jobs" />
           </>
         )}
       </div>
@@ -551,12 +551,19 @@ export default function Dashboard() {
   )
 }
 
-function StatsCard({ icon: Icon, label, value, sub, color }: any) {
-  return (
-    <Card className="border-none shadow-sm hover:shadow-md transition-all rounded-2xl bg-card overflow-hidden">
+function StatsCard({ icon: Icon, label, value, sub, color, href }: any) {
+  const content = (
+    <Card className={cn(
+      "border-none shadow-sm transition-all rounded-2xl bg-card overflow-hidden",
+      href ? "hover:shadow-lg hover:-translate-y-1 cursor-pointer active:scale-95 group" : ""
+    )}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-2">
-          <div className={`p-2 rounded-xl bg-muted transition-colors ${color}`}>
+          <div className={cn(
+            "p-2 rounded-xl bg-muted transition-colors",
+            color,
+            href && "group-hover:bg-primary/10"
+          )}>
             <Icon className="h-4 w-4" />
           </div>
           <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{label}</span>
@@ -567,7 +574,13 @@ function StatsCard({ icon: Icon, label, value, sub, color }: any) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
+
+  if (href) {
+    return <Link href={href}>{content}</Link>;
+  }
+
+  return content;
 }
 
 function ActivityItem({ icon: Icon, title, time, desc, isNew, href }: any) {

@@ -21,11 +21,14 @@ import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 import { cn } from "@/lib/utils"
+import { useSearchParams } from "next/navigation"
 
 export default function MyJobsPage() {
   const { user } = useUser()
   const db = useFirestore()
   const { toast } = useToast()
+  const searchParams = useSearchParams()
+  const tabFromUrl = searchParams.get('tab')
   
   const [allJobs, setAllJobs] = useState<any[]>([])
   const [allApps, setAllApps] = useState<any[]>([])
@@ -38,6 +41,14 @@ export default function MyJobsPage() {
 
   const { data: profile } = useDoc(userDocRef);
   const activeRole = profile?.activeRole || profile?.role || 'client';
+
+  const [activeTab, setActiveTab] = useState(tabFromUrl || (activeRole === 'freelancer' ? 'applications' : 'postings'))
+
+  useEffect(() => {
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl)
+    }
+  }, [tabFromUrl])
 
   useEffect(() => {
     async function fetchData() {
@@ -130,7 +141,7 @@ export default function MyJobsPage() {
         )}
       </div>
 
-      <Tabs defaultValue={isFreelancer ? "applications" : "postings"} className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="flex items-center justify-between mb-6 overflow-x-auto pb-1">
           <TabsList className="bg-muted/50 p-1 rounded-xl h-auto">
             {isClient && (

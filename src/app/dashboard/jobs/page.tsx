@@ -1,8 +1,7 @@
-
 "use client"
 
-import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
-import { collection, doc, updateDoc, serverTimestamp, addDoc, getDocs } from "firebase/firestore"
+import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from "@/firebase"
+import { collection, doc, updateDoc, serverTimestamp, addDoc, query, where, or } from "firebase/firestore"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -35,10 +34,6 @@ export default function MyJobsPage() {
   const searchParams = useSearchParams()
   const tabFromUrl = searchParams.get('tab')
   
-  const [allJobs, setAllJobs] = useState<any[]>([])
-  const [allApps, setAllApps] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-
   const userDocRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null;
     return doc(db, 'users', user.uid);
@@ -47,6 +42,27 @@ export default function MyJobsPage() {
   const { data: profile } = useDoc(userDocRef);
   const activeRole = profile?.activeRole || profile?.role || 'client';
 
+  // Reactive listeners for jobs and applications
+  const jobsQuery = useMemoFirebase(() => {
+    if (!db || !user?.uid) return null
+    return query(
+      collection(db, 'jobs'),
+      or(where('clientId', '==', user.uid), where('freelancerId', '==', user.uid))
+    )
+  }, [db, user?.uid])
+
+  const { data: allJobs, loading: jobsLoading } = useCollection(jobsQuery)
+
+  const appsQuery = useMemoFirebase(() => {
+    if (!db || !user?.uid) return null
+    return query(
+      collection(db, 'applications'),
+      or(where('freelancerId', '==', user.uid), where('clientId', '==', user.uid))
+    )
+  }, [db, user?.uid])
+
+  const { data: allApps, loading: appsLoading } = useCollection(appsQuery)
+
   const [activeTab, setActiveTab] = useState(tabFromUrl || (activeRole === 'freelancer' ? 'applications' : 'postings'))
 
   useEffect(() => {
@@ -54,30 +70,6 @@ export default function MyJobsPage() {
       setActiveTab(tabFromUrl)
     }
   }, [tabFromUrl])
-
-  useEffect(() => {
-    async function fetchData() {
-      if (!db || !user?.uid) return
-      setLoading(true)
-      try {
-        const jobsRef = collection(db, 'jobs')
-        const appsRef = collection(db, 'applications')
-        
-        const [jobsSnap, appsSnap] = await Promise.all([
-          getDocs(jobsRef),
-          getDocs(appsRef)
-        ])
-        
-        setAllJobs(jobsSnap.docs.map(d => ({ id: d.id, ...d.data() })))
-        setAllApps(appsSnap.docs.map(d => ({ id: d.id, ...d.data() })))
-      } catch (error) {
-        console.error("Error fetching data:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [db, user?.uid])
 
   const postedJobs = useMemo(() => {
     if (!allJobs || !user?.uid) return []
@@ -124,7 +116,6 @@ export default function MyJobsPage() {
         })
       }
       toast({ title: "Project Status Updated", description: `The status is now set to ${status}.` })
-      setAllJobs(prev => prev.map(j => j.id === job.id ? { ...j, status } : j))
     })
     .catch(async (error) => {
       errorEmitter.emit("permission-error", new FirestorePermissionError({
@@ -137,6 +128,7 @@ export default function MyJobsPage() {
 
   const isFreelancer = activeRole === 'freelancer'
   const isClient = activeRole === 'client'
+  const loading = jobsLoading || appsLoading
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
@@ -226,7 +218,7 @@ export default function MyJobsPage() {
             <EmptyState 
               icon={UserCheck} 
               title="No active work" 
-              description="Hired projects and ongoing contracts will appear here." 
+              description="Hired projects and ongoing contracts will appear here after hiring." 
               actionUrl={activeRole === 'client' ? "/freelancers" : "/jobs"} 
               actionText={activeRole === 'client' ? "Hire Talent" : "Find Work"} 
             />
@@ -261,7 +253,7 @@ function ActiveContractCard({ job, onUpdateStatus, currentUserId, router }: { jo
                 <div className="flex items-center gap-2 mt-2">
                   <User className="h-3.5 w-3.5 text-muted-foreground" />
                   <p className="text-xs font-medium text-muted-foreground">
-                    {isClient ? "Hired: " : "Client: "} <span className="text-foreground font-bold">{partnerName}</span>
+                    {isClient ? "Hired: " : "Client: "} <span className="text-foreground font-bold">{partnerName || 'Unknown'}</span>
                   </p>
                 </div>
               </div>

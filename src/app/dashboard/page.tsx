@@ -8,11 +8,12 @@ import {
   doc, 
   getDoc, 
   collection, 
-  getDocs,
+  onSnapshot,
   setDoc,
   serverTimestamp,
   query,
-  where
+  where,
+  or
 } from 'firebase/firestore'
 import { 
   Loader2, 
@@ -90,25 +91,18 @@ export default function Dashboard() {
     const auth = getAuth()
     const db = getFirestore()
     
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         router.replace('/login')
         return
       }
 
-      try {
-        const docRef = doc(db, 'users', user.uid)
-        const snap = await getDoc(docRef)
-        
-        let profile: any = null
+      // 1. Listen to user profile
+      const userUnsub = onSnapshot(doc(db, 'users', user.uid), async (snap) => {
         if (snap.exists()) {
-          profile = { id: snap.id, ...snap.data() }
-          if (!profile.roles || !Array.isArray(profile.roles)) profile.roles = ['client', 'freelancer']
-          if (!profile.activeRole) profile.activeRole = profile.role || 'freelancer'
+          const profile = { id: snap.id, ...snap.data() }
           setUserData(profile)
-          if (profile.gender) setSetupGender(profile.gender)
           
-          // Calculate Profile Completion
           if (profile.activeRole === 'freelancer') {
             const items = [
               { label: "Profile photo", exists: !!(profile.avatarUrl || user.photoURL), weight: 20 },
@@ -117,94 +111,78 @@ export default function Dashboard() {
               { label: "Professional title", exists: !!profile.title, weight: 10 },
               { label: "Portfolio projects", exists: profile.portfolio && profile.portfolio.length > 0, weight: 30 },
             ]
-            
             const score = items.reduce((acc, item) => acc + (item.exists ? item.weight : 0), 0)
-            const missing = items.filter(i => !i.exists).map(i => i.label)
+            setCompletion({ percentage: score, missing: items.filter(i => !i.exists).map(i => i.label) })
+          }
+
+          // 2. Listen to Jobs & Apps for stats
+          const activeRole = profile.activeRole || profile.role || 'client'
+          
+          // Setup listeners based on role
+          const jobsQuery = query(collection(db, 'jobs'), or(where('clientId', '==', user.uid), where('freelancerId', '==', user.uid)))
+          const appsQuery = query(collection(db, 'applications'), or(where('freelancerId', '==', user.uid), where('clientId', '==', user.uid)))
+
+          const unsubJobs = onSnapshot(jobsQuery, (jobsSnap) => {
+            const allJobs = jobsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
             
-            setCompletion({ percentage: score, missing })
-          }
-        } else {
-          profile = { 
-            id: user.uid, 
-            firstName: user.email?.split('@')[0] || 'User', 
-            roles: ['client', 'freelancer'],
-            activeRole: 'client',
-            skills: []
-          }
-          setUserData(profile)
+            if (activeRole === 'client') {
+              const myJobs = allJobs.filter((j: any) => j.clientId === user.uid)
+              const openJobs = myJobs.filter((j: any) => j.status === 'open')
+              // Updated to include 'hired' status
+              const hiredJobs = myJobs.filter((j: any) => ['hired', 'in-progress', 'completed'].includes(j.status))
+              
+              setStats(prev => ({
+                ...prev,
+                activeJobs: openJobs.length,
+                expertsHired: hiredJobs.length
+              }))
+            } else {
+              const workCount = allJobs.filter((j: any) => j.freelancerId === user.uid && ['hired', 'in-progress'].includes(j.status)).length
+              const completedCount = allJobs.filter((j: any) => j.freelancerId === user.uid && j.status === 'completed').length
+              setStats(prev => ({
+                ...prev,
+                activeProjects: workCount,
+                completedJobs: completedCount
+              }))
+            }
+          })
+
+          const unsubApps = onSnapshot(appsQuery, (appsSnap) => {
+            const allApps = appsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+            if (activeRole === 'client') {
+              const pendingCount = allApps.filter((a: any) => a.clientId === user.uid && a.status === 'pending').length
+              setStats(prev => ({ ...prev, pendingProposals: pendingCount }))
+            } else {
+              const myApps = allApps.filter((a: any) => a.freelancerId === user.uid).length
+              setStats(prev => ({ ...prev, myProposals: myApps }))
+            }
+          })
+
+          setLoading(false)
         }
+      })
 
-        const activeRole = profile.activeRole
-
-        const jobsSnap = await getDocs(collection(db, 'jobs'))
-        const allJobs = jobsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-
-        const appsSnap = await getDocs(collection(db, 'applications'))
-        const allApps = appsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-
-        if (activeRole === 'client') {
-          const myJobs = allJobs.filter((j: any) => j.clientId === user.uid)
-          const openJobs = myJobs.filter((j: any) => j.status === 'open')
-          const hiredJobs = myJobs.filter((j: any) => ['in-progress', 'completed'].includes(j.status))
-
-          const openJobIds = openJobs.map(j => j.id)
-          const pendingCount = allApps.filter((a: any) => openJobIds.includes(a.jobId) && a.status === 'pending').length
-          
-          setStats({
-            activeJobs: openJobs.length,
-            expertsHired: hiredJobs.length,
-            pendingProposals: pendingCount,
-            activeProjects: 0,
-            myProposals: 0,
-            completedJobs: 0,
-            averageRating: 0,
-            reviewCount: 0
-          })
-        } else {
-          const myApps = allApps.filter((a: any) => a.freelancerId === user.uid)
-          const workCount = allJobs.filter((j: any) => j.freelancerId === user.uid && j.status === 'in-progress').length
-          const completedCount = allJobs.filter((j: any) => j.freelancerId === user.uid && j.status === 'completed').length
-          
-          // Fetch ratings for freelancer
-          const reviewsSnap = await getDocs(query(collection(db, 'reviews'), where('freelancerId', '==', user.uid)))
-          const reviewsData = reviewsSnap.docs.map(d => d.data())
-          const reviewCount = reviewsData.length
-          const totalRating = reviewsData.reduce((acc: number, r: any) => acc + (r.rating || 0), 0)
-          const averageRating = reviewCount > 0 ? totalRating / reviewCount : 0
-
-          setStats({
-            activeJobs: 0,
-            expertsHired: 0,
-            pendingProposals: 0,
-            myProposals: myApps.length,
-            activeProjects: workCount,
-            completedJobs: completedCount,
-            averageRating: averageRating,
-            reviewCount: reviewCount
-          })
+      // 3. Listen to Notifications
+      const notifsUnsub = onSnapshot(
+        query(collection(db, 'notifications'), where('userId', '==', user.uid)),
+        (snap) => {
+          const notifs = snap.docs
+            .map(d => ({ id: d.id, ...d.data() }))
+            .sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+            .slice(0, 5)
+          setRecentActivity(notifs)
         }
+      )
 
-        const notifsSnap = await getDocs(collection(db, 'notifications'))
-        const myNotifs = notifsSnap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter((n: any) => n.userId === user.uid)
-          .sort((a: any, b: any) => {
-            const dateA = a.createdAt?.seconds || 0
-            const dateB = b.createdAt?.seconds || 0
-            return dateB - dateA
-          })
-          .slice(0, 5)
-
-        setRecentActivity(myNotifs)
-
-      } catch (e) {
-        console.error('Error fetching dashboard data:', e)
-      } finally {
-        setLoading(false)
+      // Fetch reviews for freelancer role ratings
+      const reviewsSnap = await getDoc(doc(db, 'users', user.uid)) // Simplified for aggregate rating
+      if (reviewsSnap.exists()) {
+        const d = reviewsSnap.data()
+        setStats(prev => ({ ...prev, averageRating: d.rating || 0, reviewCount: d.completedJobs || 0 }))
       }
     })
 
-    return () => unsubscribe()
+    return () => unsubscribeAuth()
   }, [router])
 
   const handleSwitchRole = async () => {
@@ -223,13 +201,10 @@ export default function Dashboard() {
 
     setSwitching(true)
     try {
-      const updates: any = {
+      await setDoc(doc(db, 'users', user.uid), {
         activeRole: newRole,
-        roles: ['client', 'freelancer'],
         updatedAt: serverTimestamp()
-      }
-
-      await setDoc(doc(db, 'users', user.uid), updates, { merge: true })
+      }, { merge: true })
       
       toast({
         title: `Switched to ${newRole === 'client' ? 'Client' : 'Freelancer'} Mode`,
@@ -240,12 +215,7 @@ export default function Dashboard() {
         window.location.reload()
       }, 500)
     } catch (e: any) {
-      console.error("AutoSwitch failed:", e)
-      toast({
-        variant: "destructive",
-        title: "Switch failed",
-        description: "Could not change role at this time."
-      })
+      toast({ variant: "destructive", title: "Switch failed" })
       setSwitching(false)
     }
   }
@@ -258,7 +228,6 @@ export default function Dashboard() {
     const db = getFirestore()
     const auth = getAuth()
     const user = auth.currentUser
-
     if (!user) return
 
     try {
@@ -267,26 +236,13 @@ export default function Dashboard() {
         gender: setupGender,
         priceRange: setupPriceRange,
         activeRole: 'freelancer',
-        roles: ['client', 'freelancer'],
         updatedAt: serverTimestamp()
       }, { merge: true })
 
       setShowSwitchModal(false)
-      toast({
-        title: "Welcome!",
-        description: "You are now in Freelancer Mode"
-      })
-
-      setTimeout(() => {
-        window.location.reload()
-      }, 500)
+      window.location.reload()
     } catch (e: any) {
-      console.error("Setup failed:", e)
-      toast({
-        variant: "destructive",
-        title: "Setup failed",
-        description: "Setup failed. Please try again."
-      })
+      toast({ variant: "destructive", title: "Setup failed" })
     } finally {
       setIsSubmittingSetup(false)
     }
@@ -348,7 +304,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Profile Completion Indicator */}
       {isFreelancer && completion.percentage < 100 && (
         <Card className="border-none shadow-xl shadow-primary/5 rounded-[2rem] bg-card overflow-hidden border-2 border-primary/5 animate-in slide-in-from-top-4 duration-1000">
           <CardContent className="p-6 md:p-10 flex flex-col md:flex-row items-center gap-6 md:gap-10">

@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
@@ -13,7 +14,10 @@ import {
   ArrowUpRight,
   PlusCircle,
   FileText,
-  UserCheck
+  UserCheck,
+  User,
+  CheckCircle2,
+  MessageSquare
 } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState, useEffect } from "react"
@@ -21,12 +25,13 @@ import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 import { cn } from "@/lib/utils"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 
 export default function MyJobsPage() {
   const { user } = useUser()
   const db = useFirestore()
   const { toast } = useToast()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const tabFromUrl = searchParams.get('tab')
   
@@ -87,6 +92,16 @@ export default function MyJobsPage() {
       .filter((a: any) => a.freelancerId === user.uid)
       .sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
   }, [allApps, user?.uid])
+
+  const activeWork = useMemo(() => {
+    if (!allJobs || !user?.uid) return []
+    return allJobs
+      .filter((j: any) => 
+        (j.clientId === user.uid || j.freelancerId === user.uid) && 
+        ['hired', 'in-progress'].includes(j.status)
+      )
+      .sort((a: any, b: any) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0))
+  }, [allJobs, user?.uid])
 
   const handleUpdateJobStatus = async (job: any, status: string) => {
     if (!db || !user) return
@@ -199,16 +214,93 @@ export default function MyJobsPage() {
         )}
 
         <TabsContent value="contracts" className="space-y-4">
-          <div className="text-center py-20 bg-card rounded-[2rem] border border-dashed shadow-sm">
-            <div className="w-16 h-16 bg-muted/50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <UserCheck className="h-8 w-8 text-muted-foreground opacity-20" />
+          {loading ? (
+            <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-10" /></div>
+          ) : activeWork?.length ? (
+            <div className="grid gap-4">
+              {activeWork.map((job: any) => (
+                <ActiveContractCard key={job.id} job={job} onUpdateStatus={handleUpdateJobStatus} currentUserId={user?.uid} router={router} />
+              ))}
             </div>
-            <h3 className="text-xl font-bold tracking-tight mb-2">Active Contracts</h3>
-            <p className="text-muted-foreground mt-2 max-w-[240px] mx-auto font-medium text-xs leading-relaxed">Agreed milestones and active work will appear here after hiring.</p>
-          </div>
+          ) : (
+            <EmptyState 
+              icon={UserCheck} 
+              title="No active work" 
+              description="Hired projects and ongoing contracts will appear here." 
+              actionUrl={activeRole === 'client' ? "/freelancers" : "/jobs"} 
+              actionText={activeRole === 'client' ? "Hire Talent" : "Find Work"} 
+            />
+          )}
         </TabsContent>
       </Tabs>
     </div>
+  )
+}
+
+function ActiveContractCard({ job, onUpdateStatus, currentUserId, router }: { job: any, onUpdateStatus: (j: any, s: string) => void, currentUserId?: string, router: any }) {
+  const isClient = job.clientId === currentUserId
+  const partnerName = isClient ? job.freelancerName : job.clientName
+  const partnerId = isClient ? job.freelancerId : job.clientId
+
+  return (
+    <Card className="border-none shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300 rounded-2xl bg-card border border-muted/50">
+      <CardContent className="p-0">
+        <div className="p-4 md:p-6">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+            <div className="space-y-4 flex-1">
+              <div className="flex items-center gap-2">
+                <Badge className="px-2 py-0.5 border-none font-bold text-[9px] uppercase tracking-widest rounded-full bg-blue-500/10 text-blue-700">
+                  {job.status === 'hired' ? 'Awaiting Start' : 'In Progress'}
+                </Badge>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  Updated {job.updatedAt ? new Date(job.updatedAt.seconds * 1000).toLocaleDateString() : 'Just now'}
+                </span>
+              </div>
+              <div>
+                <h3 className="text-lg md:text-xl font-bold group-hover:text-primary transition-colors tracking-tight leading-snug">{job.title}</h3>
+                <div className="flex items-center gap-2 mt-2">
+                  <User className="h-3.5 w-3.5 text-muted-foreground" />
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {isClient ? "Hired: " : "Client: "} <span className="text-foreground font-bold">{partnerName}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap md:flex-nowrap items-center gap-3">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-9 px-4 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2"
+                onClick={() => router.push(`/dashboard/messages?userId=${partnerId}`)}
+              >
+                <MessageSquare className="h-3.5 w-3.5" /> Chat
+              </Button>
+              {isClient && (
+                <Button 
+                  size="sm" 
+                  className="h-9 px-4 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 bg-green-500 hover:bg-green-600 text-white"
+                  onClick={() => onUpdateStatus(job, 'completed')}
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Complete
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="px-4 md:px-6 py-3 bg-muted/20 border-t flex items-center justify-between">
+          <Link href={`/jobs/${job.id}`}>
+            <Button variant="ghost" className="font-bold text-[9px] uppercase tracking-widest text-primary gap-1.5 hover:bg-primary/5 h-8 px-2 rounded-lg">
+              Project Details <ArrowUpRight className="h-3 w-3" />
+            </Button>
+          </Link>
+          <div className="text-right">
+            <p className="text-sm font-black text-primary">
+              {job.budget && job.budget > 0 ? `NGN ${job.budget.toLocaleString()}` : "Negotiable"}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 

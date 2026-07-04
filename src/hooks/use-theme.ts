@@ -12,9 +12,9 @@ export function useTheme() {
     if (savedTheme) {
       setTheme(savedTheme)
       applyTheme(savedTheme)
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setTheme('dark')
-      applyTheme('dark')
+    } else {
+      setTheme('light')
+      applyTheme('light')
     }
   }, [])
 

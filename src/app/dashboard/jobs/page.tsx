@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils"
 import { useSearchParams, useRouter } from "next/navigation"
 
 export default function MyJobsPage() {
-  const { user } = useUser()
+  const { user, loading: authLoading } = useUser()
   const db = useFirestore()
   const { toast } = useToast()
   const router = useRouter()
@@ -39,7 +39,7 @@ export default function MyJobsPage() {
     return doc(db, 'users', user.uid);
   }, [db, user?.uid]);
 
-  const { data: profile } = useDoc(userDocRef);
+  const { data: profile, loading: profileLoading } = useDoc(userDocRef);
   const activeRole = profile?.activeRole || profile?.role || 'client';
 
   // Reactive listeners for jobs and applications
@@ -71,13 +71,15 @@ export default function MyJobsPage() {
     }
   }, [tabFromUrl])
 
+  // Postings: Only show "Open" jobs for clients
   const postedJobs = useMemo(() => {
     if (!allJobs || !user?.uid) return []
     return allJobs
-      .filter((j: any) => j.clientId === user.uid)
+      .filter((j: any) => j.clientId === user.uid && j.status === 'open')
       .sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
   }, [allJobs, user?.uid])
 
+  // Applications: Show all applications sent by the freelancer
   const applications = useMemo(() => {
     if (!allApps || !user?.uid) return []
     return allApps
@@ -85,12 +87,13 @@ export default function MyJobsPage() {
       .sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
   }, [allApps, user?.uid])
 
+  // Active Work: Everything currently contracted or finished (Hired, In-Progress, Completed)
   const activeWork = useMemo(() => {
     if (!allJobs || !user?.uid) return []
     return allJobs
       .filter((j: any) => 
         (j.clientId === user.uid || j.freelancerId === user.uid) && 
-        ['hired', 'in-progress'].includes(j.status)
+        ['hired', 'in-progress', 'completed'].includes(j.status)
       )
       .sort((a: any, b: any) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0))
   }, [allJobs, user?.uid])
@@ -128,7 +131,9 @@ export default function MyJobsPage() {
 
   const isFreelancer = activeRole === 'freelancer'
   const isClient = activeRole === 'client'
-  const loading = jobsLoading || appsLoading
+  
+  // Ensure we don't show EmptyState while still resolving user or querying Firestore
+  const pageLoading = authLoading || profileLoading || jobsLoading || appsLoading || !user?.uid
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
@@ -157,13 +162,16 @@ export default function MyJobsPage() {
             {isFreelancer && (
               <TabsTrigger value="applications" className="rounded-lg px-4 py-2 font-bold text-[10px] uppercase tracking-widest data-[state=active]:shadow-md transition-all">My Proposals</TabsTrigger>
             )}
-            <TabsTrigger value="contracts" className="rounded-lg px-4 py-2 font-bold text-[10px] uppercase tracking-widest data-[state=active]:shadow-md transition-all">Active Work</TabsTrigger>
+            <TabsTrigger value="contracts" className="rounded-lg px-4 py-2 font-bold text-[10px] uppercase tracking-widest data-[state=active]:shadow-md transition-all">
+              Active Work
+              {activeWork.length > 0 && <span className="ml-2 bg-primary/20 text-primary px-1.5 py-0.5 rounded-md text-[8px]">{activeWork.length}</span>}
+            </TabsTrigger>
           </TabsList>
         </div>
 
         {isClient && (
           <TabsContent value="postings" className="space-y-4">
-            {loading ? (
+            {pageLoading ? (
               <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-10" /></div>
             ) : postedJobs?.length ? (
               <div className="grid gap-4">
@@ -185,7 +193,7 @@ export default function MyJobsPage() {
 
         {isFreelancer && (
           <TabsContent value="applications" className="space-y-4">
-            {loading ? (
+            {pageLoading ? (
               <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-10" /></div>
             ) : applications?.length ? (
               <div className="grid gap-4">
@@ -206,7 +214,7 @@ export default function MyJobsPage() {
         )}
 
         <TabsContent value="contracts" className="space-y-4">
-          {loading ? (
+          {pageLoading ? (
             <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-10" /></div>
           ) : activeWork?.length ? (
             <div className="grid gap-4">
@@ -231,18 +239,26 @@ export default function MyJobsPage() {
 
 function ActiveContractCard({ job, onUpdateStatus, currentUserId, router }: { job: any, onUpdateStatus: (j: any, s: string) => void, currentUserId?: string, router: any }) {
   const isClient = job.clientId === currentUserId
-  const partnerName = isClient ? job.freelancerName : job.clientName
+  const partnerName = isClient ? job.freelancerName : (job.clientName || 'The Client')
   const partnerId = isClient ? job.freelancerId : job.clientId
 
+  const isCompleted = job.status === 'completed'
+
   return (
-    <Card className="border-none shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300 rounded-2xl bg-card border border-muted/50">
+    <Card className={cn(
+      "border-none shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300 rounded-2xl bg-card border border-muted/50",
+      isCompleted && "opacity-70"
+    )}>
       <CardContent className="p-0">
         <div className="p-4 md:p-6">
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
             <div className="space-y-4 flex-1">
               <div className="flex items-center gap-2">
-                <Badge className="px-2 py-0.5 border-none font-bold text-[9px] uppercase tracking-widest rounded-full bg-blue-500/10 text-blue-700">
-                  {job.status === 'hired' ? 'Awaiting Start' : 'In Progress'}
+                <Badge className={cn(
+                  "px-2 py-0.5 border-none font-bold text-[9px] uppercase tracking-widest rounded-full",
+                  isCompleted ? "bg-slate-500/10 text-slate-700" : "bg-blue-500/10 text-blue-700"
+                )}>
+                  {isCompleted ? 'Finished' : (job.status === 'hired' ? 'Awaiting Start' : 'In Progress')}
                 </Badge>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   Updated {job.updatedAt ? new Date(job.updatedAt.seconds * 1000).toLocaleDateString() : 'Just now'}
@@ -253,7 +269,7 @@ function ActiveContractCard({ job, onUpdateStatus, currentUserId, router }: { jo
                 <div className="flex items-center gap-2 mt-2">
                   <User className="h-3.5 w-3.5 text-muted-foreground" />
                   <p className="text-xs font-medium text-muted-foreground">
-                    {isClient ? "Hired: " : "Client: "} <span className="text-foreground font-bold">{partnerName || 'Unknown'}</span>
+                    {isClient ? "Hired: " : "Client: "} <span className="text-foreground font-bold">{partnerName}</span>
                   </p>
                 </div>
               </div>
@@ -267,7 +283,7 @@ function ActiveContractCard({ job, onUpdateStatus, currentUserId, router }: { jo
               >
                 <MessageSquare className="h-3.5 w-3.5" /> Chat
               </Button>
-              {isClient && (
+              {isClient && !isCompleted && (
                 <Button 
                   size="sm" 
                   className="h-9 px-4 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 bg-green-500 hover:bg-green-600 text-white"
@@ -349,14 +365,9 @@ function JobManagementCard({ job, onUpdateStatus }: { job: any, onUpdateStatus: 
             </Button>
           </Link>
           <div className="flex gap-2">
-            {(job.status === 'in-progress' || job.status === 'hired') && (
-              <Button variant="outline" size="sm" className="font-bold text-[10px] uppercase tracking-widest h-9 px-4 rounded-lg" onClick={() => onUpdateStatus(job, 'completed')}>
-                Complete
-              </Button>
-            )}
             {job.status === 'open' && (
               <Link href={`/dashboard/jobs/manage/${job.id}`}>
-                <Button size="sm" className="font-bold text-[10px] uppercase tracking-widest rounded-lg px-4 h-9">Manage</Button>
+                <Button size="sm" className="font-bold text-[10px] uppercase tracking-widest rounded-lg px-4 h-9">Manage Applicants</Button>
               </Link>
             )}
           </div>

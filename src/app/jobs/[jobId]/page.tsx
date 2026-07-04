@@ -26,6 +26,7 @@ import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, errorEmi
 import { doc, collection, addDoc, serverTimestamp, query, where } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { formatDistanceToNow } from "date-fns"
+import Link from "next/link"
 
 export default function JobDetailPage() {
   const { jobId } = useParams()
@@ -136,6 +137,8 @@ export default function JobDetailPage() {
     )
   }
 
+  const isOwner = user?.uid === job.clientId
+
   const getStatusBadge = () => {
     switch(job.status) {
       case 'open':
@@ -215,71 +218,91 @@ export default function JobDetailPage() {
           </div>
 
           <aside className="space-y-8">
-            <Card className="border-none shadow-2xl bg-primary text-primary-foreground rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden sticky top-28">
-              <CardHeader className="p-6 md:p-10 pb-4">
-                <CardTitle className="text-xl md:text-2xl font-black">
-                  {hasApplied ? "Applied ✓" : "Join Project"}
-                </CardTitle>
-                <CardDescription className="text-primary-foreground/70 font-medium text-sm md:text-base">
-                  {hasApplied 
-                    ? "Your proposal is being reviewed by the client." 
-                    : "Submit your professional proposal to begin this collaboration."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-6 md:p-10 pt-4 md:pt-6">
-                {!showApplyForm ? (
-                  <Button 
-                    className="w-full bg-white text-primary hover:bg-white/90 h-14 md:h-16 text-lg md:text-xl font-black rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-                    onClick={() => setShowApplyForm(true)}
-                    disabled={hasApplied || job.status !== 'open'}
-                  >
-                    {getButtonText()}
-                  </Button>
-                ) : (
-                  <form onSubmit={handleApply} className="space-y-4 md:space-y-6">
-                    <div className="grid gap-2">
-                      <Label htmlFor="bid" className="text-white font-bold text-[10px] md:text-sm uppercase tracking-widest">Your Bid (NGN)</Label>
-                      <Input 
-                        id="bid" 
-                        type="number" 
-                        placeholder={job.budget && job.budget > 0 ? job.budget.toString() : "Enter your bid"} 
-                        className="bg-primary-foreground/10 border-white/20 text-white placeholder:text-white/40 h-12 md:h-14 rounded-xl px-4 md:px-6 font-bold text-base md:text-lg"
-                        value={bidAmount}
-                        onChange={(e) => setBidAmount(e.target.value)}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="letter" className="text-white font-bold text-[10px] md:text-sm uppercase tracking-widest">Cover Letter (Optional)</Label>
-                      <Textarea 
-                        id="letter" 
-                        placeholder="Detail your relevant experience (optional)..." 
-                        className="bg-primary-foreground/10 border-white/20 text-white placeholder:text-white/40 rounded-xl p-4 md:p-6 resize-none text-sm md:text-base"
-                        rows={5}
-                        value={coverLetter}
-                        onChange={(e) => setCoverLetter(e.target.value)}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-2 md:gap-3">
-                      <Button 
-                        type="submit" 
-                        className="w-full bg-white text-primary hover:bg-white/90 h-12 md:h-14 text-base md:text-lg font-black rounded-2xl shadow-xl"
-                        disabled={isApplying}
-                      >
-                        {isApplying ? <Loader2 className="h-5 w-5 animate-spin" /> : "Submit Proposal"}
-                      </Button>
-                      <Button 
-                        type="button" 
-                        variant="ghost" 
-                        className="w-full text-white hover:bg-white/10 h-10 md:h-12 font-bold text-xs md:text-sm"
-                        onClick={() => setShowApplyForm(false)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </form>
-                )}
-              </CardContent>
-            </Card>
+            {isOwner ? (
+              <Card className="border-none shadow-2xl bg-primary text-primary-foreground rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden sticky top-28">
+                <CardHeader className="p-6 md:p-10 pb-4">
+                  <CardTitle className="text-xl md:text-2xl font-black">Your Listing</CardTitle>
+                  <CardDescription className="text-primary-foreground/70 font-medium text-sm md:text-base">
+                    You posted this listing. You can manage applicants and view proposals from your dashboard.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6 md:p-10 pt-4 md:pt-6">
+                  <Link href={`/dashboard/jobs/manage/${jobId}`} className="w-full block">
+                    <Button 
+                      className="w-full bg-white text-primary hover:bg-white/90 h-14 md:h-16 text-lg md:text-xl font-black rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      Manage Applicants
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-none shadow-2xl bg-primary text-primary-foreground rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden sticky top-28">
+                <CardHeader className="p-6 md:p-10 pb-4">
+                  <CardTitle className="text-xl md:text-2xl font-black">
+                    {hasApplied ? "Applied ✓" : "Join Project"}
+                  </CardTitle>
+                  <CardDescription className="text-primary-foreground/70 font-medium text-sm md:text-base">
+                    {hasApplied 
+                      ? "Your proposal is being reviewed by the client." 
+                      : "Submit your professional proposal to begin this collaboration."}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6 md:p-10 pt-4 md:pt-6">
+                  {!showApplyForm ? (
+                    <Button 
+                      className="w-full bg-white text-primary hover:bg-white/90 h-14 md:h-16 text-lg md:text-xl font-black rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                      onClick={() => setShowApplyForm(true)}
+                      disabled={hasApplied || job.status !== 'open'}
+                    >
+                      {getButtonText()}
+                    </Button>
+                  ) : (
+                    <form onSubmit={handleApply} className="space-y-4 md:space-y-6">
+                      <div className="grid gap-2">
+                        <Label htmlFor="bid" className="text-white font-bold text-[10px] md:text-sm uppercase tracking-widest">Your Bid (NGN)</Label>
+                        <Input 
+                          id="bid" 
+                          type="number" 
+                          placeholder={job.budget && job.budget > 0 ? job.budget.toString() : "Enter your bid"} 
+                          className="bg-primary-foreground/10 border-white/20 text-white placeholder:text-white/40 h-12 md:h-14 rounded-xl px-4 md:px-6 font-bold text-base md:text-lg"
+                          value={bidAmount}
+                          onChange={(e) => setBidAmount(e.target.value)}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="letter" className="text-white font-bold text-[10px] md:text-sm uppercase tracking-widest">Cover Letter (Optional)</Label>
+                        <Textarea 
+                          id="letter" 
+                          placeholder="Detail your relevant experience (optional)..." 
+                          className="bg-primary-foreground/10 border-white/20 text-white placeholder:text-white/40 rounded-xl p-4 md:p-6 resize-none text-sm md:text-base"
+                          rows={5}
+                          value={coverLetter}
+                          onChange={(e) => setCoverLetter(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-2 md:gap-3">
+                        <Button 
+                          type="submit" 
+                          className="w-full bg-white text-primary hover:bg-white/90 h-12 md:h-14 text-base md:text-lg font-black rounded-2xl shadow-xl"
+                          disabled={isApplying}
+                        >
+                          {isApplying ? <Loader2 className="h-5 w-5 animate-spin" /> : "Submit Proposal"}
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          className="w-full text-white hover:bg-white/10 h-10 md:h-12 font-bold text-xs md:text-sm"
+                          onClick={() => setShowApplyForm(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             <Card className="border-none shadow-sm rounded-[1.5rem] md:rounded-[2.5rem] bg-card overflow-hidden">
               <CardHeader className="p-6 md:p-10 pb-4">

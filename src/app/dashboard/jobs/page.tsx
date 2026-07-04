@@ -112,7 +112,7 @@ export default function MyJobsPage() {
           userId: job.freelancerId,
           title: "Milestone Completed!",
           message: `${user.displayName || 'The client'} has marked "${job.title}" as completed.`,
-          link: `/dashboard/jobs`,
+          link: `/dashboard/jobs?tab=contracts`,
           type: "status",
           read: false,
           createdAt: serverTimestamp()
@@ -132,7 +132,6 @@ export default function MyJobsPage() {
   const isFreelancer = activeRole === 'freelancer'
   const isClient = activeRole === 'client'
   
-  // Ensure we don't show EmptyState while still resolving user or querying Firestore
   const pageLoading = authLoading || profileLoading || jobsLoading || appsLoading || !user?.uid
 
   return (
@@ -176,7 +175,7 @@ export default function MyJobsPage() {
             ) : postedJobs?.length ? (
               <div className="grid gap-4">
                 {postedJobs.map((job: any) => (
-                  <JobManagementCard key={job.id} job={job} onUpdateStatus={handleUpdateJobStatus} />
+                  <JobManagementCard key={job.id} job={job} />
                 ))}
               </div>
             ) : (
@@ -258,7 +257,7 @@ function ActiveContractCard({ job, onUpdateStatus, currentUserId, router }: { jo
                   "px-2 py-0.5 border-none font-bold text-[9px] uppercase tracking-widest rounded-full",
                   isCompleted ? "bg-slate-500/10 text-slate-700" : "bg-blue-500/10 text-blue-700"
                 )}>
-                  {isCompleted ? 'Finished' : (job.status === 'hired' ? 'Awaiting Start' : 'In Progress')}
+                  {isCompleted ? 'Finished' : 'In Progress'}
                 </Badge>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   Updated {job.updatedAt ? new Date(job.updatedAt.seconds * 1000).toLocaleDateString() : 'Just now'}
@@ -286,10 +285,10 @@ function ActiveContractCard({ job, onUpdateStatus, currentUserId, router }: { jo
               {isClient && !isCompleted && (
                 <Button 
                   size="sm" 
-                  className="h-9 px-4 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 bg-green-500 hover:bg-green-600 text-white"
+                  className="h-9 px-4 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/20"
                   onClick={() => onUpdateStatus(job, 'completed')}
                 >
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Complete
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Mark as Complete
                 </Button>
               )}
             </div>
@@ -312,17 +311,7 @@ function ActiveContractCard({ job, onUpdateStatus, currentUserId, router }: { jo
   )
 }
 
-function JobManagementCard({ job, onUpdateStatus }: { job: any, onUpdateStatus: (job: any, s: string) => void }) {
-  const statusConfig: any = {
-    'open': { color: 'bg-green-500/10 text-green-700', label: 'Open' },
-    'hired': { color: 'bg-blue-500/10 text-blue-700', label: 'Hired' },
-    'in-progress': { color: 'bg-blue-500/10 text-blue-700', label: 'In Progress' },
-    'completed': { color: 'bg-slate-500/10 text-slate-700', label: 'Finished' },
-    'cancelled': { color: 'bg-red-500/10 text-red-700', label: 'Cancelled' }
-  }
-
-  const current = statusConfig[job.status] || { color: 'bg-muted', label: job.status }
-
+function JobManagementCard({ job }: { job: any }) {
   return (
     <Card className="border-none shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300 rounded-2xl bg-card border border-muted/50">
       <CardContent className="p-0">
@@ -330,8 +319,8 @@ function JobManagementCard({ job, onUpdateStatus }: { job: any, onUpdateStatus: 
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
             <div className="space-y-3 flex-1">
               <div className="flex items-center gap-2">
-                <Badge className={cn("px-2 py-0.5 border-none font-bold text-[9px] uppercase tracking-widest rounded-full", current.color)}>
-                  {current.label}
+                <Badge className="px-2 py-0.5 border-none font-bold text-[9px] uppercase tracking-widest rounded-full bg-green-500/10 text-green-700">
+                  Open Listing
                 </Badge>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
                   <Clock className="h-3 w-3" /> {job.createdAt ? new Date(job.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
@@ -365,11 +354,9 @@ function JobManagementCard({ job, onUpdateStatus }: { job: any, onUpdateStatus: 
             </Button>
           </Link>
           <div className="flex gap-2">
-            {job.status === 'open' && (
-              <Link href={`/dashboard/jobs/manage/${job.id}`}>
-                <Button size="sm" className="font-bold text-[10px] uppercase tracking-widest rounded-lg px-4 h-9">Manage Applicants</Button>
-              </Link>
-            )}
+            <Link href={`/dashboard/jobs/manage/${job.id}`}>
+              <Button size="sm" className="font-bold text-[10px] uppercase tracking-widest rounded-lg px-4 h-9">Manage Applicants</Button>
+            </Link>
           </div>
         </div>
       </CardContent>

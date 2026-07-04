@@ -150,6 +150,14 @@ export default function JobDetailPage() {
     }
   }
 
+  const getButtonText = () => {
+    if (hasApplied) return "Application Submitted"
+    if (job.status === 'open') return "Quick Apply"
+    if (['hired', 'in-progress'].includes(job.status)) return "Project in Progress"
+    if (job.status === 'completed') return "Project Completed"
+    return "Project Closed"
+  }
+
   return (
     <div className="min-h-screen bg-muted/20 flex flex-col">
       <Navbar />
@@ -225,7 +233,7 @@ export default function JobDetailPage() {
                     onClick={() => setShowApplyForm(true)}
                     disabled={hasApplied || job.status !== 'open'}
                   >
-                    {hasApplied ? "Application Submitted" : (job.status === 'open' ? "Quick Apply" : "Project Closed")}
+                    {getButtonText()}
                   </Button>
                 ) : (
                   <form onSubmit={handleApply} className="space-y-4 md:space-y-6">

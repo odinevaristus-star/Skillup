@@ -44,7 +44,7 @@ export default function ManageJobApplicantsPage() {
 
     setIsHiring(true)
     const jobUpdate = {
-      status: 'hired',
+      status: 'in-progress',
       freelancerId: app.freelancerId,
       freelancerName: app.freelancerName,
       hiredAt: serverTimestamp(),
@@ -62,8 +62,8 @@ export default function ManageJobApplicantsPage() {
         addDoc(collection(db, "notifications"), {
           userId: app.freelancerId,
           title: "Offer Accepted!",
-          message: `Congratulations! ${job.clientName} hired you for: ${job.title}`,
-          link: `/dashboard/jobs`,
+          message: `Congratulations! ${job.clientName} hired you for: ${job.title}. Work is now in progress.`,
+          link: `/dashboard/jobs?tab=contracts`,
           type: "hire",
           read: false,
           createdAt: serverTimestamp()
@@ -72,7 +72,7 @@ export default function ManageJobApplicantsPage() {
         toast({ title: "Freelancer hired successfully!", description: `${app.freelancerName} is now assigned to this project.` })
         
         setTimeout(() => {
-          router.push("/dashboard/jobs");
+          router.push("/dashboard/jobs?tab=contracts");
         }, 500);
       })
       .catch(async (error) => {
@@ -167,7 +167,7 @@ export default function ManageJobApplicantsPage() {
                         onClick={() => handleHire(app)} 
                         disabled={job?.status !== 'open' || isHiring}
                       >
-                        {isHiring ? <Loader2 className="h-4 w-4 animate-spin" /> : (job?.status === 'open' ? 'Accept & Hire' : 'Hired')}
+                        {isHiring ? <Loader2 className="h-4 w-4 animate-spin" /> : (job?.status === 'open' ? 'Accept & Hire' : 'Closed')}
                       </Button>
                     </div>
                   </div>

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card"
 import { Navbar } from "@/components/navbar"
-import { Chrome, Loader2 } from "lucide-react"
+import { Chrome, Loader2, AlertCircle } from "lucide-react"
 import { 
   signInWithEmailAndPassword, 
   GoogleAuthProvider, 
@@ -27,11 +27,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const router = useRouter()
   
   // Password Reset States
   const [showResetModal, setShowResetModal] = useState(false)
@@ -46,9 +48,23 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
     try {
-      await signInWithEmailAndPassword(auth, email, password)
-      // Verification check removed as per request
-      window.location.replace('/dashboard');
+      const result = await signInWithEmailAndPassword(auth, email, password)
+      const user = result.user
+
+      // Enforce email verification
+      if (!user.emailVerified) {
+        toast({
+          variant: "destructive",
+          title: "Email not verified",
+          description: "Please check your inbox and verify your email before logging in."
+        })
+        await signOut(auth)
+        router.push("/verify-email")
+        setIsLoading(false)
+        return
+      }
+
+      router.replace('/dashboard');
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -76,7 +92,7 @@ export default function LoginPage() {
         updatedAt: new Date().toISOString()
       }, { merge: true });
       
-      window.location.replace('/dashboard');
+      router.replace('/dashboard');
     } catch (error) {
       console.error('Google login error:', error);
       toast({ 
@@ -201,7 +217,7 @@ export default function LoginPage() {
             <div className="grid gap-2">
               <Label htmlFor="reset-email">Email Address</Label>
               <Input
-                id="reset-email"
+                id="verify-email-input"
                 type="email"
                 placeholder="name@example.com"
                 required

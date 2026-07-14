@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -9,12 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
 import { Navbar } from '@/components/navbar';
-import { Briefcase, User, Loader2, Check, Chrome, ArrowLeft } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Briefcase, User, Loader2, Chrome, ArrowLeft, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useRouter } from 'next/navigation';
 
 export default function SignupPage() {
   const [selectedRole, setSelectedRole] = useState<'client' | 'freelancer' | null>(null);
@@ -29,6 +29,7 @@ export default function SignupPage() {
   const auth = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +57,10 @@ export default function SignupPage() {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
+      // 1. Send verification email
+      await sendEmailVerification(result.user);
+
+      // 2. Save user data to Firestore
       const userData = {
         uid: result.user.uid,
         email: email,
@@ -78,10 +83,11 @@ export default function SignupPage() {
       
       toast({
         title: "Account created!",
-        description: "Welcome to SkillUp! Redirecting to your dashboard..."
+        description: "We've sent a verification link to your email."
       });
       
-      window.location.replace("/dashboard");
+      // Redirect to verification instructions instead of dashboard
+      router.push("/verify-email");
 
     } catch (error: any) {
       toast({
@@ -118,7 +124,7 @@ export default function SignupPage() {
         updatedAt: serverTimestamp()
       }, { merge: true });
       
-      window.location.replace('/dashboard');
+      router.replace('/dashboard');
     } catch (error) {
       console.error('Google login error:', error);
       toast({ 

@@ -101,9 +101,14 @@ export default function VerifyEmailPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              To keep the campus community safe, we need you to confirm your email address before you can hire or apply for jobs.
-            </p>
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                To keep the campus community safe, we need you to confirm your email address before you can hire or apply for jobs.
+              </p>
+              <p className="text-xs font-bold text-primary/80 uppercase tracking-widest">
+                Don't see it? Check your spam or junk folder.
+              </p>
+            </div>
             
             <div className="space-y-3">
               <Button 

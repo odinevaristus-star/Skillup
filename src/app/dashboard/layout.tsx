@@ -16,8 +16,13 @@ export default function DashboardLayout({
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
+    if (!loading) {
+      if (!user) {
+        router.replace('/login');
+      } else if (!user.emailVerified) {
+        // Force redirect unverified users to the verification page
+        router.replace('/verify-email');
+      }
     }
   }, [user, loading, router]);
 
@@ -29,7 +34,8 @@ export default function DashboardLayout({
     );
   }
 
-  if (!user) return null;
+  // Double-check verification before rendering protected content
+  if (!user || !user.emailVerified) return null;
 
   return (
     <div className="min-h-screen bg-muted/20">

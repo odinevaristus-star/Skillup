@@ -18,27 +18,34 @@ export default function VerifyEmailPage() {
   const [isResending, setIsResending] = useState(false)
   const [isChecking, setIsChecking] = useState(false)
 
-  // Auto-redirect if they manage to verify while on this page
+  // 1. Auto-check on mount to handle users coming back from verification link
+  useEffect(() => {
+    if (auth.currentUser) {
+      reload(auth.currentUser).catch(console.error);
+    }
+  }, [auth.currentUser]);
+
+  // 2. Auto-redirect if they manage to verify while on this page
   useEffect(() => {
     if (user?.emailVerified) {
       router.replace("/dashboard")
     }
-  }, [user, router])
+  }, [user?.emailVerified, router])
 
   const handleCheckStatus = async () => {
     if (!auth.currentUser) return
     setIsChecking(true)
     try {
-      // Reload the user object to get the latest emailVerified status
+      // Reload the user object to get the latest emailVerified status from server
       await reload(auth.currentUser)
       if (auth.currentUser.emailVerified) {
-        toast({ title: "Email verified!", description: "Welcome to SkillUp." })
+        toast({ title: "Email verified!", description: "Welcome back to SkillUp." })
         router.replace("/dashboard")
       } else {
         toast({ 
-          variant: "outline",
+          variant: "default",
           title: "Still unverified", 
-          description: "Please click the link in your email, then check again." 
+          description: "Please click the link in your email, then check again here." 
         })
       }
     } catch (error: any) {
@@ -50,7 +57,8 @@ export default function VerifyEmailPage() {
 
   const handleResendEmail = async () => {
     if (!auth.currentUser) {
-      toast({ variant: "destructive", title: "Error", description: "You must be logged in to resend the email." })
+      toast({ variant: "destructive", title: "Error", description: "Your session has expired. Please log in again." })
+      router.push("/login")
       return
     }
 

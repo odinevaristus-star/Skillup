@@ -56,9 +56,9 @@ export default function LoginPage() {
         toast({
           variant: "destructive",
           title: "Email not verified",
-          description: "Please check your inbox and verify your email before logging in."
+          description: "Please check your inbox and verify your email to continue."
         })
-        await signOut(auth)
+        // Do NOT sign out here; redirecting to verify-email requires an active session to reload/resend
         router.push("/verify-email")
         setIsLoading(false)
         return
@@ -96,7 +96,7 @@ export default function LoginPage() {
     } catch (error) {
       console.error('Google login error:', error);
       toast({ 
-        variant: "destructive",
+        variant: "destructive", 
         title: 'Google login failed',
         description: 'Please try again.' 
       });
